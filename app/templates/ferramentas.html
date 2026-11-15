@@ -1,0 +1,31 @@
+{% extends "index.html" %}
+
+{% block title %}Ferramentas | TaskBerry{% endblock %}
+
+{% block content %}
+
+<div class="dashboard-layout">
+
+    {% include 'components/sidebar.html' %}
+
+    <main class="dashboard-main">
+
+        <header class="dashboard-header">
+            <button
+                class="sidebar-toggle"
+                id="sidebarToggle"
+                type="button"
+                aria-label="Abrir menu"
+            >
+                <i class="bi bi-list"></i>
+            </button>
+        </header>
+
+        <section class="dashboard-content">
+        </section>
+
+    </main>
+
+</div>
+
+{% endblock %}

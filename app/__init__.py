@@ -43,11 +43,23 @@ def create_app():
     from app.routes.dashboard import dashboard_bp
     from app.routes.perfil import perfil_bp
     from app.routes.clientes import clientes_bp
+    from app.routes.configuracoes import configuracoes_bp
+    from app.routes.funcionarios import funcionarios_bp
+    from app.routes.chamados import chamados_bp
+    from app.routes.materiais import materiais_bp
+    from app.routes.ferramentas import ferramentas_bp
+    from app.routes.financeiro import financeiro_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(perfil_bp)
     app.register_blueprint(clientes_bp)
+    app.register_blueprint(configuracoes_bp)
+    app.register_blueprint(funcionarios_bp)
+    app.register_blueprint(chamados_bp)
+    app.register_blueprint(materiais_bp)
+    app.register_blueprint(ferramentas_bp)
+    app.register_blueprint(financeiro_bp)
 
     # Página inicial
     @app.route("/")
@@ -72,11 +84,9 @@ def create_app():
             "auth.logout"
         ]
 
-        # Permite acessar arquivos estáticos e páginas públicas
         if request.endpoint in endpoints_publicos:
             return None
 
-        # Impede acesso sem autenticação
         if not session.get("usuario_id"):
             return redirect(url_for("inicio"))
 

@@ -1,0 +1,484 @@
+{% extends "index.html" %}
+
+{% block title %}Configurações | TaskBerry{% endblock %}
+
+{% block content %}
+
+<div class="dashboard-layout">
+
+    {% include 'components/sidebar.html' %}
+
+    <main class="dashboard-main">
+
+        <!-- CABEÇALHO -->
+        <header class="dashboard-header">
+
+            <button
+                class="sidebar-toggle"
+                id="sidebarToggle"
+                type="button"
+                aria-label="Abrir menu"
+            >
+                <i class="bi bi-list"></i>
+            </button>
+
+            <div class="dashboard-breadcrumb">
+                <span>TaskBerry</span>
+                <i class="bi bi-chevron-right"></i>
+                <strong>Configurações</strong>
+            </div>
+
+            <div class="header-actions">
+                <div class="header-profile">
+                    <div class="sidebar-user-avatar">
+                        {{ session.get("usuario_nome", "U")[0]|upper }}
+                    </div>
+
+                    <div>
+                        <strong>{{ session.get("usuario_nome", "Usuário") }}</strong>
+                        <small>Minha conta</small>
+                    </div>
+
+                    <i class="bi bi-chevron-down"></i>
+                </div>
+            </div>
+
+        </header>
+
+        <!-- CONTEÚDO -->
+        <section class="dashboard-content settings-content">
+
+            <!-- TÍTULO DA PÁGINA -->
+            <div class="dashboard-welcome settings-welcome">
+
+                <div>
+                    <span class="welcome-date">
+                        <i class="bi bi-sliders"></i>
+                        PREFERÊNCIAS DO SISTEMA
+                    </span>
+
+                    <h1>Configurações</h1>
+
+                    <p>
+                        Personalize o funcionamento do seu empreendimento
+                        e defina as regras de controle do TaskBerry.
+                    </p>
+                </div>
+
+            </div>
+
+            <!-- MENSAGENS DO FLASK -->
+            {% with mensagens = get_flashed_messages(with_categories=true) %}
+
+                {% if mensagens %}
+
+                    {% for categoria, mensagem in mensagens %}
+
+                        <div
+                            class="alert alert-{{ categoria }} alert-dismissible fade show"
+                            role="alert"
+                        >
+                            {{ mensagem }}
+
+                            <button
+                                type="button"
+                                class="btn-close"
+                                data-bs-dismiss="alert"
+                                aria-label="Fechar"
+                            ></button>
+                        </div>
+
+                    {% endfor %}
+
+                {% endif %}
+
+            {% endwith %}
+
+
+            <div class="row g-4">
+
+                <!-- =================================
+                     CONTROLE MENSAL
+                ================================== -->
+
+                <div class="col-12">
+
+                    <div class="profile-card settings-card">
+
+                        <div class="d-flex align-items-center gap-3 mb-4">
+
+                            <div class="settings-icon">
+                                <i class="bi bi-calendar2-range"></i>
+                            </div>
+
+                            <div>
+                                <h5 class="mb-1">Controle mensal</h5>
+
+                                <p class="text-muted small mb-0">
+                                    Defina quando começa e termina o ciclo
+                                    financeiro do seu empreendimento.
+                                </p>
+                            </div>
+
+                        </div>
+
+
+                        <!-- RESUMO DO PERÍODO -->
+
+                        <div class="row g-3 mb-4">
+
+                            <div class="col-md-4">
+
+                                <div class="settings-period-card">
+
+                                    <span>
+                                        <i class="bi bi-calendar-event me-1"></i>
+                                        Data atual
+                                    </span>
+
+                                    <strong>{{ data_atual }}</strong>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="col-md-4">
+
+                                <div class="settings-period-card">
+
+                                    <span>
+                                        <i class="bi bi-calendar-check me-1"></i>
+                                        Início do período
+                                    </span>
+
+                                    <strong>{{ data_inicio }}</strong>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="col-md-4">
+
+                                <div class="settings-period-card">
+
+                                    <span>
+                                        <i class="bi bi-calendar-x me-1"></i>
+                                        Fechamento do período
+                                    </span>
+
+                                    <strong>{{ data_fim }}</strong>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- FORMULÁRIO DE FECHAMENTO -->
+
+                        <form
+                            method="POST"
+                            action="{{ url_for('configuracoes.minhas_configuracoes') }}"
+                        >
+
+                            <div class="row align-items-end g-3">
+
+                                <div class="col-md-6">
+
+                                    <label
+                                        for="dia_fechamento"
+                                        class="form-label"
+                                    >
+                                        Dia de fechamento mensal
+                                    </label>
+
+                                    <select
+                                        class="form-select"
+                                        id="dia_fechamento"
+                                        name="dia_fechamento"
+                                        required
+                                    >
+
+                                        {% for dia in range(1, 32) %}
+
+                                            <option
+                                                value="{{ dia }}"
+                                                {% if dia == dia_fechamento %}selected{% endif %}
+                                            >
+                                                Dia {{ dia }}
+                                            </option>
+
+                                        {% endfor %}
+
+                                    </select>
+
+                                    <div class="form-text">
+                                        O TaskBerry utilizará esse dia para
+                                        organizar os períodos financeiros.
+                                    </div>
+
+                                </div>
+
+                                <div class="col-md-6 settings-button-wrapper">
+
+                                    <button
+                                        type="submit"
+                                        class="settings-save-button"
+                                    >
+                                        <i class="bi bi-check2-circle me-2"></i>
+                                        Salvar configurações
+                                    </button>
+
+                                </div>
+                            </div>
+
+                        </form>
+
+
+                        <!-- EXPLICAÇÃO DO CONTROLE MENSAL -->
+
+                        <div class="settings-info mt-4">
+
+                            <i class="bi bi-info-circle"></i>
+
+                            <div>
+
+                                <strong>
+                                    Como funciona o fechamento?
+                                </strong>
+
+                                <p>
+                                    O período financeiro será contado a partir
+                                    do dia seguinte ao fechamento anterior até
+                                    o dia de fechamento escolhido. Em meses
+                                    com menos dias, o sistema utilizará
+                                    automaticamente o último dia disponível.
+                                </p>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- =================================
+                     DATA E HORÁRIO
+                ================================== -->
+
+                <div class="col-12">
+
+                    <div class="profile-card settings-card">
+
+                        <div class="d-flex align-items-center gap-3 mb-4">
+
+                            <div class="settings-icon">
+                                <i class="bi bi-clock-history"></i>
+                            </div>
+
+                            <div>
+                                <h5 class="mb-1">Data e horário</h5>
+
+                                <p class="text-muted small mb-0">
+                                    Referência utilizada para organizar
+                                    os registros do empreendimento.
+                                </p>
+                            </div>
+
+                        </div>
+
+
+                        <div class="row g-3">
+
+                            <div class="col-md-6">
+
+                                <label class="form-label">
+                                    Fuso horário
+                                </label>
+
+                                <div class="settings-readonly">
+                                    <i class="bi bi-globe-americas me-2"></i>
+                                    America/Sao_Paulo
+                                </div>
+
+                            </div>
+
+
+                            <div class="col-md-6">
+
+                                <label class="form-label">
+                                    Atualização da data
+                                </label>
+
+                                <div class="settings-readonly">
+                                    <i class="bi bi-arrow-repeat me-2"></i>
+                                    Automática
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <p class="text-muted small mt-3 mb-0">
+                            O sistema utiliza o horário de São Paulo para
+                            calcular os períodos e registrar as movimentações.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <!-- =================================
+                     INTEGRAÇÃO DOS MÓDULOS
+                ================================== -->
+
+                <div class="col-12">
+
+                    <div class="profile-card settings-card">
+
+                        <div class="d-flex align-items-center gap-3 mb-4">
+
+                            <div class="settings-icon">
+                                <i class="bi bi-diagram-3"></i>
+                            </div>
+
+                            <div>
+                                <h5 class="mb-1">Integração dos módulos</h5>
+
+                                <p class="text-muted small mb-0">
+                                    Os módulos compartilharão as regras
+                                    e informações do empreendimento.
+                                </p>
+                            </div>
+
+                        </div>
+
+
+                        <div class="list-group list-group-flush settings-module-list">
+
+                            <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+
+                                <span>
+                                    <i class="bi bi-person-badge me-2"></i>
+                                    Funcionários
+                                </span>
+
+                                <span>
+                                    Remuneração e pagamentos
+                                </span>
+
+                            </div>
+
+
+                            <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+
+                                <span>
+                                    <i class="bi bi-clipboard-check me-2"></i>
+                                    Chamados e obras
+                                </span>
+
+                                <span>
+                                    Serviços e custos
+                                </span>
+
+                            </div>
+
+
+                            <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+
+                                <span>
+                                    <i class="bi bi-box-seam me-2"></i>
+                                    Materiais
+                                </span>
+
+                                <span>
+                                    Compras e consumo
+                                </span>
+
+                            </div>
+
+
+                            <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+
+                                <span>
+                                    <i class="bi bi-tools me-2"></i>
+                                    Ferramentas
+                                </span>
+
+                                <span>
+                                    Ativos e manutenção
+                                </span>
+
+                            </div>
+
+
+                            <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+
+                                <span>
+                                    <i class="bi bi-wallet2 me-2"></i>
+                                    Financeiro
+                                </span>
+
+                                <span>
+                                    Entradas, saídas e relatórios
+                                </span>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="settings-info mt-3">
+
+                            <i class="bi bi-lightbulb"></i>
+
+                            <div>
+
+                                <strong>
+                                    Um sistema integrado
+                                </strong>
+
+                                <p>
+                                    As integrações serão ativadas conforme
+                                    os módulos forem implementados. Dessa
+                                    forma, os registros de funcionários,
+                                    chamados, materiais e ferramentas
+                                    poderão alimentar automaticamente
+                                    o controle financeiro.
+                                </p>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- RODAPÉ -->
+
+            <footer class="dashboard-footer mt-4">
+
+                <span>TaskBerry · Gestão inteligente para pequenos negócios</span>
+
+                <span>Configurações do empreendimento</span>
+
+            </footer>
+
+        </section>
+
+    </main>
+
+</div>
+
+{% endblock %}

@@ -84,3 +84,69 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
 });
+
+
+/* =========================================
+   TASKBERRY - MATERIAIS
+========================================= */
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    // Evita envios duplicados nos formulários dos modais de materiais.
+    const formulariosMateriais = document.querySelectorAll(
+        ".materials-modal form"
+    );
+
+    formulariosMateriais.forEach(function (formulario) {
+
+        formulario.addEventListener("submit", function (event) {
+
+            if (formulario.dataset.enviando === "true") {
+                event.preventDefault();
+                return;
+            }
+
+            formulario.dataset.enviando = "true";
+
+            const botao = formulario.querySelector(
+                'button[type="submit"]'
+            );
+
+            if (botao) {
+                botao.disabled = true;
+                botao.dataset.textoOriginal = botao.innerHTML;
+
+                botao.innerHTML =
+                    '<span class="spinner-border spinner-border-sm me-2" role="status"></span>' +
+                    'Processando...';
+            }
+
+        });
+
+    });
+
+    // Garante que os percentuais selecionáveis sejam múltiplos de 10.
+    const camposPercentuais = document.querySelectorAll(
+        'select[name="percentual_aberto"], ' +
+        'select[name="percentual_consumido"]'
+    );
+
+    camposPercentuais.forEach(function (campo) {
+
+        campo.addEventListener("change", function () {
+
+            const valor = Number(campo.value);
+
+            if (!Number.isInteger(valor) || valor < 0 ||
+                valor > 100 || valor % 10 !== 0) {
+
+                campo.value = "";
+                alert("Selecione um percentual de 10 em 10%.");
+
+            }
+
+        });
+
+    });
+
+});

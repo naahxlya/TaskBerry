@@ -1,0 +1,104 @@
+<aside class="sidebar" id="sidebar">
+
+    <div class="sidebar-brand">
+        <a href="{{ url_for('dashboard.dashboard') }}">
+            <img
+                src="{{ url_for('static', filename='img/logo-horizontal.png') }}"
+                alt="TaskBerry"
+            >
+        </a>
+    </div>
+
+    <div class="sidebar-label">MENU PRINCIPAL</div>
+
+    <nav class="sidebar-nav">
+
+        <a href="{{ url_for('dashboard.dashboard') }}"
+           class="sidebar-link {% if request.endpoint == 'dashboard.dashboard' %}active{% endif %}">
+            <i class="bi bi-grid-1x2"></i>
+            <span>Visão geral</span>
+        </a>
+
+        <a href="{{ url_for('chamados.listar_chamados') }}"
+           class="sidebar-link {% if request.endpoint == 'chamados.listar_chamados' %}active{% endif %}">
+            <i class="bi bi-clipboard-check"></i>
+            <span>Chamados e obras</span>
+        </a>
+
+        <a href="{{ url_for('clientes.listar_clientes') }}"
+           class="sidebar-link {% if request.endpoint == 'clientes.listar_clientes' %}active{% endif %}">
+            <i class="bi bi-people"></i>
+            <span>Clientes</span>
+        </a>
+
+        <a href="{{ url_for('materiais.listar_materiais') }}"
+           class="sidebar-link {% if request.endpoint == 'materiais.listar_materiais' %}active{% endif %}">
+            <i class="bi bi-box-seam"></i>
+            <span>Materiais</span>
+        </a>
+
+        <a href="{{ url_for('funcionarios.listar_funcionarios') }}"
+           class="sidebar-link {% if request.endpoint == 'funcionarios.listar_funcionarios' %}active{% endif %}">
+            <i class="bi bi-person-badge"></i>
+            <span>Funcionários</span>
+        </a>
+
+        <a href="{{ url_for('ferramentas.listar_ferramentas') }}"
+           class="sidebar-link {% if request.endpoint == 'ferramentas.listar_ferramentas' %}active{% endif %}">
+            <i class="bi bi-tools"></i>
+            <span>Ferramentas</span>
+        </a>
+
+        <a href="{{ url_for('financeiro.index') }}"
+           class="sidebar-link {% if request.endpoint == 'financeiro.index' %}active{% endif %}">
+            <i class="bi bi-wallet2"></i>
+            <span>Financeiro</span>
+        </a>
+
+    </nav>
+
+    <div class="sidebar-label sidebar-label-bottom">
+        PREFERÊNCIAS
+    </div>
+
+    <nav class="sidebar-nav">
+
+        <a href="{{ url_for('perfil.meu_perfil') }}"
+           class="sidebar-link {% if request.endpoint == 'perfil.meu_perfil' %}active{% endif %}">
+            <i class="bi bi-person-circle"></i>
+            <span>Meu perfil</span>
+        </a>
+
+        <a href="{{ url_for('configuracoes.minhas_configuracoes') }}"
+           class="sidebar-link {% if request.endpoint == 'configuracoes.minhas_configuracoes' %}active{% endif %}">
+            <i class="bi bi-gear"></i>
+            <span>Configurações</span>
+        </a>
+
+    </nav>
+
+    <div class="sidebar-footer">
+
+        <div class="sidebar-user-avatar">
+            {{ session.get("usuario_nome", "TB")[0]|upper }}
+        </div>
+
+        <div class="sidebar-user-info">
+            <strong>{{ session.get("usuario_nome", "Usuário") }}</strong>
+            <small>{{ session.get("usuario_email", "") }}</small>
+        </div>
+
+        <form method="POST" action="{{ url_for('auth.logout') }}">
+            <button
+                type="submit"
+                class="logout-button"
+                title="Sair da conta"
+                aria-label="Sair da conta"
+            >
+                <i class="bi bi-box-arrow-right"></i>
+            </button>
+        </form>
+
+    </div>
+
+</aside>

@@ -1,0 +1,1062 @@
+{% extends "index.html" %}
+
+{% block title %}Materiais | TaskBerry{% endblock %}
+
+{% block content %}
+
+<div class="dashboard-layout">
+
+    {% include 'components/sidebar.html' %}
+
+    <main class="dashboard-main">
+
+        <header class="dashboard-header">
+            <button class="sidebar-toggle" id="sidebarToggle"
+                    type="button" aria-label="Abrir menu">
+                <i class="bi bi-list"></i>
+            </button>
+
+            <div class="materials-breadcrumb">
+                <span>TaskBerry</span>
+                <i class="bi bi-chevron-right"></i>
+                <strong>Materiais e estoque</strong>
+            </div>
+        </header>
+
+        <section class="dashboard-content materials-content">
+
+            <!-- CABEÇALHO -->
+            <div class="materials-welcome">
+
+                <div>
+                    <span class="materials-eyebrow">
+                        <i class="bi bi-box-seam"></i>
+                        CONTROLE DE ESTOQUE
+                    </span>
+
+                    <h1>Materiais</h1>
+
+                    <p>
+                        Organize seus materiais, acompanhe o estoque
+                        e registre o consumo do empreendimento.
+                    </p>
+                </div>
+
+                <button type="button"
+                        class="dashboard-primary-button"
+                        data-bs-toggle="modal"
+                        data-bs-target="#modalNovoMaterial">
+                    <i class="bi bi-plus-lg"></i>
+                    Novo material
+                </button>
+
+            </div>
+
+
+            <!-- MENSAGENS -->
+            {% with mensagens = get_flashed_messages(with_categories=true) %}
+                {% if mensagens %}
+                    {% for categoria, mensagem in mensagens %}
+                        <div class="alert alert-{{ categoria }} alert-dismissible fade show"
+                             role="alert">
+                            {{ mensagem }}
+                            <button type="button" class="btn-close"
+                                    data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+
+            <!-- INDICADORES -->
+            <div class="materials-stats">
+
+                <div class="materials-stat-card">
+                    <div class="materials-stat-icon purple">
+                        <i class="bi bi-boxes"></i>
+                    </div>
+                    <div>
+                        <span>Itens cadastrados</span>
+                        <strong>{{ total_materiais }}</strong>
+                        <small>Materiais diferentes</small>
+                    </div>
+                </div>
+
+                <div class="materials-stat-card">
+                    <div class="materials-stat-icon green">
+                        <i class="bi bi-box-seam"></i>
+                    </div>
+                    <div>
+                        <span>Disponíveis</span>
+                        <strong>{{ total_disponiveis }}</strong>
+                        <small>Com saldo em estoque</small>
+                    </div>
+                </div>
+
+                <div class="materials-stat-card">
+                    <div class="materials-stat-icon orange">
+                        <i class="bi bi-exclamation-triangle"></i>
+                    </div>
+                    <div>
+                        <span>Estoque baixo</span>
+                        <strong>{{ total_estoque_baixo }}</strong>
+                        <small>Precisam de atenção</small>
+                    </div>
+                </div>
+
+                <div class="materials-stat-card">
+                    <div class="materials-stat-icon lilac">
+                        <i class="bi bi-wallet2"></i>
+                    </div>
+                    <div>
+                        <span>Valor estimado em estoque</span>
+                        <strong>
+                            R$ {{ "{:,.2f}".format(valor_total_estoque).replace(",", "X").replace(".", ",").replace("X", ".") }}
+                        </strong>
+                        <small>Baseado no custo cadastrado</small>
+                    </div>
+                </div>
+
+            </div>
+
+
+            <!-- PAINEL DE MATERIAIS -->
+            <div class="materials-panel">
+
+                <div class="materials-panel-heading">
+                    <div>
+                        <h5>Estoque do empreendimento</h5>
+                        <p>Consulte e gerencie os materiais cadastrados.</p>
+                    </div>
+
+                    <span class="materials-count">
+                        {{ materiais|length }} resultados
+                    </span>
+                </div>
+
+
+                <!-- FILTROS -->
+                <form method="GET"
+                      action="{{ url_for('materiais.listar_materiais') }}"
+                      class="materials-toolbar">
+
+                    <div class="materials-search">
+                        <i class="bi bi-search"></i>
+                        <input type="search"
+                               name="busca"
+                               value="{{ busca }}"
+                               placeholder="Buscar material, marca ou fornecedor...">
+                    </div>
+
+                    <select name="categoria" class="form-select">
+                        <option value="">Todas as categorias</option>
+                        {% for item_categoria in categorias %}
+                            <option value="{{ item_categoria }}"
+                                {% if categoria_selecionada == item_categoria %}selected{% endif %}>
+                                {{ item_categoria }}
+                            </option>
+                        {% endfor %}
+                    </select>
+
+                    <select name="estoque" class="form-select">
+                        <option value="">Todo o estoque</option>
+                        <option value="disponivel"
+                            {% if filtro_estoque == "disponivel" %}selected{% endif %}>
+                            Disponíveis
+                        </option>
+                        <option value="baixo"
+                            {% if filtro_estoque == "baixo" %}selected{% endif %}>
+                            Estoque baixo
+                        </option>
+                        <option value="zerado"
+                            {% if filtro_estoque == "zerado" %}selected{% endif %}>
+                            Sem estoque
+                        </option>
+                    </select>
+
+                    <button type="submit" class="materials-filter-button">
+                        Filtrar
+                    </button>
+
+                    {% if busca or categoria_selecionada or filtro_estoque %}
+                        <a href="{{ url_for('materiais.listar_materiais') }}"
+                           class="materials-clear-filter">
+                            Limpar
+                        </a>
+                    {% endif %}
+
+                </form>
+
+
+                <!-- TABELA -->
+                {% if materiais %}
+
+                    <div class="table-responsive">
+
+                        <table class="table materials-table align-middle">
+
+                            <thead>
+                                <tr>
+                                    <th>Material</th>
+                                    <th>Categoria</th>
+                                    <th>Estoque</th>
+                                    <th>Disponibilidade</th>
+                                    <th>Valor unitário</th>
+                                    <th>Situação</th>
+                                    <th class="text-end">Ações</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+
+                                {% for material in materiais %}
+
+                                    <tr>
+
+                                        <td>
+                                            <div class="materials-item">
+                                                <div class="materials-item-icon">
+                                                    <i class="bi bi-box"></i>
+                                                </div>
+
+                                                <div>
+                                                    <strong>{{ material.nome }}</strong>
+                                                    <small>
+                                                        {{ material.marca or "Marca não informada" }}
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </td>
+
+                                        <td>
+                                            <span class="materials-category">
+                                                {{ material.categoria }}
+                                            </span>
+                                        </td>
+
+                                        <td>
+                                            <strong class="materials-stock-number">
+                                                {{ "%.2f"|format(material.saldo_equivalente)|replace(".", ",") }}
+                                                {{ material.unidade_medida }}
+                                            </strong>
+
+                                            {% if material.capacidade_por_unidade %}
+                                                <small class="materials-stock-detail">
+                                                    {{ "%.2f"|format(material.quantidade_total)|replace(".", ",") }}
+                                                    {{ material.unidade_medida }} no total
+                                                </small>
+                                            {% endif %}
+                                        </td>
+
+                                        <td>
+                                            <div class="materials-progress-info">
+                                                <span>
+                                                    {% if material.percentual_aberto > 0 %}
+                                                        Unidade aberta:
+                                                        {{ material.percentual_aberto }}%
+                                                    {% else %}
+                                                        Unidades fechadas
+                                                    {% endif %}
+                                                </span>
+                                            </div>
+
+                                            <div class="materials-progress">
+                                                <div style="width: {{ material.percentual_visual }}%;">
+                                                </div>
+                                            </div>
+                                        </td>
+
+                                        <td>
+                                            R$ {{ "{:,.2f}".format(material.valor_unitario).replace(",", "X").replace(".", ",").replace("X", ".") }}
+                                        </td>
+
+                                        <td>
+                                            {% if material.saldo_equivalente <= 0 %}
+                                                <span class="materials-status empty">
+                                                    Sem estoque
+                                                </span>
+                                            {% elif material.estoque_baixo %}
+                                                <span class="materials-status low">
+                                                    Estoque baixo
+                                                </span>
+                                            {% else %}
+                                                <span class="materials-status available">
+                                                    Disponível
+                                                </span>
+                                            {% endif %}
+                                        </td>
+
+                                        <td>
+                                            <div class="materials-actions">
+
+                                                <button type="button"
+                                                        class="materials-action-button"
+                                                        title="Visualizar"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#modalVisualizar{{ material._id }}">
+                                                    <i class="bi bi-eye"></i>
+                                                </button>
+
+                                                <button type="button"
+                                                        class="materials-action-button"
+                                                        title="Editar"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#modalEditar{{ material._id }}">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+
+                                                <button type="button"
+                                                        class="materials-action-button"
+                                                        title="Registrar consumo"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#modalConsumo{{ material._id }}">
+                                                    <i class="bi bi-droplet"></i>
+                                                </button>
+
+                                                <button type="button"
+                                                        class="materials-action-button danger"
+                                                        title="Arquivar"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#modalArquivar{{ material._id }}">
+                                                    <i class="bi bi-archive"></i>
+                                                </button>
+
+                                            </div>
+                                        </td>
+
+                                    </tr>
+
+                                {% endfor %}
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                {% else %}
+
+                    <div class="materials-empty-state">
+                        <div class="materials-empty-icon">
+                            <i class="bi bi-box-seam"></i>
+                        </div>
+
+                        {% if busca or categoria_selecionada or filtro_estoque %}
+                            <h5>Nenhum material encontrado</h5>
+                            <p>
+                                Tente alterar os filtros ou realizar uma nova pesquisa.
+                            </p>
+                        {% else %}
+                            <h5>Seu estoque começa aqui!</h5>
+                            <p>
+                                Cadastre tintas, peças, insumos, produtos e outros
+                                materiais utilizados no empreendimento.
+                            </p>
+
+                            <button type="button"
+                                    class="dashboard-primary-button"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#modalNovoMaterial">
+                                <i class="bi bi-plus-lg"></i>
+                                Cadastrar primeiro material
+                            </button>
+                        {% endif %}
+                    </div>
+
+                {% endif %}
+
+            </div>
+
+
+            <!-- HISTÓRICO -->
+            <div class="materials-history-panel">
+
+                <div class="materials-panel-heading">
+                    <div>
+                        <h5>Movimentações recentes</h5>
+                        <p>Acompanhe as últimas alterações no estoque.</p>
+                    </div>
+                </div>
+
+                {% if movimentacoes %}
+
+                    <div class="materials-history-list">
+
+                        {% for movimento in movimentacoes %}
+
+                            <div class="materials-history-item">
+
+                                <div class="materials-history-icon
+                                    {% if movimento.tipo == 'compra' or movimento.tipo == 'cadastro' %}positive
+                                    {% elif movimento.tipo == 'consumo' %}negative
+                                    {% else %}neutral{% endif %}">
+
+                                    {% if movimento.tipo == "compra" %}
+                                        <i class="bi bi-cart-plus"></i>
+                                    {% elif movimento.tipo == "consumo" %}
+                                        <i class="bi bi-arrow-down-circle"></i>
+                                    {% elif movimento.tipo == "arquivamento" %}
+                                        <i class="bi bi-archive"></i>
+                                    {% else %}
+                                        <i class="bi bi-box"></i>
+                                    {% endif %}
+
+                                </div>
+
+                                <div class="materials-history-description">
+                                    <strong>{{ movimento.material_nome }}</strong>
+                                    <span>{{ movimento.descricao }}</span>
+                                    <small>
+                                        {{ movimento.responsavel }}
+                                        · {{ movimento.data.strftime("%d/%m/%Y %H:%M") }}
+                                    </small>
+                                </div>
+
+                                <span class="materials-history-type">
+                                    {{ movimento.tipo|capitalize }}
+                                </span>
+
+                            </div>
+
+                        {% endfor %}
+
+                    </div>
+
+                {% else %}
+
+                    <div class="materials-history-empty">
+                        Nenhuma movimentação registrada até o momento.
+                    </div>
+
+                {% endif %}
+
+            </div>
+
+
+            <footer class="dashboard-footer mt-4">
+                <span>TaskBerry · Gestão inteligente para pequenos negócios</span>
+                <span>Materiais e estoque</span>
+            </footer>
+
+        </section>
+
+    </main>
+
+</div>
+
+
+<!-- =====================================================
+     MODAL: NOVO MATERIAL
+====================================================== -->
+
+<div class="modal fade" id="modalNovoMaterial" tabindex="-1" aria-hidden="true">
+
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable materials-modal-dialog">
+
+        <div class="modal-content materials-modal">
+
+            <form method="POST"
+                  action="{{ url_for('materiais.cadastrar_material') }}">
+
+                <div class="modal-header">
+                    <div>
+                        <h5 class="modal-title">Cadastrar material</h5>
+                        <p class="text-muted small mb-0">
+                            Informe os dados do material e seu estoque inicial.
+                        </p>
+                    </div>
+                    <button type="button" class="btn-close"
+                            data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+
+                    <div class="materials-form-section">
+                        <h6><i class="bi bi-box me-2"></i>Identificação</h6>
+                    </div>
+
+                    <div class="row g-3">
+
+                        <div class="col-md-6">
+                            <label class="form-label">Nome do material *</label>
+                            <input type="text" name="nome"
+                                   class="form-control" maxlength="120" required
+                                   placeholder="Ex.: Tinta acrílica branca">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Categoria *</label>
+                            <input type="text" name="categoria"
+                                   class="form-control" maxlength="80" required
+                                   placeholder="Ex.: Material de pintura">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Marca</label>
+                            <input type="text" name="marca"
+                                   class="form-control" maxlength="80">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Unidade de medida *</label>
+                            <select name="unidade_medida" class="form-select" required>
+                                <option value="">Selecione</option>
+                                <option value="unidade">Unidade</option>
+                                <option value="litros">Litros</option>
+                                <option value="kg">Quilograma (kg)</option>
+                                <option value="gramas">Gramas</option>
+                                <option value="metros">Metros</option>
+                                <option value="m²">Metro quadrado (m²)</option>
+                                <option value="m³">Metro cúbico (m³)</option>
+                                <option value="caixa">Caixa</option>
+                                <option value="pacote">Pacote</option>
+                                <option value="rolo">Rolo</option>
+                                <option value="par">Par</option>
+                                <option value="outro">Outro</option>
+                            </select>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label">Descrição</label>
+                            <textarea name="descricao" class="form-control"
+                                      rows="2" maxlength="500"
+                                      placeholder="Detalhes e características do material..."></textarea>
+                        </div>
+
+                    </div>
+
+
+                    <div class="materials-form-section mt-4">
+                        <h6><i class="bi bi-boxes me-2"></i>Estoque inicial</h6>
+                    </div>
+
+                    <div class="row g-3">
+
+                        <div class="col-md-6">
+                            <label class="form-label">Capacidade por unidade *</label>
+                            <input type="number" name="capacidade_por_unidade"
+                                   class="form-control" min="0.01" step="0.01"
+                                   value="1" required>
+                            <small class="form-text">
+                                Ex.: uma lata contém 18 litros. Use 1 para unidade simples.
+                            </small>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Unidades fechadas</label>
+                            <input type="number" name="quantidade_fechada"
+                                   class="form-control" min="0" step="1"
+                                   value="0" required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Percentual da unidade aberta</label>
+                            <select name="percentual_aberto" class="form-select">
+                                {% for percentual in range(0, 101, 10) %}
+                                    <option value="{{ percentual }}"
+                                        {% if percentual == 0 %}selected{% endif %}>
+                                        {{ percentual }}% restante
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <small class="form-text">
+                                Informe o conteúdo restante da unidade aberta, se houver.
+                            </small>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Estoque mínimo (unidades equivalentes)</label>
+                            <input type="number" name="estoque_minimo"
+                                   class="form-control" min="0" step="0.01"
+                                   value="0">
+                        </div>
+
+                    </div>
+
+
+                    <div class="materials-form-section mt-4">
+                        <h6><i class="bi bi-receipt me-2"></i>Compra e aquisição</h6>
+                    </div>
+
+                    <div class="row g-3">
+
+                        <div class="col-md-6">
+                            <label class="form-label">Valor por unidade (R$)</label>
+                            <input type="text" name="valor_unitario"
+                                   class="form-control" inputmode="decimal"
+                                   placeholder="Ex.: 150,00" value="0">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Fornecedor</label>
+                            <input type="text" name="fornecedor"
+                                   class="form-control" maxlength="120">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Data da compra</label>
+                            <input type="date" name="data_compra"
+                                   class="form-control">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Localização no estoque</label>
+                            <input type="text" name="localizacao"
+                                   class="form-control" maxlength="120"
+                                   placeholder="Ex.: Depósito, prateleira 2">
+                        </div>
+
+                    </div>
+
+
+                    <div class="materials-form-section mt-4">
+                        <h6><i class="bi bi-card-text me-2"></i>Informações adicionais</h6>
+                    </div>
+
+                    <textarea name="observacoes" class="form-control"
+                              rows="3" maxlength="1000"
+                              placeholder="Observações sobre o material..."></textarea>
+
+                    <div class="materials-info-notice mt-3">
+                        <i class="bi bi-info-circle"></i>
+                        O registro da aquisição será armazenado no histórico de estoque.
+                        A integração com o ERP será implementada na etapa financeira.
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="materials-secondary-button"
+                            data-bs-dismiss="modal">
+                        Cancelar
+                    </button>
+
+                    <button type="submit" class="materials-primary-button">
+                        <i class="bi bi-check2-circle me-2"></i>
+                        Cadastrar material
+                    </button>
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =====================================================
+     MODAIS INDIVIDUAIS
+====================================================== -->
+
+{% for material in materiais %}
+
+
+<!-- VISUALIZAR -->
+<div class="modal fade" id="modalVisualizar{{ material._id }}"
+     tabindex="-1" aria-hidden="true">
+
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable materials-modal-dialog">
+
+        <div class="modal-content materials-modal">
+
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title">Ficha do material</h5>
+                    <p class="text-muted small mb-0">
+                        Informações e situação atual do estoque.
+                    </p>
+                </div>
+                <button type="button" class="btn-close"
+                        data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+
+                <div class="materials-detail-header">
+                    <div class="materials-detail-icon">
+                        <i class="bi bi-box-seam"></i>
+                    </div>
+                    <div>
+                        <h4>{{ material.nome }}</h4>
+                        <p>{{ material.categoria }} · {{ material.marca or "Marca não informada" }}</p>
+                    </div>
+                </div>
+
+                <div class="materials-detail-grid">
+
+                    <div>
+                        <span>Unidades fechadas</span>
+                        <strong>{{ material.quantidade_fechada }}</strong>
+                    </div>
+
+                    <div>
+                        <span>Unidade aberta</span>
+                        <strong>{{ material.percentual_aberto }}% restante</strong>
+                    </div>
+
+                    <div>
+                        <span>Saldo equivalente</span>
+                        <strong>{{ "%.2f"|format(material.saldo_equivalente)|replace(".", ",") }}</strong>
+                    </div>
+
+                    <div>
+                        <span>Capacidade por unidade</span>
+                        <strong>{{ material.capacidade_por_unidade }} {{ material.unidade_medida }}</strong>
+                    </div>
+
+                    <div>
+                        <span>Valor unitário</span>
+                        <strong>R$ {{ "{:,.2f}".format(material.valor_unitario).replace(",", "X").replace(".", ",").replace("X", ".") }}</strong>
+                    </div>
+
+                    <div>
+                        <span>Valor estimado em estoque</span>
+                        <strong>R$ {{ "{:,.2f}".format(material.valor_estoque).replace(",", "X").replace(".", ",").replace("X", ".") }}</strong>
+                    </div>
+
+                    <div>
+                        <span>Fornecedor</span>
+                        <strong>{{ material.fornecedor or "Não informado" }}</strong>
+                    </div>
+
+                    <div>
+                        <span>Localização</span>
+                        <strong>{{ material.localizacao or "Não informada" }}</strong>
+                    </div>
+
+                    <div>
+                        <span>Estoque mínimo</span>
+                        <strong>{{ material.estoque_minimo }}</strong>
+                    </div>
+
+                    <div>
+                        <span>Data da compra</span>
+                        <strong>
+                            {% if material.data_compra %}
+                                {{ material.data_compra.strftime("%d/%m/%Y") }}
+                            {% else %}
+                                Não informada
+                            {% endif %}
+                        </strong>
+                    </div>
+
+                </div>
+
+                <div class="materials-detail-description mt-4">
+                    <strong>Descrição</strong>
+                    <p>{{ material.descricao or "Nenhuma descrição informada." }}</p>
+
+                    <strong>Observações</strong>
+                    <p>{{ material.observacoes or "Nenhuma observação cadastrada." }}</p>
+                </div>
+
+                <div class="materials-info-notice">
+                    <i class="bi bi-info-circle"></i>
+                    O material ainda não está vinculado a uma obra.
+                    Essa associação será feita na tela de chamados.
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="materials-secondary-button"
+                        data-bs-dismiss="modal">
+                    Fechar
+                </button>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- EDITAR -->
+<div class="modal fade" id="modalEditar{{ material._id }}"
+     tabindex="-1" aria-hidden="true">
+
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable materials-modal-dialog">
+
+        <div class="modal-content materials-modal">
+
+            <form method="POST"
+                  action="{{ url_for('materiais.editar_material', material_id=material._id) }}">
+
+                <div class="modal-header">
+                    <div>
+                        <h5 class="modal-title">Editar material</h5>
+                        <p class="text-muted small mb-0">
+                            Atualize os dados do cadastro.
+                        </p>
+                    </div>
+                    <button type="button" class="btn-close"
+                            data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+
+                    <div class="row g-3">
+
+                        <div class="col-md-6">
+                            <label class="form-label">Nome *</label>
+                            <input type="text" name="nome" class="form-control"
+                                   value="{{ material.nome }}" required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Categoria *</label>
+                            <input type="text" name="categoria" class="form-control"
+                                   value="{{ material.categoria }}" required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Marca</label>
+                            <input type="text" name="marca" class="form-control"
+                                   value="{{ material.marca or '' }}">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Unidade de medida *</label>
+                            <input type="text" name="unidade_medida" class="form-control"
+                                   value="{{ material.unidade_medida }}" required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Capacidade por unidade *</label>
+                            <input type="number" name="capacidade_por_unidade"
+                                   class="form-control" min="0.01" step="0.01"
+                                   value="{{ material.capacidade_por_unidade }}" required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Unidades fechadas</label>
+                            <input type="number" name="quantidade_fechada"
+                                   class="form-control" min="0" step="1"
+                                   value="{{ material.quantidade_fechada }}" required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Percentual restante da unidade aberta</label>
+                            <select name="percentual_aberto" class="form-select">
+                                {% for percentual in range(0, 101, 10) %}
+                                    <option value="{{ percentual }}"
+                                        {% if material.percentual_aberto == percentual %}selected{% endif %}>
+                                        {{ percentual }}%
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Estoque mínimo</label>
+                            <input type="number" name="estoque_minimo"
+                                   class="form-control" min="0" step="0.01"
+                                   value="{{ material.estoque_minimo }}">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Valor unitário (R$)</label>
+                            <input type="text" name="valor_unitario"
+                                   class="form-control" inputmode="decimal"
+                                   value="{{ material.valor_unitario }}">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Fornecedor</label>
+                            <input type="text" name="fornecedor"
+                                   class="form-control"
+                                   value="{{ material.fornecedor or '' }}">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Data da compra</label>
+                            <input type="date" name="data_compra"
+                                   class="form-control"
+                                   value="{{ material.data_compra.strftime('%Y-%m-%d') if material.data_compra else '' }}">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Localização</label>
+                            <input type="text" name="localizacao"
+                                   class="form-control"
+                                   value="{{ material.localizacao or '' }}">
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label">Descrição</label>
+                            <textarea name="descricao" class="form-control"
+                                      rows="2">{{ material.descricao or '' }}</textarea>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label">Observações</label>
+                            <textarea name="observacoes" class="form-control"
+                                      rows="2">{{ material.observacoes or '' }}</textarea>
+                        </div>
+
+                    </div>
+
+                    <div class="materials-info-notice mt-3">
+                        <i class="bi bi-info-circle"></i>
+                        Alterar o saldo manualmente gera uma movimentação de ajuste
+                        no histórico. Para consumo normal, utilize a opção Registrar consumo.
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="materials-secondary-button"
+                            data-bs-dismiss="modal">
+                        Cancelar
+                    </button>
+
+                    <button type="submit" class="materials-primary-button">
+                        <i class="bi bi-check2-circle me-2"></i>
+                        Salvar alterações
+                    </button>
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- CONSUMO -->
+<div class="modal fade" id="modalConsumo{{ material._id }}"
+     tabindex="-1" aria-hidden="true">
+
+    <div class="modal-dialog modal-dialog-centered">
+
+        <div class="modal-content materials-modal">
+
+            <form method="POST"
+                  action="{{ url_for('materiais.consumir_material', material_id=material._id) }}">
+
+                <div class="modal-header">
+                    <div>
+                        <h5 class="modal-title">Registrar consumo</h5>
+                        <p class="text-muted small mb-0">{{ material.nome }}</p>
+                    </div>
+                    <button type="button" class="btn-close"
+                            data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+
+                    <div class="materials-consumption-summary">
+                        <span>Saldo atual equivalente</span>
+                        <strong>
+                            {{ "%.2f"|format(material.saldo_equivalente)|replace(".", ",") }}
+                            {{ material.unidade_medida }}
+                        </strong>
+
+                        <small>
+                            {% if material.percentual_aberto > 0 %}
+                                Unidade aberta com {{ material.percentual_aberto }}% restante.
+                            {% else %}
+                                Não há unidade aberta. Uma unidade fechada será aberta para o consumo.
+                            {% endif %}
+                        </small>
+                    </div>
+
+                    <label class="form-label mt-3">
+                        Percentual consumido da unidade *
+                    </label>
+
+                    <select name="percentual_consumido" class="form-select" required>
+                        <option value="">Selecione</option>
+                        {% for percentual in range(10, 101, 10) %}
+                            <option value="{{ percentual }}">{{ percentual }}%</option>
+                        {% endfor %}
+                    </select>
+
+                    <div class="materials-info-notice mt-3">
+                        <i class="bi bi-info-circle"></i>
+                        O percentual será descontado da unidade aberta.
+                        Se o conteúdo atual for menor que o consumo informado,
+                        o sistema não permitirá a operação.
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="materials-secondary-button"
+                            data-bs-dismiss="modal">
+                        Cancelar
+                    </button>
+
+                    <button type="submit" class="materials-primary-button">
+                        Confirmar consumo
+                    </button>
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ARQUIVAR -->
+<div class="modal fade" id="modalArquivar{{ material._id }}"
+     tabindex="-1" aria-hidden="true">
+
+    <div class="modal-dialog modal-dialog-centered">
+
+        <div class="modal-content materials-modal">
+
+            <form method="POST"
+                  action="{{ url_for('materiais.excluir_material', material_id=material._id) }}">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">Arquivar material</h5>
+                    <button type="button" class="btn-close"
+                            data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body text-center">
+
+                    <div class="materials-archive-icon">
+                        <i class="bi bi-archive"></i>
+                    </div>
+
+                    <h6>Deseja arquivar {{ material.nome }}?</h6>
+
+                    <p class="text-muted small mb-0">
+                        O material deixará de aparecer no estoque ativo,
+                        mas seu cadastro e histórico serão preservados.
+                    </p>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="materials-secondary-button"
+                            data-bs-dismiss="modal">
+                        Cancelar
+                    </button>
+
+                    <button type="submit" class="materials-danger-button">
+                        Confirmar arquivamento
+                    </button>
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endfor %}
+
+{% endblock %}

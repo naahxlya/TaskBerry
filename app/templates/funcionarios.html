@@ -1,0 +1,956 @@
+{% extends "index.html" %}
+
+{% block title %}Funcionários | TaskBerry{% endblock %}
+
+{% block content %}
+
+<div class="dashboard-layout">
+
+    {% include 'components/sidebar.html' %}
+
+    <main class="dashboard-main">
+
+        <!-- CABEÇALHO -->
+        <header class="dashboard-header">
+
+            <button
+                class="sidebar-toggle"
+                id="sidebarToggle"
+                type="button"
+                aria-label="Abrir menu"
+            >
+                <i class="bi bi-list"></i>
+            </button>
+
+            <div class="dashboard-breadcrumb">
+                <span>TaskBerry</span>
+                <i class="bi bi-chevron-right"></i>
+                <strong>Funcionários</strong>
+            </div>
+
+            <div class="header-actions">
+                <div class="header-profile">
+                    <div class="sidebar-user-avatar">
+                        {{ session.get("usuario_nome", "U")[0]|upper }}
+                    </div>
+                    <div>
+                        <strong>{{ session.get("usuario_nome", "Usuário") }}</strong>
+                        <small>Minha equipe</small>
+                    </div>
+                    <i class="bi bi-chevron-down"></i>
+                </div>
+            </div>
+
+        </header>
+
+
+        <section class="dashboard-content employees-content">
+
+            <!-- TÍTULO -->
+            <div class="dashboard-welcome employees-welcome">
+
+                <div>
+                    <span class="welcome-date">
+                        <i class="bi bi-people"></i>
+                        GESTÃO DE PESSOAS
+                    </span>
+
+                    <h1>Funcionários</h1>
+
+                    <p>
+                        Organize sua equipe, acompanhe remunerações
+                        e mantenha os dados do empreendimento em um só lugar.
+                    </p>
+                </div>
+
+                <button
+                    type="button"
+                    class="dashboard-primary-button"
+                    data-bs-toggle="modal"
+                    data-bs-target="#modalNovoFuncionario"
+                >
+                    <i class="bi bi-plus-lg"></i>
+                    Novo funcionário
+                </button>
+
+            </div>
+
+
+            <!-- MENSAGENS -->
+            {% with mensagens = get_flashed_messages(with_categories=true) %}
+                {% if mensagens %}
+                    {% for categoria, mensagem in mensagens %}
+                        <div
+                            class="alert alert-{{ categoria }} alert-dismissible fade show"
+                            role="alert"
+                        >
+                            {{ mensagem }}
+                            <button
+                                type="button"
+                                class="btn-close"
+                                data-bs-dismiss="alert"
+                                aria-label="Fechar"
+                            ></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+
+            <!-- INDICADORES -->
+            <div class="employee-stats">
+
+                <div class="employee-stat-card">
+                    <div class="employee-stat-icon purple">
+                        <i class="bi bi-people"></i>
+                    </div>
+                    <div>
+                        <span>Total da equipe</span>
+                        <strong>{{ total_funcionarios }}</strong>
+                        <small>Cadastros realizados</small>
+                    </div>
+                </div>
+
+                <div class="employee-stat-card">
+                    <div class="employee-stat-icon green">
+                        <i class="bi bi-person-check"></i>
+                    </div>
+                    <div>
+                        <span>Funcionários ativos</span>
+                        <strong>{{ total_ativos }}</strong>
+                        <small>Integrantes ativos</small>
+                    </div>
+                </div>
+
+                <div class="employee-stat-card">
+                    <div class="employee-stat-icon orange">
+                        <i class="bi bi-person-dash"></i>
+                    </div>
+                    <div>
+                        <span>Afastados</span>
+                        <strong>{{ total_afastados }}</strong>
+                        <small>Integrantes afastados</small>
+                    </div>
+                </div>
+
+                <div class="employee-stat-card">
+                    <div class="employee-stat-icon lilac">
+                        <i class="bi bi-wallet2"></i>
+                    </div>
+                    <div>
+                        <span>Remuneração mensal</span>
+                        <strong>
+                            R$ {{ "{:,.2f}".format(total_remuneracao_mensal).replace(",", "X").replace(".", ",").replace("X", ".") }}
+                        </strong>
+                        <small>Base dos funcionários ativos com remuneração mensal</small>
+                    </div>
+                </div>
+
+            </div>
+
+
+            <!-- LISTAGEM -->
+            <div class="employee-panel">
+
+                <div class="employee-panel-heading">
+
+                    <div>
+                        <h5>Equipe do empreendimento</h5>
+                        <p>Consulte e gerencie os integrantes da sua equipe.</p>
+                    </div>
+
+                    <span class="employee-total-badge">
+                        {{ total_funcionarios }} cadastrados
+                    </span>
+
+                </div>
+
+
+                <!-- BUSCA E FILTROS -->
+                <form method="GET" action="{{ url_for('funcionarios.listar_funcionarios') }}"
+                      class="employee-toolbar">
+
+                    <div class="employee-search">
+                        <i class="bi bi-search"></i>
+                        <input
+                            type="search"
+                            name="busca"
+                            value="{{ busca }}"
+                            placeholder="Buscar por nome, cargo ou e-mail..."
+                        >
+                    </div>
+
+                    <select
+                        name="situacao"
+                        class="form-select employee-filter"
+                        aria-label="Filtrar por situação"
+                    >
+                        <option value="">Todas as situações</option>
+                        <option value="ativo" {% if filtro_situacao == "ativo" %}selected{% endif %}>
+                            Ativos
+                        </option>
+                        <option value="afastado" {% if filtro_situacao == "afastado" %}selected{% endif %}>
+                            Afastados
+                        </option>
+                        <option value="desligado" {% if filtro_situacao == "desligado" %}selected{% endif %}>
+                            Desligados
+                        </option>
+                    </select>
+
+                    <button type="submit" class="employee-filter-button">
+                        Filtrar
+                    </button>
+
+                    {% if busca or filtro_situacao %}
+                        <a
+                            href="{{ url_for('funcionarios.listar_funcionarios') }}"
+                            class="employee-clear-filter"
+                        >
+                            Limpar
+                        </a>
+                    {% endif %}
+
+                </form>
+
+
+                <!-- TABELA -->
+                {% if funcionarios %}
+
+                    <div class="table-responsive">
+
+                        <table class="table employee-table align-middle">
+
+                            <thead>
+                                <tr>
+                                    <th>Funcionário</th>
+                                    <th>Função</th>
+                                    <th>Remuneração</th>
+                                    <th>Vínculo</th>
+                                    <th>Situação</th>
+                                    <th class="text-end">Ações</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+
+                                {% for funcionario in funcionarios %}
+
+                                    <tr>
+
+                                        <td>
+                                            <div class="employee-person">
+
+                                                <div class="employee-avatar">
+                                                    {{ funcionario.nome[0]|upper }}
+                                                </div>
+
+                                                <div>
+                                                    <strong>{{ funcionario.nome }}</strong>
+                                                    <small>
+                                                        {{ funcionario.email or funcionario.telefone or "Sem contato informado" }}
+                                                    </small>
+                                                </div>
+
+                                            </div>
+                                        </td>
+
+                                        <td>
+                                            <span class="employee-role">
+                                                {{ funcionario.cargo }}
+                                            </span>
+                                        </td>
+
+                                        <td>
+                                            <strong class="employee-value">
+                                                R$ {{ "{:,.2f}".format(funcionario.valor_remuneracao).replace(",", "X").replace(".", ",").replace("X", ".") }}
+                                            </strong>
+
+                                            <small class="employee-payment-type">
+                                                {% if funcionario.tipo_remuneracao == "mensal" %}
+                                                    Por mês
+                                                {% elif funcionario.tipo_remuneracao == "diaria" %}
+                                                    Por diária
+                                                {% else %}
+                                                    Por serviço
+                                                {% endif %}
+                                            </small>
+                                        </td>
+
+                                        <td>
+                                            {% if funcionario.tipo_vinculo == "proprietario" %}
+                                                <span class="employee-owner-badge">
+                                                    <i class="bi bi-star-fill"></i>
+                                                    Proprietário
+                                                </span>
+                                            {% else %}
+                                                <span class="employee-link-type">
+                                                    Funcionário
+                                                </span>
+                                            {% endif %}
+                                        </td>
+
+                                        <td>
+                                            {% if funcionario.situacao == "ativo" %}
+                                                <span class="employee-status active">
+                                                    <span></span> Ativo
+                                                </span>
+                                            {% elif funcionario.situacao == "afastado" %}
+                                                <span class="employee-status away">
+                                                    <span></span> Afastado
+                                                </span>
+                                            {% else %}
+                                                <span class="employee-status inactive">
+                                                    <span></span> Desligado
+                                                </span>
+                                            {% endif %}
+                                        </td>
+
+                                        <td>
+                                            <div class="employee-actions">
+
+                                                <button
+                                                    type="button"
+                                                    class="employee-action-button"
+                                                    title="Visualizar"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#modalVisualizar{{ funcionario._id }}"
+                                                >
+                                                    <i class="bi bi-eye"></i>
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    class="employee-action-button"
+                                                    title="Editar"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#modalEditar{{ funcionario._id }}"
+                                                >
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+
+                                                {% if funcionario.tipo_vinculo != "proprietario" and funcionario.situacao != "desligado" %}
+                                                    <button
+                                                        type="button"
+                                                        class="employee-action-button danger"
+                                                        title="Desligar"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#modalDesligar{{ funcionario._id }}"
+                                                    >
+                                                        <i class="bi bi-person-x"></i>
+                                                    </button>
+                                                {% endif %}
+
+                                            </div>
+                                        </td>
+
+                                    </tr>
+
+                                {% endfor %}
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                {% else %}
+
+                    <div class="employee-empty-state">
+
+                        <div class="employee-empty-icon">
+                            <i class="bi bi-people"></i>
+                        </div>
+
+                        {% if busca or filtro_situacao %}
+                            <h5>Nenhum resultado encontrado</h5>
+                            <p>
+                                Não encontramos funcionários com os filtros informados.
+                                Tente uma nova pesquisa.
+                            </p>
+                        {% else %}
+                            <h5>Sua equipe começa aqui!</h5>
+                            <p>
+                                Cadastre os funcionários do seu empreendimento
+                                para organizar funções e remunerações.
+                            </p>
+
+                            <button
+                                type="button"
+                                class="dashboard-primary-button"
+                                data-bs-toggle="modal"
+                                data-bs-target="#modalNovoFuncionario"
+                            >
+                                <i class="bi bi-plus-lg"></i>
+                                Cadastrar primeiro funcionário
+                            </button>
+                        {% endif %}
+
+                    </div>
+
+                {% endif %}
+
+            </div>
+
+
+            <!-- RODAPÉ -->
+            <footer class="dashboard-footer mt-4">
+                <span>TaskBerry · Gestão inteligente para pequenos negócios</span>
+                <span>Gestão de pessoas</span>
+            </footer>
+
+        </section>
+
+    </main>
+
+</div>
+
+
+<!-- =====================================================
+     MODAL: NOVO FUNCIONÁRIO
+====================================================== -->
+
+<div class="modal fade" id="modalNovoFuncionario" tabindex="-1" aria-hidden="true">
+
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable employee-modal-dialog">
+        
+        <div class="modal-content employee-modal">
+
+            <form
+                method="POST"
+                action="{{ url_for('funcionarios.cadastrar_funcionario') }}"
+            >
+
+                <div class="modal-header">
+
+                    <div>
+                        <h5 class="modal-title">Novo funcionário</h5>
+                        <p class="text-muted small mb-0">
+                            Cadastre os dados profissionais e a remuneração.
+                        </p>
+                    </div>
+
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+
+                </div>
+
+
+                <div class="modal-body">
+
+                    <div class="employee-form-section">
+                        <h6><i class="bi bi-person me-2"></i>Identificação</h6>
+                    </div>
+
+                    <div class="row g-3">
+
+                        <div class="col-md-6">
+                            <label class="form-label">Nome completo *</label>
+                            <input type="text" name="nome" class="form-control"
+                                   maxlength="120" required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Telefone</label>
+                            <input type="tel" name="telefone" class="form-control"
+                                   maxlength="30">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">E-mail</label>
+                            <input type="email" name="email" class="form-control"
+                                   maxlength="120">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Cargo ou função *</label>
+                            <input type="text" name="cargo" class="form-control"
+                                   placeholder="Ex.: Pintor, auxiliar, eletricista"
+                                   maxlength="80" required>
+                        </div>
+
+                    </div>
+
+
+                    <div class="employee-form-section mt-4">
+                        <h6><i class="bi bi-briefcase me-2"></i>Vínculo profissional</h6>
+                    </div>
+
+                    <div class="row g-3">
+
+                        <div class="col-md-6">
+                            <label class="form-label">Tipo de vínculo *</label>
+                            <select name="tipo_vinculo" class="form-select" required>
+                                <option value="funcionario" selected>Funcionário</option>
+                                <option value="proprietario">Proprietário</option>
+                            </select>
+                            <small class="form-text">
+                                O proprietário utilizará os dados da conta cadastrada.
+                            </small>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Data de contratação</label>
+                            <input type="date" name="data_contratacao" class="form-control">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Situação *</label>
+                            <select name="situacao" class="form-select" required>
+                                <option value="ativo" selected>Ativo</option>
+                                <option value="afastado">Afastado</option>
+                                <option value="desligado">Desligado</option>
+                            </select>
+                        </div>
+
+                    </div>
+
+
+                    <div class="employee-form-section mt-4">
+                        <h6><i class="bi bi-cash-coin me-2"></i>Remuneração</h6>
+                    </div>
+
+                    <div class="row g-3">
+
+                        <div class="col-md-6">
+                            <label class="form-label">Tipo de remuneração *</label>
+                            <select name="tipo_remuneracao" class="form-select" required>
+                                <option value="">Selecione</option>
+                                <option value="mensal">Mensal</option>
+                                <option value="diaria">Por diária</option>
+                                <option value="servico">Por serviço</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Valor-base (R$) *</label>
+                            <input
+                                type="text"
+                                name="valor_remuneracao"
+                                class="form-control"
+                                placeholder="Ex.: 2500,00"
+                                inputmode="decimal"
+                                required
+                            >
+                        </div>
+
+                    </div>
+
+                    <div class="employee-form-section mt-4">
+                        <h6><i class="bi bi-card-text me-2"></i>Informações adicionais</h6>
+                    </div>
+
+                    <div>
+                        <label class="form-label">Observações</label>
+                        <textarea
+                            name="observacoes"
+                            class="form-control"
+                            rows="3"
+                            maxlength="1000"
+                            placeholder="Informações importantes sobre o funcionário..."
+                        ></textarea>
+                    </div>
+
+                </div>
+
+
+                <div class="modal-footer">
+                    <button type="button" class="employee-secondary-button"
+                            data-bs-dismiss="modal">
+                        Cancelar
+                    </button>
+
+                    <button type="submit" class="employee-primary-button">
+                        <i class="bi bi-check2-circle me-2"></i>
+                        Cadastrar funcionário
+                    </button>
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =====================================================
+     MODAIS INDIVIDUAIS: VISUALIZAÇÃO, EDIÇÃO E DESLIGAMENTO
+====================================================== -->
+
+{% for funcionario in funcionarios %}
+
+
+<!-- VISUALIZAR -->
+<div class="modal fade" id="modalVisualizar{{ funcionario._id }}"
+     tabindex="-1" aria-hidden="true">
+
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+
+        <div class="modal-content employee-modal">
+
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title">Ficha do funcionário</h5>
+                    <p class="text-muted small mb-0">
+                        Informações profissionais e remuneração cadastrada.
+                    </p>
+                </div>
+
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+
+            <div class="modal-body">
+
+                <div class="employee-detail-header">
+
+                    <div class="employee-detail-avatar">
+                        {{ funcionario.nome[0]|upper }}
+                    </div>
+
+                    <div>
+                        <h4>{{ funcionario.nome }}</h4>
+                        <p>{{ funcionario.cargo }}</p>
+
+                        {% if funcionario.situacao == "ativo" %}
+                            <span class="employee-status active"><span></span> Ativo</span>
+                        {% elif funcionario.situacao == "afastado" %}
+                            <span class="employee-status away"><span></span> Afastado</span>
+                        {% else %}
+                            <span class="employee-status inactive"><span></span> Desligado</span>
+                        {% endif %}
+                    </div>
+
+                </div>
+
+
+                <div class="employee-detail-section">
+                    <h6>Dados de contato</h6>
+
+                    <div class="row g-3">
+
+                        <div class="col-md-6">
+                            <span class="employee-detail-label">Telefone</span>
+                            <strong>{{ funcionario.telefone or "Não informado" }}</strong>
+                        </div>
+
+                        <div class="col-md-6">
+                            <span class="employee-detail-label">E-mail</span>
+                            <strong>{{ funcionario.email or "Não informado" }}</strong>
+                        </div>
+
+                        <div class="col-md-6">
+                            <span class="employee-detail-label">Tipo de vínculo</span>
+                            <strong>
+                                {{ "Proprietário" if funcionario.tipo_vinculo == "proprietario" else "Funcionário" }}
+                            </strong>
+                        </div>
+
+                        <div class="col-md-6">
+                            <span class="employee-detail-label">Data de contratação</span>
+                            <strong>
+                                {% if funcionario.data_contratacao %}
+                                    {{ funcionario.data_contratacao.strftime("%d/%m/%Y") }}
+                                {% else %}
+                                    Não informada
+                                {% endif %}
+                            </strong>
+                        </div>
+
+                    </div>
+                </div>
+
+
+                <div class="employee-financial-card">
+
+                    <div class="employee-financial-heading">
+                        <div>
+                            <span>Remuneração cadastrada</span>
+                            <h3>
+                                R$ {{ "{:,.2f}".format(funcionario.valor_remuneracao).replace(",", "X").replace(".", ",").replace("X", ".") }}
+                            </h3>
+                        </div>
+
+                        <span class="employee-financial-icon">
+                            <i class="bi bi-wallet2"></i>
+                        </span>
+                    </div>
+
+                    <div class="employee-financial-divider"></div>
+
+                    <div class="employee-financial-row">
+                        <span>Tipo de remuneração</span>
+
+                        <strong>
+                            {% if funcionario.tipo_remuneracao == "mensal" %}
+                                Mensal
+                            {% elif funcionario.tipo_remuneracao == "diaria" %}
+                                Por diária
+                            {% else %}
+                                Por serviço
+                            {% endif %}
+                        </strong>
+                    </div>
+
+                    <div class="employee-financial-row">
+                        <span>Situação do vínculo</span>
+                        <strong>
+                            {{ funcionario.situacao|capitalize }}
+                        </strong>
+                    </div>
+
+                    <p class="employee-financial-note">
+                        Este valor representa a remuneração-base cadastrada.
+                        Pagamentos, horas extras, adiantamentos e descontos
+                        serão controlados na próxima etapa de integração financeira.
+                    </p>
+
+                </div>
+
+
+                <div class="employee-detail-section">
+                    <h6>Observações</h6>
+
+                    <p class="employee-observations">
+                        {{ funcionario.observacoes or "Nenhuma observação cadastrada." }}
+                    </p>
+                </div>
+
+            </div>
+
+
+            <div class="modal-footer">
+                <button type="button" class="employee-secondary-button"
+                        data-bs-dismiss="modal">
+                    Fechar
+                </button>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- EDITAR -->
+<div class="modal fade" id="modalEditar{{ funcionario._id }}"
+     tabindex="-1" aria-hidden="true">
+
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+
+        <div class="modal-content employee-modal">
+
+            <form
+                method="POST"
+                action="{{ url_for('funcionarios.editar_funcionario', funcionario_id=funcionario._id) }}"
+            >
+
+                <div class="modal-header">
+                    <div>
+                        <h5 class="modal-title">Editar funcionário</h5>
+                        <p class="text-muted small mb-0">
+                            Atualize as informações do cadastro.
+                        </p>
+                    </div>
+
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+
+                <div class="modal-body">
+
+                    <div class="row g-3">
+
+                        <div class="col-md-6">
+                            <label class="form-label">Nome completo *</label>
+                            <input
+                                type="text"
+                                name="nome"
+                                class="form-control"
+                                value="{{ funcionario.nome }}"
+                                {% if funcionario.tipo_vinculo == "proprietario" %}readonly{% endif %}
+                                required
+                            >
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Telefone</label>
+                            <input
+                                type="tel"
+                                name="telefone"
+                                class="form-control"
+                                value="{{ funcionario.telefone or '' }}"
+                                {% if funcionario.tipo_vinculo == "proprietario" %}readonly{% endif %}
+                            >
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">E-mail</label>
+                            <input
+                                type="email"
+                                name="email"
+                                class="form-control"
+                                value="{{ funcionario.email or '' }}"
+                                {% if funcionario.tipo_vinculo == "proprietario" %}readonly{% endif %}
+                            >
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Cargo ou função *</label>
+                            <input
+                                type="text"
+                                name="cargo"
+                                class="form-control"
+                                value="{{ funcionario.cargo }}"
+                                required
+                            >
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Tipo de remuneração *</label>
+                            <select name="tipo_remuneracao" class="form-select" required>
+                                <option value="mensal" {% if funcionario.tipo_remuneracao == "mensal" %}selected{% endif %}>
+                                    Mensal
+                                </option>
+                                <option value="diaria" {% if funcionario.tipo_remuneracao == "diaria" %}selected{% endif %}>
+                                    Por diária
+                                </option>
+                                <option value="servico" {% if funcionario.tipo_remuneracao == "servico" %}selected{% endif %}>
+                                    Por serviço
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Valor-base (R$) *</label>
+                            <input
+                                type="text"
+                                name="valor_remuneracao"
+                                class="form-control"
+                                value="{{ funcionario.valor_remuneracao }}"
+                                inputmode="decimal"
+                                required
+                            >
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Situação *</label>
+                            <select name="situacao" class="form-select" required>
+                                <option value="ativo" {% if funcionario.situacao == "ativo" %}selected{% endif %}>
+                                    Ativo
+                                </option>
+                                <option value="afastado" {% if funcionario.situacao == "afastado" %}selected{% endif %}>
+                                    Afastado
+                                </option>
+                                <option value="desligado" {% if funcionario.situacao == "desligado" %}selected{% endif %}>
+                                    Desligado
+                                </option>
+                            </select>
+                        </div>
+
+                    </div>
+
+                    {% if funcionario.tipo_vinculo == "proprietario" %}
+                        <div class="employee-info-notice mt-3">
+                            <i class="bi bi-shield-lock"></i>
+                            Os dados de identificação do proprietário são vinculados
+                            à conta e não podem ser alterados nesta tela.
+                        </div>
+                    {% endif %}
+
+                    <div class="mt-3">
+                        <label class="form-label">Observações</label>
+                        <textarea
+                            name="observacoes"
+                            class="form-control"
+                            rows="3"
+                            maxlength="1000"
+                        >{{ funcionario.observacoes or '' }}</textarea>
+                    </div>
+
+                </div>
+
+
+                <div class="modal-footer">
+                    <button type="button" class="employee-secondary-button"
+                            data-bs-dismiss="modal">
+                        Cancelar
+                    </button>
+
+                    <button type="submit" class="employee-primary-button">
+                        <i class="bi bi-check2-circle me-2"></i>
+                        Salvar alterações
+                    </button>
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- DESLIGAR -->
+{% if funcionario.tipo_vinculo != "proprietario" and funcionario.situacao != "desligado" %}
+
+<div class="modal fade" id="modalDesligar{{ funcionario._id }}"
+     tabindex="-1" aria-hidden="true">
+
+    <div class="modal-dialog modal-dialog-centered">
+
+        <div class="modal-content employee-modal">
+
+            <form
+                method="POST"
+                action="{{ url_for('funcionarios.desligar_funcionario', funcionario_id=funcionario._id) }}"
+            >
+
+                <div class="modal-header">
+                    <h5 class="modal-title">Desligar funcionário</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+
+                    <div class="employee-delete-icon">
+                        <i class="bi bi-person-x"></i>
+                    </div>
+
+                    <h6 class="text-center">
+                        Deseja desligar {{ funcionario.nome }}?
+                    </h6>
+
+                    <p class="text-muted text-center small mb-0">
+                        O cadastro será preservado, mas a situação será alterada
+                        para desligado. O histórico não será apagado.
+                    </p>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="employee-secondary-button"
+                            data-bs-dismiss="modal">
+                        Cancelar
+                    </button>
+
+                    <button type="submit" class="employee-danger-button">
+                        Confirmar desligamento
+                    </button>
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endif %}
+
+{% endfor %}
+
+{% endblock %}
