@@ -1,0 +1,728 @@
+
+{% extends "index.html" %}
+
+{% block title %}Clientes | TaskBerry{% endblock %}
+
+{% block content %}
+
+<div class="dashboard-layout">
+
+    <!-- MENU LATERAL -->
+    <aside class="sidebar" id="sidebar">
+
+        <div class="sidebar-brand">
+            <a href="{{ url_for('dashboard.dashboard') }}">
+                <img
+                    src="{{ url_for('static', filename='img/logo-horizontal.png') }}"
+                    alt="TaskBerry"
+                >
+            </a>
+        </div>
+
+        <div class="sidebar-label">MENU PRINCIPAL</div>
+
+        <nav class="sidebar-nav">
+
+            <a href="{{ url_for('dashboard.dashboard') }}"
+               class="sidebar-link">
+                <i class="bi bi-grid-1x2"></i>
+                <span>Visão geral</span>
+            </a>
+
+            <a href="#" class="sidebar-link">
+                <i class="bi bi-clipboard-check"></i>
+                <span>Chamados e obras</span>
+            </a>
+
+            <a href="{{ url_for('clientes.listar_clientes') }}"
+               class="sidebar-link active">
+                <i class="bi bi-people"></i>
+                <span>Clientes</span>
+            </a>
+
+            <a href="#" class="sidebar-link">
+                <i class="bi bi-box-seam"></i>
+                <span>Materiais</span>
+            </a>
+
+            <a href="#" class="sidebar-link">
+                <i class="bi bi-tools"></i>
+                <span>Ferramentas</span>
+            </a>
+
+            <a href="#" class="sidebar-link">
+                <i class="bi bi-wallet2"></i>
+                <span>Financeiro</span>
+            </a>
+
+        </nav>
+
+        <div class="sidebar-label sidebar-label-bottom">
+            PREFERÊNCIAS
+        </div>
+
+        <nav class="sidebar-nav">
+
+            <a href="{{ url_for('perfil.meu_perfil') }}"
+               class="sidebar-link">
+                <i class="bi bi-person-circle"></i>
+                <span>Meu perfil</span>
+            </a>
+
+            <a href="#" class="sidebar-link">
+                <i class="bi bi-gear"></i>
+                <span>Configurações</span>
+            </a>
+
+        </nav>
+
+        <div class="sidebar-footer">
+
+            <div class="sidebar-user-avatar">
+                {{ session.get("usuario_nome", "TB")[0]|upper }}
+            </div>
+
+            <div class="sidebar-user-info">
+                <strong>{{ session.get("usuario_nome", "Usuário") }}</strong>
+                <small>{{ session.get("usuario_email", "") }}</small>
+            </div>
+
+            <form method="POST" action="{{ url_for('auth.logout') }}">
+                <button
+                    type="submit"
+                    class="logout-button"
+                    title="Sair da conta"
+                    aria-label="Sair da conta"
+                >
+                    <i class="bi bi-box-arrow-right"></i>
+                </button>
+            </form>
+
+        </div>
+
+    </aside>
+
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main class="dashboard-main">
+
+        <header class="dashboard-header">
+
+            <button class="sidebar-toggle"
+                    id="sidebarToggle"
+                    type="button"
+                    aria-label="Abrir menu">
+                <i class="bi bi-list"></i>
+            </button>
+
+            <div class="dashboard-breadcrumb">
+                <span>Painel</span>
+                <i class="bi bi-chevron-right"></i>
+                <strong>Clientes</strong>
+            </div>
+
+            <div class="header-actions">
+
+                <div class="header-divider"></div>
+
+                <div class="header-profile">
+                    <div class="profile-avatar">
+                        {{ session.get("usuario_nome", "TB")[0]|upper }}
+                    </div>
+                    <div>
+                        <strong>{{ session.get("usuario_nome", "Usuário") }}</strong>
+                        <small>Minha empresa</small>
+                    </div>
+                </div>
+
+            </div>
+
+        </header>
+
+
+        <section class="dashboard-content clients-content">
+
+            <!-- TÍTULO E APRESENTAÇÃO -->
+            <div class="dashboard-welcome">
+
+                <div>
+                    <span class="welcome-date">
+                        <i class="bi bi-people"></i>
+                        GESTÃO DE CLIENTES
+                    </span>
+
+                    <h1>Seus clientes <span>✦</span></h1>
+
+                    <p>
+                        Organize seus contatos e mantenha as informações
+                        dos seus clientes sempre acessíveis.
+                    </p>
+                </div>
+
+                <button
+                    class="dashboard-primary-button"
+                    type="button"
+                    data-bs-toggle="modal"
+                    data-bs-target="#modalNovoCliente"
+                >
+                    <i class="bi bi-plus-lg"></i>
+                    Novo cliente
+                </button>
+
+            </div>
+
+
+            <!-- MENSAGENS -->
+            {% with mensagens = get_flashed_messages(with_categories=true) %}
+                {% if mensagens %}
+                    {% for categoria, mensagem in mensagens %}
+                        <div class="alert alert-{{ categoria }} alert-dismissible fade show"
+                             role="alert">
+                            {{ mensagem }}
+                            <button type="button"
+                                    class="btn-close"
+                                    data-bs-dismiss="alert"
+                                    aria-label="Fechar"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+
+            <!-- INDICADOR -->
+            <div class="clients-summary">
+
+                <div class="clients-summary-icon">
+                    <i class="bi bi-people"></i>
+                </div>
+
+                <div>
+                    <span>Total de clientes cadastrados</span>
+                    <strong>{{ total_clientes }}</strong>
+                </div>
+
+            </div>
+
+
+            <!-- LISTAGEM -->
+            <section class="dashboard-panel clients-panel">
+
+                <div class="clients-toolbar">
+
+                    <div>
+                        <h2>Lista de clientes</h2>
+                        <p>Consulte e gerencie os contatos do seu negócio.</p>
+                    </div>
+
+                    <form method="GET"
+                          action="{{ url_for('clientes.listar_clientes') }}"
+                          class="clients-search">
+
+                        <i class="bi bi-search"></i>
+
+                        <input
+                            type="search"
+                            name="busca"
+                            placeholder="Buscar cliente..."
+                            value="{{ busca }}"
+                            aria-label="Buscar cliente"
+                        >
+
+                        {% if busca %}
+                            <a href="{{ url_for('clientes.listar_clientes') }}"
+                               title="Limpar pesquisa">
+                                <i class="bi bi-x-circle"></i>
+                            </a>
+                        {% endif %}
+
+                        <button type="submit" aria-label="Pesquisar">
+                            Buscar
+                        </button>
+
+                    </form>
+
+                </div>
+
+
+                {% if clientes %}
+
+                    <div class="table-responsive">
+
+                        <table class="table clients-table align-middle">
+
+                            <thead>
+                                <tr>
+                                    <th>CLIENTE</th>
+                                    <th>TELEFONE</th>
+                                    <th>E-MAIL</th>
+                                    <th>CADASTRO</th>
+                                    <th class="text-end">AÇÕES</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+
+                                {% for cliente in clientes %}
+
+                                    <tr>
+
+                                        <td>
+                                            <div class="client-name-cell">
+
+                                                <div class="client-avatar">
+                                                    {{ cliente.nome[0]|upper }}
+                                                </div>
+
+                                                <strong>{{ cliente.nome }}</strong>
+
+                                            </div>
+                                        </td>
+
+                                        <td>
+                                            {{ cliente.telefone }}
+                                        </td>
+
+                                        <td>
+                                            {{ cliente.email or "Não informado" }}
+                                        </td>
+
+                                        <td>
+                                            {% if cliente.criado_em %}
+                                                {{ cliente.criado_em.strftime("%d/%m/%Y") }}
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+
+                                        <td>
+                                            <div class="client-actions">
+
+                                                <!-- VISUALIZAR -->
+                                                <button
+                                                    type="button"
+                                                    class="client-action-button"
+                                                    title="Visualizar cliente"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#modalDetalhes{{ cliente._id }}"
+                                                >
+                                                    <i class="bi bi-eye"></i>
+                                                </button>
+
+                                                <!-- EDITAR -->
+                                                <button
+                                                    type="button"
+                                                    class="client-action-button"
+                                                    title="Editar cliente"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#modalEditar{{ cliente._id }}"
+                                                >
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+
+                                                <!-- EXCLUIR -->
+                                                <button
+                                                    type="button"
+                                                    class="client-action-button client-delete-button"
+                                                    title="Excluir cliente"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#modalExcluir{{ cliente._id }}"
+                                                >
+                                                    <i class="bi bi-trash3"></i>
+                                                </button>
+
+                                            </div>
+                                        </td>
+
+                                    </tr>
+
+
+                                    <!-- MODAL DE DETALHES -->
+                                    <div class="modal fade"
+                                         id="modalDetalhes{{ cliente._id }}"
+                                         tabindex="-1"
+                                         aria-hidden="true">
+
+                                        <div class="modal-dialog modal-dialog-centered">
+
+                                            <div class="modal-content">
+
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">
+                                                        Informações do cliente
+                                                    </h5>
+
+                                                    <button type="button"
+                                                            class="btn-close"
+                                                            data-bs-dismiss="modal"></button>
+                                                </div>
+
+                                                <div class="modal-body">
+
+                                                    <div class="client-detail-heading">
+                                                        <div class="client-avatar client-avatar-large">
+                                                            {{ cliente.nome[0]|upper }}
+                                                        </div>
+
+                                                        <h4>{{ cliente.nome }}</h4>
+                                                        <span>Cliente cadastrado</span>
+                                                    </div>
+
+                                                    <div class="client-detail-item">
+                                                        <small>Telefone</small>
+                                                        <strong>{{ cliente.telefone }}</strong>
+                                                    </div>
+
+                                                    <div class="client-detail-item">
+                                                        <small>E-mail</small>
+                                                        <strong>{{ cliente.email or "Não informado" }}</strong>
+                                                    </div>
+
+                                                    <div class="client-detail-item">
+                                                        <small>Endereço</small>
+                                                        <strong>{{ cliente.endereco or "Não informado" }}</strong>
+                                                    </div>
+
+                                                    <div class="client-detail-item">
+                                                        <small>Observações</small>
+                                                        <p>{{ cliente.observacoes or "Nenhuma observação cadastrada." }}</p>
+                                                    </div>
+
+                                                    <div class="client-detail-item">
+                                                        <small>Total de serviços</small>
+                                                        <strong>{{ cliente.total_servicos or 0 }}</strong>
+                                                    </div>
+
+                                                </div>
+
+                                                <div class="modal-footer">
+                                                    <button type="button"
+                                                            class="btn btn-secondary"
+                                                            data-bs-dismiss="modal">
+                                                        Fechar
+                                                    </button>
+                                                </div>
+
+                                            </div>
+
+                                        </div>
+                                    </div>
+
+
+                                    <!-- MODAL DE EDIÇÃO -->
+                                    <div class="modal fade"
+                                         id="modalEditar{{ cliente._id }}"
+                                         tabindex="-1"
+                                         aria-hidden="true">
+
+                                        <div class="modal-dialog modal-dialog-centered">
+
+                                            <div class="modal-content">
+
+                                                <form method="POST"
+                                                      action="{{ url_for('clientes.editar_cliente', cliente_id=cliente._id) }}">
+
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">
+                                                            Editar cliente
+                                                        </h5>
+
+                                                        <button type="button"
+                                                                class="btn-close"
+                                                                data-bs-dismiss="modal"></button>
+                                                    </div>
+
+                                                    <div class="modal-body">
+
+                                                        <div class="mb-3">
+                                                            <label class="form-label">Nome completo *</label>
+                                                            <input type="text"
+                                                                   name="nome"
+                                                                   class="form-control"
+                                                                   value="{{ cliente.nome }}"
+                                                                   required>
+                                                        </div>
+
+                                                        <div class="mb-3">
+                                                            <label class="form-label">Telefone *</label>
+                                                            <input type="text"
+                                                                   name="telefone"
+                                                                   class="form-control"
+                                                                   value="{{ cliente.telefone }}"
+                                                                   required>
+                                                        </div>
+
+                                                        <div class="mb-3">
+                                                            <label class="form-label">E-mail</label>
+                                                            <input type="email"
+                                                                   name="email"
+                                                                   class="form-control"
+                                                                   value="{{ cliente.email }}">
+                                                        </div>
+
+                                                        <div class="mb-3">
+                                                            <label class="form-label">Endereço</label>
+                                                            <input type="text"
+                                                                   name="endereco"
+                                                                   class="form-control"
+                                                                   value="{{ cliente.endereco }}">
+                                                        </div>
+
+                                                        <div class="mb-3">
+                                                            <label class="form-label">Observações</label>
+                                                            <textarea name="observacoes"
+                                                                      class="form-control"
+                                                                      rows="3">{{ cliente.observacoes }}</textarea>
+                                                        </div>
+
+                                                    </div>
+
+                                                    <div class="modal-footer">
+                                                        <button type="button"
+                                                                class="btn btn-secondary"
+                                                                data-bs-dismiss="modal">
+                                                            Cancelar
+                                                        </button>
+
+                                                        <button type="submit"
+                                                                class="btn btn-primary">
+                                                            Salvar alterações
+                                                        </button>
+                                                    </div>
+
+                                                </form>
+
+                                            </div>
+
+                                        </div>
+                                    </div>
+
+
+                                    <!-- MODAL DE EXCLUSÃO -->
+                                    <div class="modal fade"
+                                         id="modalExcluir{{ cliente._id }}"
+                                         tabindex="-1"
+                                         aria-hidden="true">
+
+                                        <div class="modal-dialog modal-dialog-centered modal-sm">
+
+                                            <div class="modal-content">
+
+                                                <div class="modal-body text-center p-4">
+
+                                                    <div class="client-delete-icon">
+                                                        <i class="bi bi-trash3"></i>
+                                                    </div>
+
+                                                    <h5>Excluir cliente?</h5>
+
+                                                    <p>
+                                                        Tem certeza de que deseja excluir
+                                                        <strong>{{ cliente.nome }}</strong>?
+                                                        Essa ação não poderá ser desfeita.
+                                                    </p>
+
+                                                    <form method="POST"
+                                                          action="{{ url_for('clientes.excluir_cliente', cliente_id=cliente._id) }}">
+
+                                                        <div class="d-flex gap-2 justify-content-center">
+
+                                                            <button type="button"
+                                                                    class="btn btn-secondary"
+                                                                    data-bs-dismiss="modal">
+                                                                Cancelar
+                                                            </button>
+
+                                                            <button type="submit"
+                                                                    class="btn btn-danger">
+                                                                Excluir
+                                                            </button>
+
+                                                        </div>
+
+                                                    </form>
+
+                                                </div>
+
+                                            </div>
+
+                                        </div>
+                                    </div>
+
+                                {% endfor %}
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                {% else %}
+
+                    <div class="clients-empty-state">
+
+                        <div class="clients-empty-icon">
+                            <i class="bi bi-person-lines-fill"></i>
+                        </div>
+
+                        {% if busca %}
+
+                            <h3>Nenhum resultado encontrado</h3>
+
+                            <p>
+                                Não encontramos clientes com esse termo.
+                                Experimente pesquisar por outro nome ou contato.
+                            </p>
+
+                            <a href="{{ url_for('clientes.listar_clientes') }}"
+                               class="btn btn-outline-primary">
+                                Limpar pesquisa
+                            </a>
+
+                        {% else %}
+
+                            <h3>Você ainda não tem clientes cadastrados</h3>
+
+                            <p>
+                                Comece adicionando seu primeiro cliente
+                                para organizar os contatos do seu negócio.
+                            </p>
+
+                            <button
+                                type="button"
+                                class="dashboard-primary-button"
+                                data-bs-toggle="modal"
+                                data-bs-target="#modalNovoCliente"
+                            >
+                                <i class="bi bi-plus-lg"></i>
+                                Cadastrar primeiro cliente
+                            </button>
+
+                        {% endif %}
+
+                    </div>
+
+                {% endif %}
+
+            </section>
+
+
+            <footer class="dashboard-footer">
+                <span>© 2026 TaskBerry. Gestão e otimização.</span>
+                <span>Organização que faz o negócio crescer.</span>
+            </footer>
+
+        </section>
+
+    </main>
+
+</div>
+
+
+<!-- MODAL DE NOVO CLIENTE -->
+<div class="modal fade"
+     id="modalNovoCliente"
+     tabindex="-1"
+     aria-hidden="true">
+
+    <div class="modal-dialog modal-dialog-centered">
+
+        <div class="modal-content">
+
+            <form method="POST"
+                  action="{{ url_for('clientes.cadastrar_cliente') }}">
+
+                <div class="modal-header">
+
+                    <div>
+                        <h5 class="modal-title">Novo cliente</h5>
+                        <small class="text-muted">
+                            Preencha os dados para cadastrar um cliente.
+                        </small>
+                    </div>
+
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"></button>
+
+                </div>
+
+                <div class="modal-body">
+
+                    <div class="mb-3">
+                        <label class="form-label">Nome completo *</label>
+                        <input type="text"
+                               name="nome"
+                               class="form-control"
+                               placeholder="Ex.: Maria Oliveira"
+                               maxlength="120"
+                               required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Telefone *</label>
+                        <input type="tel"
+                               name="telefone"
+                               class="form-control"
+                               placeholder="(00) 00000-0000"
+                               maxlength="20"
+                               required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">E-mail</label>
+                        <input type="email"
+                               name="email"
+                               class="form-control"
+                               placeholder="cliente@email.com"
+                               maxlength="150">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Endereço</label>
+                        <input type="text"
+                               name="endereco"
+                               class="form-control"
+                               placeholder="Rua, número, bairro e cidade"
+                               maxlength="250">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Observações</label>
+                        <textarea name="observacoes"
+                                  class="form-control"
+                                  rows="3"
+                                  maxlength="1000"
+                                  placeholder="Informações adicionais sobre o cliente..."></textarea>
+                    </div>
+
+                    <small class="text-muted">
+                        * Campos obrigatórios
+                    </small>
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <button type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal">
+                        Cancelar
+                    </button>
+
+                    <button type="submit"
+                            class="btn btn-primary">
+                        <i class="bi bi-check-lg"></i>
+                        Cadastrar cliente
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

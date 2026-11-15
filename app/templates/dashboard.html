@@ -1,0 +1,440 @@
+
+{% extends "index.html" %}
+
+{% block title %}Dashboard | TaskBerry{% endblock %}
+
+{% block content %}
+
+<div class="dashboard-layout">
+
+    <!-- MENU LATERAL -->
+    <aside class="sidebar" id="sidebar">
+
+        <div class="sidebar-brand">
+            <a href="{{ url_for('dashboard.dashboard') }}">
+                <img
+                    src="{{ url_for('static', filename='img/logo-horizontal.png') }}"
+                    alt="TaskBerry"
+                >
+            </a>
+        </div>
+
+        <div class="sidebar-label">MENU PRINCIPAL</div>
+
+        <nav class="sidebar-nav">
+
+            <a href="{{ url_for('dashboard.dashboard') }}"
+               class="sidebar-link active">
+                <i class="bi bi-grid-1x2"></i>
+                <span>Visão geral</span>
+            </a>
+
+            <a href="#" class="sidebar-link">
+                <i class="bi bi-clipboard-check"></i>
+                <span>Chamados e obras</span>
+            </a>
+
+            <a href="{{ url_for('clientes.listar_clientes') }}"
+            class="sidebar-link">
+                <i class="bi bi-people"></i>
+                <span>Clientes</span>
+            </a>
+
+            <a href="#" class="sidebar-link">
+                <i class="bi bi-box-seam"></i>
+                <span>Materiais</span>
+            </a>
+
+            <a href="#" class="sidebar-link">
+                <i class="bi bi-tools"></i>
+                <span>Ferramentas</span>
+            </a>
+
+            <a href="#" class="sidebar-link">
+                <i class="bi bi-wallet2"></i>
+                <span>Financeiro</span>
+            </a>
+
+        </nav>
+
+        <div class="sidebar-label sidebar-label-bottom">
+            PREFERÊNCIAS
+        </div>
+
+        <nav class="sidebar-nav">
+
+            <a href="{{ url_for('perfil.meu_perfil') }}"
+            class="sidebar-link">
+                <i class="bi bi-person-circle"></i>
+                <span>Meu perfil</span>
+            </a>
+
+            <a href="#" class="sidebar-link">
+                <i class="bi bi-gear"></i>
+                <span>Configurações</span>
+            </a>
+
+        </nav>
+
+        
+    <div class="sidebar-footer">
+
+        <div class="sidebar-user-avatar">
+            {{ session.get("usuario_nome", "TB")[0]|upper }}
+        </div>
+
+        <div class="sidebar-user-info">
+            <strong>{{ session.get("usuario_nome", "Usuário") }}</strong>
+            <small>{{ session.get("usuario_email", "") }}</small>
+        </div>
+
+        <form method="POST" action="{{ url_for('auth.logout') }}">
+            <button
+                type="submit"
+                class="logout-button"
+                title="Sair da conta"
+                aria-label="Sair da conta"
+            >
+                <i class="bi bi-box-arrow-right"></i>
+            </button>
+        </form>
+
+    </div>
+
+
+    </aside>
+
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main class="dashboard-main">
+
+        <header class="dashboard-header">
+
+            <button class="sidebar-toggle"
+                    id="sidebarToggle"
+                    type="button"
+                    aria-label="Abrir menu">
+                <i class="bi bi-list"></i>
+            </button>
+
+            <div class="dashboard-breadcrumb">
+                <span>Painel</span>
+                <i class="bi bi-chevron-right"></i>
+                <strong>Visão geral</strong>
+            </div>
+
+            <div class="header-actions">
+
+                <button class="header-icon"
+                        type="button"
+                        aria-label="Notificações">
+                    <i class="bi bi-bell"></i>
+                    <span class="notification-dot"></span>
+                </button>
+
+                <div class="header-divider"></div>
+
+                <div class="header-profile">
+                    <div class="profile-avatar">TB</div>
+                    <div>
+                        <strong>Administrador</strong>
+                        <small>Minha empresa</small>
+                    </div>
+                    <i class="bi bi-chevron-down"></i>
+                </div>
+
+            </div>
+
+        </header>
+
+
+        <section class="dashboard-content">
+
+            <!-- APRESENTAÇÃO -->
+            <div class="dashboard-welcome">
+
+                <div>
+                    <span class="welcome-date">
+                        <i class="bi bi-calendar3"></i>
+                        PAINEL DE CONTROLE
+                    </span>
+
+                    <h1>Olá, seja bem-vindo! <span>✦</span></h1>
+
+                    <p>
+                        Acompanhe o que está acontecendo no seu negócio
+                        e mantenha tudo em ordem.
+                    </p>
+                </div>
+
+                <button class="dashboard-primary-button" type="button">
+                    <i class="bi bi-plus-lg"></i>
+                    Novo chamado
+                </button>
+
+            </div>
+
+
+            <!-- INDICADORES -->
+            <div class="dashboard-section-heading">
+                <div>
+                    <h2>Resumo do negócio</h2>
+                    <p>Uma visão rápida dos seus principais indicadores.</p>
+                </div>
+            </div>
+
+            <div class="dashboard-stats">
+
+                <article class="stat-card">
+                    <div class="stat-top">
+                        <span class="stat-icon purple">
+                            <i class="bi bi-people"></i>
+                        </span>
+                        <span class="stat-caption">CLIENTES</span>
+                    </div>
+
+                    <strong class="stat-number">{{ total_clientes }}</strong>
+                    <span class="stat-description">
+                        Clientes cadastrados
+                    </span>
+                </article>
+
+
+                <article class="stat-card">
+                    <div class="stat-top">
+                        <span class="stat-icon pink">
+                            <i class="bi bi-clipboard-check"></i>
+                        </span>
+                        <span class="stat-caption">CHAMADOS</span>
+                    </div>
+
+                    <strong class="stat-number">24</strong>
+                    <span class="stat-description">
+                        Chamados registrados
+                    </span>
+                </article>
+
+
+                <article class="stat-card">
+                    <div class="stat-top">
+                        <span class="stat-icon blue">
+                            <i class="bi bi-clock-history"></i>
+                        </span>
+                        <span class="stat-caption">EM ANDAMENTO</span>
+                    </div>
+
+                    <strong class="stat-number">08</strong>
+                    <span class="stat-description">
+                        Serviços em execução
+                    </span>
+                </article>
+
+
+                <article class="stat-card">
+                    <div class="stat-top">
+                        <span class="stat-icon green">
+                            <i class="bi bi-currency-dollar"></i>
+                        </span>
+                        <span class="stat-caption">FATURAMENTO</span>
+                    </div>
+
+                    <strong class="stat-number">R$ 8.450</strong>
+                    <span class="stat-description">
+                        Exemplo de valor mensal
+                    </span>
+                </article>
+
+            </div>
+
+
+            <!-- ÁREA DE GRÁFICO E CHAMADOS -->
+            <div class="dashboard-grid">
+
+                <section class="dashboard-panel financial-panel">
+
+                    <div class="panel-heading">
+                        <div>
+                            <h2>Movimentação financeira</h2>
+                            <p>Acompanhamento ilustrativo de entradas e saídas.</p>
+                        </div>
+
+                        <select class="dashboard-select"
+                                aria-label="Período financeiro">
+                            <option>Últimos 6 meses</option>
+                            <option>Este ano</option>
+                        </select>
+                    </div>
+
+                    <div class="financial-summary">
+                        <div>
+                            <small>ENTRADAS</small>
+                            <strong>R$ 12.500,00</strong>
+                        </div>
+
+                        <div>
+                            <small>SAÍDAS</small>
+                            <strong>R$ 4.050,00</strong>
+                        </div>
+                    </div>
+
+                    <div class="chart-placeholder">
+                        <div class="chart-bars">
+                            <div class="chart-column">
+                                <span style="height: 42%"></span>
+                                <span style="height: 22%"></span>
+                                <small>JUN</small>
+                            </div>
+
+                            <div class="chart-column">
+                                <span style="height: 62%"></span>
+                                <span style="height: 32%"></span>
+                                <small>JUL</small>
+                            </div>
+
+                            <div class="chart-column">
+                                <span style="height: 50%"></span>
+                                <span style="height: 27%"></span>
+                                <small>AGO</small>
+                            </div>
+
+                            <div class="chart-column">
+                                <span style="height: 78%"></span>
+                                <span style="height: 39%"></span>
+                                <small>SET</small>
+                            </div>
+
+                            <div class="chart-column">
+                                <span style="height: 68%"></span>
+                                <span style="height: 31%"></span>
+                                <small>OUT</small>
+                            </div>
+
+                            <div class="chart-column">
+                                <span style="height: 92%"></span>
+                                <span style="height: 43%"></span>
+                                <small>NOV</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chart-legend">
+                        <span><i class="legend-dot income"></i> Entradas</span>
+                        <span><i class="legend-dot expenses"></i> Saídas</span>
+                    </div>
+
+                </section>
+
+
+                <section class="dashboard-panel calls-panel">
+
+                    <div class="panel-heading">
+                        <div>
+                            <h2>Chamados recentes</h2>
+                            <p>Acompanhe os últimos serviços.</p>
+                        </div>
+
+                        <a href="#" class="panel-link">Ver todos</a>
+                    </div>
+
+                    <div class="recent-call">
+                        <div class="call-icon">
+                            <i class="bi bi-house"></i>
+                        </div>
+
+                        <div class="call-info">
+                            <strong>Manutenção residencial</strong>
+                            <small>Cliente: Maria Oliveira</small>
+                        </div>
+
+                        <span class="status-badge status-progress">
+                            Em andamento
+                        </span>
+                    </div>
+
+                    <div class="recent-call">
+                        <div class="call-icon">
+                            <i class="bi bi-lightning"></i>
+                        </div>
+
+                        <div class="call-info">
+                            <strong>Instalação elétrica</strong>
+                            <small>Cliente: João Santos</small>
+                        </div>
+
+                        <span class="status-badge status-pending">
+                            Pendente
+                        </span>
+                    </div>
+
+                    <div class="recent-call">
+                        <div class="call-icon">
+                            <i class="bi bi-tools"></i>
+                        </div>
+
+                        <div class="call-info">
+                            <strong>Reparo de equipamentos</strong>
+                            <small>Cliente: Ana Costa</small>
+                        </div>
+
+                        <span class="status-badge status-finished">
+                            Concluído
+                        </span>
+                    </div>
+
+                </section>
+
+            </div>
+
+
+            <!-- ATIVIDADES -->
+            <section class="dashboard-panel activity-panel">
+
+                <div class="panel-heading">
+                    <div>
+                        <h2>Atividades recentes</h2>
+                        <p>Últimas movimentações do negócio.</p>
+                    </div>
+
+                    <a href="#" class="panel-link">Ver histórico</a>
+                </div>
+
+                <div class="activity-item">
+                    <span class="activity-icon">
+                        <i class="bi bi-person-plus"></i>
+                    </span>
+
+                    <div>
+                        <strong>Novo cliente cadastrado</strong>
+                        <small>Maria Oliveira foi adicionada ao sistema.</small>
+                    </div>
+
+                    <time>Hoje</time>
+                </div>
+
+                <div class="activity-item">
+                    <span class="activity-icon">
+                        <i class="bi bi-clipboard-check"></i>
+                    </span>
+
+                    <div>
+                        <strong>Chamado atualizado</strong>
+                        <small>Instalação elétrica passou para em andamento.</small>
+                    </div>
+
+                    <time>Ontem</time>
+                </div>
+
+            </section>
+
+            <footer class="dashboard-footer">
+                <span>© 2026 TaskBerry. Gestão e otimização.</span>
+                <span>Organização que faz o negócio crescer.</span>
+            </footer>
+
+        </section>
+
+    </main>
+
+</div>
+
+{% endblock %}

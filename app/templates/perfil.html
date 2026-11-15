@@ -1,0 +1,523 @@
+
+{% extends "index.html" %}
+
+{% block title %}Meu perfil | TaskBerry{% endblock %}
+
+{% block content %}
+
+<div class="dashboard-layout">
+
+    <!-- MENU LATERAL -->
+    <aside class="sidebar" id="sidebar">
+
+        <div class="sidebar-brand">
+            <a href="{{ url_for('dashboard.dashboard') }}">
+                <img
+                    src="{{ url_for('static', filename='img/logo-horizontal.png') }}"
+                    alt="TaskBerry"
+                >
+            </a>
+        </div>
+
+        <div class="sidebar-label">MENU PRINCIPAL</div>
+
+        <nav class="sidebar-nav">
+
+            <a href="{{ url_for('dashboard.dashboard') }}"
+               class="sidebar-link">
+                <i class="bi bi-grid-1x2"></i>
+                <span>Visão geral</span>
+            </a>
+
+            <a href="#" class="sidebar-link">
+                <i class="bi bi-clipboard-check"></i>
+                <span>Chamados e obras</span>
+            </a>
+
+            <a href="#" class="sidebar-link">
+                <i class="bi bi-people"></i>
+                <span>Clientes</span>
+            </a>
+
+            <a href="#" class="sidebar-link">
+                <i class="bi bi-box-seam"></i>
+                <span>Materiais</span>
+            </a>
+
+            <a href="#" class="sidebar-link">
+                <i class="bi bi-tools"></i>
+                <span>Ferramentas</span>
+            </a>
+
+            <a href="#" class="sidebar-link">
+                <i class="bi bi-wallet2"></i>
+                <span>Financeiro</span>
+            </a>
+
+        </nav>
+
+        <div class="sidebar-label sidebar-label-bottom">
+            PREFERÊNCIAS
+        </div>
+
+        <nav class="sidebar-nav">
+
+            <a href="{{ url_for('perfil.meu_perfil') }}"
+               class="sidebar-link active">
+                <i class="bi bi-person-circle"></i>
+                <span>Meu perfil</span>
+            </a>
+
+            <a href="#" class="sidebar-link">
+                <i class="bi bi-gear"></i>
+                <span>Configurações</span>
+            </a>
+
+        </nav>
+
+        <div class="sidebar-footer">
+
+            <div class="sidebar-user-avatar">
+                {{ usuario.nome[0]|upper }}
+            </div>
+
+            <div class="sidebar-user-info">
+                <strong>{{ usuario.nome }}</strong>
+                <small>{{ usuario.email }}</small>
+            </div>
+
+            <form method="POST" action="{{ url_for('auth.logout') }}">
+                <button
+                    type="submit"
+                    class="logout-button"
+                    title="Sair da conta"
+                    aria-label="Sair da conta"
+                >
+                    <i class="bi bi-box-arrow-right"></i>
+                </button>
+            </form>
+
+        </div>
+
+    </aside>
+
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main class="dashboard-main">
+
+        <header class="dashboard-header">
+
+            <button class="sidebar-toggle"
+                    id="sidebarToggle"
+                    type="button"
+                    aria-label="Abrir menu">
+                <i class="bi bi-list"></i>
+            </button>
+
+            <div class="dashboard-breadcrumb">
+                <span>Preferências</span>
+                <i class="bi bi-chevron-right"></i>
+                <strong>Meu perfil</strong>
+            </div>
+
+            <div class="header-actions">
+
+                <div class="header-profile">
+                    <div class="profile-avatar">
+                        {{ usuario.nome[0]|upper }}
+                    </div>
+
+                    <div>
+                        <strong>{{ usuario.nome }}</strong>
+                        <small>Minha conta</small>
+                    </div>
+                </div>
+
+            </div>
+
+        </header>
+
+
+        <section class="dashboard-content profile-content">
+
+            <div class="profile-page-heading">
+                <div>
+                    <span class="welcome-date">
+                        <i class="bi bi-person-circle"></i>
+                        CONFIGURAÇÕES DA CONTA
+                    </span>
+
+                    <h1>Meu perfil</h1>
+
+                    <p>
+                        Visualize e atualize suas informações pessoais
+                        e os dados do seu negócio.
+                    </p>
+                </div>
+            </div>
+
+
+            <!-- MENSAGENS -->
+            {% with mensagens = get_flashed_messages(with_categories=true) %}
+                {% if mensagens %}
+                    {% for categoria, mensagem in mensagens %}
+                        <div class="alert alert-{{ categoria }} alert-dismissible fade show"
+                             role="alert">
+                            {{ mensagem }}
+
+                            <button type="button"
+                                    class="btn-close"
+                                    data-bs-dismiss="alert"
+                                    aria-label="Fechar"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+
+            <!-- IDENTIFICAÇÃO -->
+            <section class="profile-card profile-identity">
+
+                <div class="profile-avatar-large">
+                    {{ usuario.nome[0]|upper }}
+                </div>
+
+                <div class="profile-identity-info">
+                    <h2>{{ usuario.nome }}</h2>
+                    <p>{{ usuario.negocio }}</p>
+
+                    <span class="profile-account-badge">
+                        <i class="bi bi-shield-check"></i>
+                        Conta TaskBerry
+                    </span>
+                </div>
+
+            </section>
+
+
+            <!-- FORMULÁRIO DE EDIÇÃO -->
+            <section class="profile-card">
+
+                <div class="profile-card-heading">
+                    <div>
+                        <h2>Informações da conta</h2>
+                        <p>
+                            Atualize seus dados sempre que necessário.
+                        </p>
+                    </div>
+
+                    <i class="bi bi-pencil-square"></i>
+                </div>
+
+                <form method="POST"
+                      action="{{ url_for('perfil.meu_perfil') }}">
+
+                    <div class="profile-fields-grid">
+
+                        <div class="profile-field">
+                            <label for="nome">Nome completo</label>
+
+                            <input
+                                type="text"
+                                id="nome"
+                                name="nome"
+                                value="{{ usuario.nome }}"
+                                maxlength="120"
+                                autocomplete="name"
+                                required
+                            >
+                        </div>
+
+                        <div class="profile-field">
+                            <label for="negocio">Nome do negócio</label>
+
+                            <input
+                                type="text"
+                                id="negocio"
+                                name="negocio"
+                                value="{{ usuario.negocio }}"
+                                maxlength="120"
+                                required
+                            >
+                        </div>
+
+                        <div class="profile-field">
+                            <label for="email">E-mail</label>
+
+                            <input
+                                type="email"
+                                id="email"
+                                name="email"
+                                value="{{ usuario.email }}"
+                                maxlength="254"
+                                autocomplete="email"
+                                required
+                            >
+                        </div>
+
+                        <div class="profile-field">
+                            <label for="telefone">Telefone</label>
+
+                            <input
+                                type="tel"
+                                id="telefone"
+                                name="telefone"
+                                value="{{ usuario.telefone }}"
+                                maxlength="20"
+                                autocomplete="tel"
+                                required
+                            >
+                        </div>
+
+                    </div>
+
+                    <div class="profile-form-footer">
+
+                        <p>
+                            <i class="bi bi-info-circle"></i>
+                            As alterações serão salvas na sua conta.
+                        </p>
+
+                        <button type="submit"
+                                class="dashboard-primary-button">
+                            <i class="bi bi-check2"></i>
+                            Salvar alterações
+                        </button>
+
+                    </div>
+
+                </form>
+
+            </section>
+
+
+            <!-- SEGURANÇA -->
+            <section class="profile-card profile-security">
+
+                <div class="profile-card-heading">
+                    <div>
+                        <h2>Segurança da conta</h2>
+                        <p>
+                            Sua senha permanece protegida e não é exibida.
+                        </p>
+                    </div>
+
+                    <i class="bi bi-shield-lock"></i>
+                </div>
+
+                <div class="profile-password-info">
+                    <div>
+                        <strong>Senha de acesso</strong>
+                        <small>
+                            Armazenada de forma protegida.
+                        </small>
+                    </div>
+
+                    <span class="profile-protected-badge">
+                        <i class="bi bi-lock-fill"></i>
+                        Protegida
+                    </span>
+                </div>
+
+            </section>
+
+
+            <!-- EXCLUSÃO DA CONTA -->
+            <section class="profile-card profile-danger">
+
+                <div class="profile-card-heading">
+                    <div>
+                        <h2>Zona de perigo</h2>
+                        <p>
+                            A exclusão da conta é uma ação permanente.
+                        </p>
+                    </div>
+
+                    <i class="bi bi-exclamation-triangle"></i>
+                </div>
+
+                <div class="profile-danger-content">
+
+                    <div>
+                        <strong>Excluir minha conta</strong>
+
+                        <p>
+                            Você perderá o acesso ao TaskBerry.
+                            Essa ação não poderá ser desfeita.
+                        </p>
+                    </div>
+
+                    <button
+                        type="button"
+                        class="profile-delete-button"
+                        data-bs-toggle="modal"
+                        data-bs-target="#confirmarExclusao"
+                    >
+                        <i class="bi bi-trash3"></i>
+                        Excluir conta
+                    </button>
+
+                </div>
+
+            </section>
+
+
+            <!-- PRIMEIRA CONFIRMAÇÃO -->
+            <div class="modal fade"
+                 id="confirmarExclusao"
+                 tabindex="-1"
+                 aria-labelledby="tituloConfirmacao"
+                 aria-hidden="true">
+
+                <div class="modal-dialog modal-dialog-centered">
+
+                    <div class="modal-content profile-modal">
+
+                        <div class="modal-body">
+
+                            <div class="delete-modal-icon">
+                                <i class="bi bi-exclamation-triangle"></i>
+                            </div>
+
+                            <h2 id="tituloConfirmacao">
+                                Tem certeza de que deseja excluir sua conta?
+                            </h2>
+
+                            <p>
+                                Essa ação removerá seu acesso ao TaskBerry.
+                                Você precisará confirmar novamente antes
+                                de continuar.
+                            </p>
+
+                            <div class="profile-modal-actions">
+
+                                <button type="button"
+                                        class="profile-cancel-button"
+                                        data-bs-dismiss="modal">
+                                    Cancelar
+                                </button>
+
+                                <button
+                                    type="button"
+                                    class="profile-delete-button"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#confirmacaoFinal"
+                                    data-bs-dismiss="modal"
+                                >
+                                    Continuar
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- SEGUNDA CONFIRMAÇÃO -->
+            <div class="modal fade"
+                 id="confirmacaoFinal"
+                 tabindex="-1"
+                 aria-labelledby="tituloConfirmacaoFinal"
+                 aria-hidden="true">
+
+                <div class="modal-dialog modal-dialog-centered">
+
+                    <div class="modal-content profile-modal">
+
+                        <div class="modal-body">
+
+                            <div class="delete-modal-icon">
+                                <i class="bi bi-trash3"></i>
+                            </div>
+
+                            <h2 id="tituloConfirmacaoFinal">
+                                Confirmação final
+                            </h2>
+
+                            <p>
+                                Para excluir definitivamente sua conta,
+                                digite a frase abaixo e informe sua senha atual.
+                            </p>
+
+                            <form
+                                method="POST"
+                                action="{{ url_for('perfil.excluir_conta') }}"
+                            >
+
+                                <div class="profile-field">
+                                    <label for="confirmacao">
+                                        Digite EXCLUIR MINHA CONTA
+                                    </label>
+
+                                    <input
+                                        type="text"
+                                        id="confirmacao"
+                                        name="confirmacao"
+                                        placeholder="EXCLUIR MINHA CONTA"
+                                        autocomplete="off"
+                                        required
+                                    >
+                                </div>
+
+                                <div class="profile-field">
+                                    <label for="senha_atual">
+                                        Senha atual
+                                    </label>
+
+                                    <input
+                                        type="password"
+                                        id="senha_atual"
+                                        name="senha_atual"
+                                        placeholder="Digite sua senha"
+                                        autocomplete="current-password"
+                                        required
+                                    >
+                                </div>
+
+                                <div class="profile-modal-actions">
+
+                                    <button
+                                        type="button"
+                                        class="profile-cancel-button"
+                                        data-bs-dismiss="modal"
+                                    >
+                                        Cancelar
+                                    </button>
+
+                                    <button
+                                        type="submit"
+                                        class="profile-delete-button"
+                                    >
+                                        Excluir definitivamente
+                                    </button>
+
+                                </div>
+
+                            </form>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <footer class="dashboard-footer">
+                <span>© 2026 TaskBerry. Gestão e otimização.</span>
+                <span>Organização que faz o negócio crescer.</span>
+            </footer>
+
+        </section>
+
+    </main>
+
+</div>
+
+{% endblock %}

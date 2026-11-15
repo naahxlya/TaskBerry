@@ -1,0 +1,125 @@
+{% extends "index.html" %}
+
+{% block title %}Recuperar senha | TaskBerry{% endblock %}
+
+{% block content %}
+
+<main class="auth-page recovery-page">
+
+    <section class="auth-showcase recovery-showcase">
+        <div class="showcase-content">
+
+            <a href="{{ url_for('inicio') }}" class="brand-logo">
+                <img
+                    src="{{ url_for('static', filename='img/logo-extended.png') }}"
+                    alt="TaskBerry"
+                >
+            </a>
+
+            <div class="showcase-message">
+                <span class="register-eyebrow">
+                    <i class="bi bi-shield-check"></i>
+                    SUA CONTA, SUA SEGURANÇA
+                </span>
+
+                <h1>Estamos aqui para ajudar você a voltar.</h1>
+
+                <p>
+                    Às vezes, uma senha escapa da memória.
+                    Não se preocupe, vamos ajudar você a recuperar
+                    o acesso à sua conta.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <section class="auth-form-area recovery-form-area">
+
+        <div class="auth-form-container recovery-container">
+
+            <div class="mobile-brand">
+                <img
+                    src="{{ url_for('static', filename='img/logo-extended.png') }}"
+                    alt="TaskBerry"
+                    class="login-logo"
+                >
+            </div>
+
+            <div class="recovery-icon">
+                <i class="bi bi-envelope-paper"></i>
+            </div>
+
+            <div class="auth-heading">
+                <span class="register-step">RECUPERAÇÃO DE ACESSO</span>
+
+                <h2>Esqueceu sua senha?</h2>
+
+                <p>
+                    Informe o e-mail utilizado no cadastro.
+                    Enviaremos um link para você criar uma nova senha.
+                </p>
+            </div>
+
+            {% with mensagens = get_flashed_messages(with_categories=true) %}
+                {% if mensagens %}
+                    {% for categoria, mensagem in mensagens %}
+                        <div class="alert alert-{{ categoria }} alert-dismissible fade show"
+                             role="alert">
+                            {{ mensagem }}
+                            <button type="button"
+                                    class="btn-close"
+                                    data-bs-dismiss="alert"
+                                    aria-label="Fechar"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST"
+                  action="{{ url_for('auth.recuperar_senha') }}">
+
+                <div class="mb-4">
+                    <label for="email" class="form-label">
+                        E-mail cadastrado
+                    </label>
+
+                    <div class="input-group auth-input">
+                        <span class="input-group-text">
+                            <i class="bi bi-envelope"></i>
+                        </span>
+
+                        <input
+                            type="email"
+                            class="form-control"
+                            id="email"
+                            name="email"
+                            placeholder="seuemail@exemplo.com"
+                            autocomplete="email"
+                            maxlength="254"
+                            required
+                        >
+                    </div>
+                </div>
+
+                <button type="submit"
+                        class="btn btn-primary auth-submit">
+                    ENVIAR LINK DE RECUPERAÇÃO
+                    <i class="bi bi-arrow-right"></i>
+                </button>
+
+            </form>
+
+            <p class="register-prompt">
+                Lembrou sua senha?
+                <a href="{{ url_for('inicio') }}" class="auth-link">
+                    Voltar para o login
+                </a>
+            </p>
+
+        </div>
+
+    </section>
+
+</main>
+
+{% endblock %}

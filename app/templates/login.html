@@ -1,0 +1,286 @@
+
+{% extends "index.html" %}
+
+{% block title %}Entrar | TaskBerry{% endblock %}
+
+{% block content %}
+
+<main class="auth-page">
+
+    <!-- Painel de apresentação -->
+    <section class="auth-showcase">
+
+        <div class="showcase-content">
+
+            <a href="#" class="brand-logo">
+                <img
+                    src="{{ url_for('static', filename='img/logo-extended.png') }}"
+                    alt="TaskBerry"
+                >
+            </a>
+
+            <div class="showcase-message">
+                <h1>Organize, controle e otimize seu negócio.</h1>
+
+                <p>
+                    O TaskBerry é a solução completa para microempreendedores
+                    e pequenos negócios que querem mais controle,
+                    organização e crescimento.
+                </p>
+            </div>
+
+            <!-- Recursos do sistema -->
+            <div class="showcase-features">
+
+                <div class="feature-item">
+                    <span class="feature-icon">
+                        <i class="bi bi-bar-chart-fill"></i>
+                    </span>
+                    <span>Gestão financeira<br>simplificada</span>
+                </div>
+
+                <div class="feature-item">
+                    <span class="feature-icon">
+                        <i class="bi bi-people-fill"></i>
+                    </span>
+                    <span>Clientes, funcionários<br>e serviços</span>
+                </div>
+
+                <div class="feature-item">
+                    <span class="feature-icon">
+                        <i class="bi bi-briefcase-fill"></i>
+                    </span>
+                    <span>Controle de materiais<br>e ferramentas</span>
+                </div>
+
+                <div class="feature-item">
+                    <span class="feature-icon">
+                        <i class="bi bi-file-earmark-bar-graph-fill"></i>
+                    </span>
+                    <span>Relatórios claros<br>para melhores decisões</span>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Ilustração do dashboard -->
+        <div class="showcase-decoration">
+
+            <div class="mini-dashboard">
+
+                <div class="mini-sidebar">
+                    <div class="mini-brand">
+                        <i class="bi bi-grid-fill"></i>
+                    </div>
+
+                    <div class="mini-menu active">
+                        <i class="bi bi-house-fill"></i>
+                    </div>
+
+                    <div class="mini-menu">
+                        <i class="bi bi-people-fill"></i>
+                    </div>
+
+                    <div class="mini-menu">
+                        <i class="bi bi-cash-stack"></i>
+                    </div>
+
+                    <div class="mini-menu">
+                        <i class="bi bi-briefcase-fill"></i>
+                    </div>
+
+                    <div class="mini-menu">
+                        <i class="bi bi-bar-chart-fill"></i>
+                    </div>
+                </div>
+
+                <div class="mini-content">
+
+                    <div class="mini-heading">
+                        <span>Olá, Usuário!</span>
+                        <small>Resumo do negócio</small>
+                    </div>
+
+                    <div class="mini-card">
+                        <small>Receita do mês</small>
+                        <strong>R$ 12.500,00</strong>
+                        <span class="text-success">
+                            <i class="bi bi-arrow-up"></i> +12%
+                        </span>
+                    </div>
+
+                    <div class="mini-card">
+                        <small>Serviços em andamento</small>
+                        <strong>08 projetos</strong>
+                        <div class="mini-progress">
+                            <span></span>
+                        </div>
+                    </div>
+
+                    <div class="mini-chart">
+                        <div style="height: 45%"></div>
+                        <div style="height: 65%"></div>
+                        <div style="height: 85%"></div>
+                        <div style="height: 55%"></div>
+                        <div style="height: 95%"></div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- Área de autenticação -->
+    <section class="auth-form-area">
+
+        <div class="auth-form-container">
+
+            <div class="mobile-brand">
+                <img
+                src="{{ url_for('static', filename='img/logo-extended.png') }}"
+                alt="TaskBerry"
+                class="login-logo"
+                >
+            </div>
+
+            <div class="auth-heading">
+                <h2>Bem-vindo de volta!</h2>
+
+                <p>
+                    Acesse sua conta e continue gerenciando
+                    seu negócio com o TaskBerry.
+                </p>
+            </div>
+
+            {% with mensagens = get_flashed_messages(with_categories=true) %}
+                {% if mensagens %}
+                    {% for categoria, mensagem in mensagens %}
+                        <div class="alert alert-{{ categoria }} alert-dismissible fade show"
+                            role="alert">
+                            {{ mensagem }}
+                            <button type="button"
+                                    class="btn-close"
+                                    data-bs-dismiss="alert"
+                                    aria-label="Fechar"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" action="{{ url_for('auth.login') }}">
+
+                <div class="mb-3">
+
+                    <label for="email" class="form-label">
+                        E-mail
+                    </label>
+
+                    <div class="input-group auth-input">
+                        <span class="input-group-text">
+                            <i class="bi bi-envelope"></i>
+                        </span>
+
+                        <input type="email"
+                               class="form-control"
+                               id="email"
+                               name="email"
+                               placeholder="seuemail@exemplo.com"
+                               autocomplete="email"
+                               required>
+                    </div>
+
+                </div>
+
+                <div class="mb-3">
+
+                    <label for="senha" class="form-label">
+                        Senha
+                    </label>
+
+                    <div class="input-group auth-input">
+                        <span class="input-group-text">
+                            <i class="bi bi-lock"></i>
+                        </span>
+
+                        <input type="password"
+                               class="form-control"
+                               id="senha"
+                               name="senha"
+                               placeholder="Digite sua senha"
+                               autocomplete="current-password"
+                               required>
+
+                        <button class="input-group-text password-toggle"
+                                type="button"
+                                id="togglePassword"
+                                aria-label="Mostrar senha">
+                            <i class="bi bi-eye-slash"></i>
+                        </button>
+                    </div>
+
+                </div>
+
+                <div class="auth-options">
+
+                    <div class="form-check">
+                        <input class="form-check-input"
+                               type="checkbox"
+                               id="remember"
+                               name="remember">
+
+                        <label class="form-check-label" for="remember">
+                            Lembrar de mim
+                        </label>
+                    </div>
+
+                    <a href="{{ url_for('auth.recuperar_senha') }}" class="auth-link">
+                        Esqueceu sua senha?
+                    </a>
+
+                </div>
+
+                <button type="submit" class="btn btn-primary auth-submit">
+                    ENTRAR
+                    <i class="bi bi-arrow-right"></i>
+                </button>
+
+            </form>
+
+            <div class="auth-divider">
+                <span></span>
+                <small>ou entre com</small>
+                <span></span>
+            </div>
+
+            <button type="button"
+                    class="btn btn-outline-secondary social-button"
+                    disabled>
+                <i class="bi bi-google"></i>
+                Continuar com Google
+            </button>
+
+            <button type="button"
+                    class="btn btn-outline-secondary social-button"
+                    disabled>
+                <i class="bi bi-microsoft"></i>
+                Continuar com Microsoft
+            </button>
+
+            <p class="register-prompt">
+                Ainda não tem uma conta?
+                <a href="{{ url_for('auth.cadastro') }}" class="auth-link">
+                    Cadastre-se
+                </a>
+            </p>
+
+        </div>
+
+    </section>
+
+</main>
+
+{% endblock %}

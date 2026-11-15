@@ -1,0 +1,335 @@
+{% extends "index.html" %}
+
+{% block title %}Criar conta | TaskBerry{% endblock %}
+
+{% block content %}
+
+<main class="auth-page register-page">
+
+    <!-- Painel de apresentação -->
+    <section class="auth-showcase register-showcase">
+
+        <div class="showcase-content">
+
+            <a href="{{ url_for('inicio') }}" class="brand-logo">
+                <img
+                    src="{{ url_for('static', filename='img/logo-extended.png') }}"
+                    alt="TaskBerry"
+                >
+            </a>
+
+            <div class="showcase-message">
+                <span class="register-eyebrow">
+                    <i class="bi bi-stars"></i>
+                    SEU NEGÓCIO, MAIS ORGANIZADO
+                </span>
+
+                <h1>Um novo jeito de cuidar do seu negócio começa aqui.</h1>
+
+                <p>
+                    Centralize informações, acompanhe serviços,
+                    controle recursos e tenha mais clareza para
+                    tomar decisões.
+                </p>
+            </div>
+
+            <div class="register-benefits">
+
+                <div class="register-benefit">
+                    <span class="register-benefit-icon">
+                        <i class="bi bi-check2-circle"></i>
+                    </span>
+                    <div>
+                        <strong>Mais organização</strong>
+                        <small>Informações reunidas em um só lugar.</small>
+                    </div>
+                </div>
+
+                <div class="register-benefit">
+                    <span class="register-benefit-icon">
+                        <i class="bi bi-graph-up-arrow"></i>
+                    </span>
+                    <div>
+                        <strong>Mais controle</strong>
+                        <small>Acompanhe os processos do seu negócio.</small>
+                    </div>
+                </div>
+
+                <div class="register-benefit">
+                    <span class="register-benefit-icon">
+                        <i class="bi bi-lightbulb"></i>
+                    </span>
+                    <div>
+                        <strong>Decisões melhores</strong>
+                        <small>Tenha informações para planejar.</small>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="register-decoration">
+            <div class="register-decoration-circle circle-one"></div>
+            <div class="register-decoration-circle circle-two"></div>
+
+            <div class="register-floating-card">
+                <i class="bi bi-grid-1x2-fill"></i>
+                <span>Seu negócio em boas mãos.</span>
+            </div>
+        </div>
+
+    </section>
+
+    <!-- Formulário de cadastro -->
+    <section class="auth-form-area register-form-area">
+
+        <div class="auth-form-container register-form-container">
+
+            <div class="mobile-brand">
+                <img
+                    src="{{ url_for('static', filename='img/logo-extended.png') }}"
+                    alt="TaskBerry"
+                    class="login-logo"
+                >
+            </div>
+
+            <div class="auth-heading register-heading">
+                <span class="register-step">COMECE POR AQUI</span>
+
+                <h2>Crie sua conta</h2>
+
+                <p>
+                    Preencha seus dados para começar a organizar
+                    seu negócio com o TaskBerry.
+                </p>
+            </div>
+
+            <!-- Mensagens do Flask -->
+            {% with mensagens = get_flashed_messages(with_categories=true) %}
+                {% if mensagens %}
+                    {% for categoria, mensagem in mensagens %}
+                        <div class="alert alert-{{ categoria }} alert-dismissible fade show"
+                             role="alert">
+                            {{ mensagem }}
+                            <button type="button"
+                                    class="btn-close"
+                                    data-bs-dismiss="alert"
+                                    aria-label="Fechar"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" action="{{ url_for('auth.cadastro') }}">
+
+                <div class="register-section-label">
+                    <i class="bi bi-person"></i>
+                    SEUS DADOS
+                </div>
+
+                <div class="mb-3">
+                    <label for="nome" class="form-label">
+                        Nome completo
+                    </label>
+
+                    <div class="input-group auth-input">
+                        <span class="input-group-text">
+                            <i class="bi bi-person"></i>
+                        </span>
+
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="nome"
+                            name="nome"
+                            placeholder="Como podemos te chamar?"
+                            autocomplete="name"
+                            value="{{ request.form.get('nome', '') }}"
+                            maxlength="120"
+                            required
+                        >
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="negocio" class="form-label">
+                        Nome do negócio
+                    </label>
+
+                    <div class="input-group auth-input">
+                        <span class="input-group-text">
+                            <i class="bi bi-shop"></i>
+                        </span>
+
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="negocio"
+                            name="negocio"
+                            placeholder="Nome da sua empresa ou negócio"
+                            value="{{ request.form.get('negocio', '') }}"
+                            maxlength="120"
+                            required
+                        >
+                    </div>
+                </div>
+
+                <div class="register-section-label register-section-spaced">
+                    <i class="bi bi-envelope"></i>
+                    CONTATO
+                </div>
+
+                <div class="mb-3">
+                    <label for="email" class="form-label">
+                        E-mail
+                    </label>
+
+                    <div class="input-group auth-input">
+                        <span class="input-group-text">
+                            <i class="bi bi-envelope"></i>
+                        </span>
+
+                        <input
+                            type="email"
+                            class="form-control"
+                            id="email"
+                            name="email"
+                            placeholder="seuemail@exemplo.com"
+                            autocomplete="email"
+                            value="{{ request.form.get('email', '') }}"
+                            maxlength="254"
+                            required
+                        >
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="telefone" class="form-label">
+                        Telefone
+                    </label>
+
+                    <div class="input-group auth-input">
+                        <span class="input-group-text">
+                            <i class="bi bi-telephone"></i>
+                        </span>
+
+                        <input
+                            type="tel"
+                            class="form-control"
+                            id="telefone"
+                            name="telefone"
+                            placeholder="(00) 00000-0000"
+                            autocomplete="tel"
+                            value="{{ request.form.get('telefone', '') }}"
+                            maxlength="20"
+                            required
+                        >
+                    </div>
+                </div>
+
+                <div class="register-section-label register-section-spaced">
+                    <i class="bi bi-shield-lock"></i>
+                    SEGURANÇA DA CONTA
+                </div>
+
+                <div class="mb-3">
+                    <label for="senha" class="form-label">
+                        Senha
+                    </label>
+
+                    <div class="input-group auth-input">
+                        <span class="input-group-text">
+                            <i class="bi bi-lock"></i>
+                        </span>
+
+                        <input
+                            type="password"
+                            class="form-control"
+                            id="senha"
+                            name="senha"
+                            placeholder="Mínimo de 8 caracteres"
+                            autocomplete="new-password"
+                            minlength="8"
+                            required
+                        >
+
+                        <button
+                            class="input-group-text password-toggle"
+                            type="button"
+                            data-toggle-password="senha"
+                            aria-label="Mostrar senha"
+                        >
+                            <i class="bi bi-eye-slash"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="confirmar_senha" class="form-label">
+                        Confirme sua senha
+                    </label>
+
+                    <div class="input-group auth-input">
+                        <span class="input-group-text">
+                            <i class="bi bi-lock-fill"></i>
+                        </span>
+
+                        <input
+                            type="password"
+                            class="form-control"
+                            id="confirmar_senha"
+                            name="confirmar_senha"
+                            placeholder="Digite a senha novamente"
+                            autocomplete="new-password"
+                            minlength="8"
+                            required
+                        >
+
+                        <button
+                            class="input-group-text password-toggle"
+                            type="button"
+                            data-toggle-password="confirmar_senha"
+                            aria-label="Mostrar senha"
+                        >
+                            <i class="bi bi-eye-slash"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="register-terms form-check">
+                    <input
+                        class="form-check-input"
+                        type="checkbox"
+                        id="termos"
+                        name="termos"
+                        required
+                    >
+
+                    <label class="form-check-label" for="termos">
+                        Li e aceito os termos de uso e a política de privacidade.
+                    </label>
+                </div>
+
+                <button type="submit"
+                        class="btn btn-primary auth-submit register-submit">
+                    CRIAR MINHA CONTA
+                    <i class="bi bi-arrow-right"></i>
+                </button>
+
+            </form>
+
+            <p class="register-prompt">
+                Já possui uma conta?
+                <a href="{{ url_for('inicio') }}" class="auth-link">
+                    Entrar
+                </a>
+            </p>
+
+        </div>
+
+    </section>
+
+</main>
+
+{% endblock %}

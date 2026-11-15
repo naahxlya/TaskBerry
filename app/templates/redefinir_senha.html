@@ -1,0 +1,190 @@
+{% extends "index.html" %}
+
+{% block title %}Nova senha | TaskBerry{% endblock %}
+
+{% block content %}
+
+<main class="auth-page recovery-page">
+
+    <section class="auth-showcase recovery-showcase">
+        <div class="showcase-content">
+
+            <a href="{{ url_for('inicio') }}" class="brand-logo">
+                <img
+                    src="{{ url_for('static', filename='img/logo-extended.png') }}"
+                    alt="TaskBerry"
+                >
+            </a>
+
+            <div class="showcase-message">
+                <span class="register-eyebrow">
+                    <i class="bi bi-shield-lock"></i>
+                    SEGURANÇA DA SUA CONTA
+                </span>
+
+                <h1>Uma nova senha, um novo começo.</h1>
+
+                <p>
+                    Crie uma senha segura e continue cuidando
+                    do seu negócio com o TaskBerry.
+                </p>
+            </div>
+
+        </div>
+    </section>
+
+    <section class="auth-form-area recovery-form-area">
+
+        <div class="auth-form-container recovery-container">
+
+            <div class="mobile-brand">
+                <img
+                    src="{{ url_for('static', filename='img/logo-extended.png') }}"
+                    alt="TaskBerry"
+                    class="login-logo"
+                >
+            </div>
+
+            {% if token_valido %}
+
+                <div class="recovery-icon">
+                    <i class="bi bi-key"></i>
+                </div>
+
+                <div class="auth-heading">
+                    <span class="register-step">QUASE LÁ</span>
+
+                    <h2>Crie sua nova senha</h2>
+
+                    <p>
+                        Escolha uma senha com pelo menos
+                        8 caracteres para proteger sua conta.
+                    </p>
+                </div>
+
+                {% with mensagens = get_flashed_messages(with_categories=true) %}
+                    {% if mensagens %}
+                        {% for categoria, mensagem in mensagens %}
+                            <div class="alert alert-{{ categoria }} alert-dismissible fade show"
+                                 role="alert">
+                                {{ mensagem }}
+                                <button type="button"
+                                        class="btn-close"
+                                        data-bs-dismiss="alert"
+                                        aria-label="Fechar"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <form method="POST">
+
+                    <div class="mb-3">
+                        <label for="senha" class="form-label">
+                            Nova senha
+                        </label>
+
+                        <div class="input-group auth-input">
+                            <span class="input-group-text">
+                                <i class="bi bi-lock"></i>
+                            </span>
+
+                            <input
+                                type="password"
+                                class="form-control"
+                                id="senha"
+                                name="senha"
+                                placeholder="Mínimo de 8 caracteres"
+                                minlength="8"
+                                autocomplete="new-password"
+                                required
+                            >
+
+                            <button
+                                class="input-group-text password-toggle"
+                                type="button"
+                                data-toggle-password="senha"
+                                aria-label="Mostrar senha"
+                            >
+                                <i class="bi bi-eye-slash"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="confirmar_senha" class="form-label">
+                            Confirme a nova senha
+                        </label>
+
+                        <div class="input-group auth-input">
+                            <span class="input-group-text">
+                                <i class="bi bi-lock-fill"></i>
+                            </span>
+
+                            <input
+                                type="password"
+                                class="form-control"
+                                id="confirmar_senha"
+                                name="confirmar_senha"
+                                placeholder="Digite novamente sua senha"
+                                minlength="8"
+                                autocomplete="new-password"
+                                required
+                            >
+
+                            <button
+                                class="input-group-text password-toggle"
+                                type="button"
+                                data-toggle-password="confirmar_senha"
+                                aria-label="Mostrar senha"
+                            >
+                                <i class="bi bi-eye-slash"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="submit"
+                            class="btn btn-primary auth-submit">
+                        SALVAR NOVA SENHA
+                        <i class="bi bi-check2"></i>
+                    </button>
+
+                </form>
+
+            {% else %}
+
+                <div class="recovery-icon recovery-error">
+                    <i class="bi bi-clock-history"></i>
+                </div>
+
+                <div class="auth-heading">
+                    <h2>Link expirado ou inválido</h2>
+
+                    <p>
+                        Esse link não está mais disponível.
+                        Solicite uma nova recuperação de senha
+                        para continuar.
+                    </p>
+                </div>
+
+                <a href="{{ url_for('auth.recuperar_senha') }}"
+                   class="btn btn-primary auth-submit">
+                    SOLICITAR NOVO LINK
+                    <i class="bi bi-arrow-right"></i>
+                </a>
+
+            {% endif %}
+
+            <p class="register-prompt">
+                <a href="{{ url_for('inicio') }}" class="auth-link">
+                    Voltar para o login
+                </a>
+            </p>
+
+        </div>
+
+    </section>
+
+</main>
+
+{% endblock %}
