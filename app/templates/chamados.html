@@ -9,10 +9,6 @@
         rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/tom-select@2.4.3/dist/css/tom-select.bootstrap5.min.css"
     >
-     <link
-        rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/tom-select@2.4.3/dist/css/tom-select.bootstrap5.min.css"
-    >
 
     <link
         rel="stylesheet"
@@ -409,6 +405,35 @@
 
                     </section>
 
+
+
+
+                    <section class="calls-form-panel">
+                        <div class="calls-section-heading">
+                            <div class="calls-section-icon"><i class="bi bi-box-seam"></i></div>
+                            <div><h2>Materiais e ferramentas previstos</h2><p>O vínculo não altera o estoque nem a situação das ferramentas.</p></div>
+                        </div>
+                        <div class="calls-form-grid">
+                            <div class="calls-field calls-field-full">
+                                <label for="materiais_ids">Materiais previstos</label>
+                                <select id="materiais_ids" name="materiais_ids" class="form-select calls-tom-select" multiple>
+                                    {% for material in materiais %}
+                                        <option value="{{ material._id }}" {% if chamado_edicao and (chamado_edicao.materiais_previstos|selectattr('material_id','equalto',material._id|string)|list|length) %}selected{% endif %}>{{ material.nome }}</option>
+                                    {% endfor %}
+                                </select>
+                                <small>Selecione os materiais que poderão ser utilizados nesta obra. O consumo será lançado separadamente em Materiais.</small>
+                            </div>
+                            <div class="calls-field calls-field-full">
+                                <label for="ferramentas_ids">Ferramentas previstas</label>
+                                <select id="ferramentas_ids" name="ferramentas_ids" class="form-select calls-tom-select" multiple>
+                                    {% for ferramenta in ferramentas %}
+                                        <option value="{{ ferramenta._id }}" {% if chamado_edicao and (chamado_edicao.ferramentas_previstas|selectattr('ferramenta_id','equalto',ferramenta._id|string)|list|length) %}selected{% endif %}>{{ ferramenta.nome }} · {{ ferramenta.codigo }}</option>
+                                    {% endfor %}
+                                </select>
+                                <small>Somente ferramentas disponíveis podem ser vinculadas. A situação não muda automaticamente.</small>
+                            </div>
+                        </div>
+                    </section>
 
                     <section class="calls-form-panel">
 
@@ -953,6 +978,9 @@
 
 
                                     <div class="calls-work-card-actions">
+                                        <a href="{{ url_for('chamados.visualizar_chamado', chamado_id=chamado._id) }}" class="calls-icon-button" title="Visualizar chamado" aria-label="Visualizar chamado"><i class="bi bi-eye"></i></a>
+                                        <form method="POST" action="{{ url_for('chamados.arquivar_chamado', chamado_id=chamado._id) }}" onsubmit="return confirm('Arquivar este chamado?');"><button type="submit" class="calls-icon-button" title="Arquivar chamado" aria-label="Arquivar chamado"><i class="bi bi-archive"></i></button></form>
+                                        <form method="POST" action="{{ url_for('chamados.enviar_para_lixeira', chamado_id=chamado._id) }}" onsubmit="return confirm('Enviar este chamado para a lixeira?');"><button type="submit" class="calls-icon-button" title="Enviar para lixeira" aria-label="Enviar para lixeira"><i class="bi bi-trash"></i></button></form>
 
                                         <a
                                             href="{{ url_for(
@@ -1348,6 +1376,35 @@
 
                             </section>
 
+
+
+
+                            <section class="calls-form-panel">
+                                <div class="calls-section-heading">
+                                    <div class="calls-section-icon"><i class="bi bi-box-seam"></i></div>
+                                    <div><h2>Materiais e ferramentas previstos</h2><p>O vínculo não altera o estoque nem a situação das ferramentas.</p></div>
+                                </div>
+                                <div class="calls-form-grid">
+                                    <div class="calls-field calls-field-full">
+                                        <label for="materiais_ids">Materiais previstos</label>
+                                        <select id="materiais_ids" name="materiais_ids" class="form-select calls-tom-select" multiple>
+                                            {% for material in materiais %}
+                                                        <option value="{{ material._id }}" {% if chamado_edicao and (chamado_edicao.materiais_previstos|selectattr('material_id','equalto',material._id|string)|list|length) %}selected{% endif %}>{{ material.nome }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <small>Selecione os materiais que poderão ser utilizados nesta obra. O consumo será lançado separadamente em Materiais.</small>
+                                    </div>
+                                    <div class="calls-field calls-field-full">
+                                        <label for="ferramentas_ids">Ferramentas previstas</label>
+                                        <select id="ferramentas_ids" name="ferramentas_ids" class="form-select calls-tom-select" multiple>
+                                            {% for ferramenta in ferramentas %}
+                                                        <option value="{{ ferramenta._id }}" {% if chamado_edicao and (chamado_edicao.ferramentas_previstas|selectattr('ferramenta_id','equalto',ferramenta._id|string)|list|length) %}selected{% endif %}>{{ ferramenta.nome }} · {{ ferramenta.codigo }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <small>Somente ferramentas disponíveis podem ser vinculadas. A situação não muda automaticamente.</small>
+                                    </div>
+                                </div>
+                            </section>
 
                             <section class="calls-form-panel">
 

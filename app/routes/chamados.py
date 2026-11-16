@@ -215,6 +215,68 @@ def obter_funcionarios_validos(ids):
     ]
 
 
+
+def carregar_materiais_disponiveis():
+    return list(get_database()["materiais"].find({
+        "usuario_id": obter_usuario_id(), "arquivado": {"$ne": True}
+    }).sort("nome", 1))
+
+
+def carregar_ferramentas_disponiveis(chamado=None):
+    filtro = {
+        "usuario_id": obter_usuario_id(),
+        "arquivada": {"$ne": True},
+        "situacao": "disponivel"
+    }
+    ferramentas = list(get_database()["ferramentas"].find(filtro).sort("nome", 1))
+    ids_atuais = {item.get("ferramenta_id") for item in (chamado or {}).get("ferramentas_previstas", [])}
+    if ids_atuais:
+        atuais = list(get_database()["ferramentas"].find({
+            "usuario_id": obter_usuario_id(), "arquivada": {"$ne": True},
+            "_id": {"$in": [ObjectId(x) for x in ids_atuais if ObjectId.is_valid(x)]}
+        }))
+        mapa = {str(x["_id"]): x for x in ferramentas}
+        mapa.update({str(x["_id"]): x for x in atuais})
+        ferramentas = list(mapa.values())
+    return ferramentas
+
+
+def obter_associacoes_previstas():
+    db = get_database()
+    materiais_ids = request.form.getlist("materiais_ids")
+    ferramentas_ids = request.form.getlist("ferramentas_ids")
+    quantidades = request.form.getlist("materiais_quantidades")
+    ids_m = [ObjectId(x) for x in materiais_ids if ObjectId.is_valid(x)]
+    materiais = list(db["materiais"].find({
+        "_id": {"$in": ids_m}, "usuario_id": obter_usuario_id(),
+        "arquivado": {"$ne": True}
+    })) if ids_m else []
+    if len(materiais) != len(set(materiais_ids)):
+        raise ValueError("Um ou mais materiais selecionados não são válidos.")
+    previstos_m = []
+    for material in materiais:
+        indice = materiais_ids.index(str(material["_id"]))
+        try:
+            quantidade = float((quantidades[indice] if indice < len(quantidades) else "1").replace(",", "."))
+        except (ValueError, AttributeError):
+            raise ValueError("Informe uma quantidade válida para cada material.")
+        if quantidade <= 0:
+            raise ValueError("A quantidade prevista deve ser maior que zero.")
+        previstos_m.append({"material_id": str(material["_id"]), "nome": material.get("nome", "Material"),
+            "unidade_medida": material.get("unidade_medida", "unidade"), "quantidade_prevista": quantidade,
+            "consumo_registrado": False})
+    ids_f = [ObjectId(x) for x in ferramentas_ids if ObjectId.is_valid(x)]
+    ferramentas = list(db["ferramentas"].find({
+        "_id": {"$in": ids_f}, "usuario_id": obter_usuario_id(),
+        "arquivada": {"$ne": True}, "situacao": "disponivel"
+    })) if ids_f else []
+    if len(ferramentas) != len(set(ferramentas_ids)):
+        raise ValueError("Uma ou mais ferramentas não estão disponíveis ou não pertencem à sua conta.")
+    previstos_f = [{"ferramenta_id": str(item["_id"]), "nome": item.get("nome", "Ferramenta"),
+        "codigo": item.get("codigo", ""), "situacao_no_vinculo": item.get("situacao", "disponivel")} for item in ferramentas]
+    return previstos_m, previstos_f
+
+
 def preparar_dados_formulario():
     titulo = request.form.get("titulo", "").strip()
     descricao = request.form.get("descricao", "").strip()
@@ -301,7 +363,11 @@ def preparar_dados_formulario():
         or cliente.get("nome", "")
     )
 
+    materiais_previstos, ferramentas_previstas = obter_associacoes_previstas()
+
     return {
+        "materiais_previstos": materiais_previstos,
+        "ferramentas_previstas": ferramentas_previstas,
         "titulo": titulo,
         "descricao": descricao,
         "cliente_id": str(cliente["_id"]),
@@ -385,7 +451,9 @@ def listar_chamados():
     ).strip()
 
     filtro = {
-        "usuario_id": usuario_id
+        "usuario_id": usuario_id,
+        "arquivado": {"$ne": True},
+        "excluido": {"$ne": True}
     }
 
     if competencia != "todos":
@@ -485,6 +553,8 @@ def listar_chamados():
         chamados=chamados,
         clientes=carregar_clientes(),
         funcionarios=carregar_funcionarios(),
+        materiais=carregar_materiais_disponiveis(),
+        ferramentas=carregar_ferramentas_disponiveis(),
         busca=busca,
         status_filtro=status,
         prioridade_filtro=prioridade,
@@ -604,6 +674,8 @@ def editar_chamado(chamado_id):
         chamados=[],
         clientes=carregar_clientes(),
         funcionarios=carregar_funcionarios(),
+        materiais=carregar_materiais_disponiveis(),
+        ferramentas=carregar_ferramentas_disponiveis(chamado),
         busca="",
         status_filtro="",
         prioridade_filtro="",
@@ -857,7 +929,7 @@ def eventos_calendario():
             "end": data_fim_exclusiva.strftime("%Y-%m-%d"),
             "allDay": True,
             "url": url_for(
-                "chamados.editar_chamado",
+                "chamados.visualizar_chamado",
                 chamado_id=str(chamado["_id"])
             ),
             "backgroundColor": cores_status.get(
@@ -887,3 +959,91 @@ def eventos_calendario():
 def eventos_calendario_json(eventos):
     from flask import jsonify
     return jsonify(eventos)
+
+
+# =========================================================
+# VISUALIZAÇÃO, ARQUIVO, LIXEIRA E RESTAURAÇÃO
+# =========================================================
+
+@chamados_bp.route("/chamados/<chamado_id>")
+def visualizar_chamado(chamado_id):
+    chamado = buscar_chamado(chamado_id)
+    if not chamado or chamado.get("excluido"):
+        flash("Chamado não encontrado.", "danger")
+        return voltar_para_lista()
+    chamado = preparar_chamado_para_template(chamado)
+    return render_template("chamado_detalhes.html", chamado=chamado, status_opcoes=STATUS_CHAMADO, prioridades=PRIORIDADES)
+
+
+def registrar_acao_chamado(chamado_id, campo, valor, acao, descricao):
+    chamado = buscar_chamado(chamado_id)
+    if not chamado:
+        flash("Chamado não encontrado.", "danger")
+        return voltar_para_lista()
+    data = agora()
+    get_database()["chamados"].update_one(
+        {"_id": chamado["_id"], "usuario_id": obter_usuario_id()},
+        {"$set": {campo: valor, "atualizado_em": data}, "$push": {"historico": {
+            "acao": acao, "descricao": descricao, "data": data,
+            "usuario_nome": session.get("usuario_nome", "Usuário")
+        }}}
+    )
+    flash(descricao, "success")
+    return voltar_para_lista()
+
+
+@chamados_bp.route("/chamados/<chamado_id>/arquivar", methods=["POST"])
+def arquivar_chamado(chamado_id):
+    chamado = buscar_chamado(chamado_id)
+    if not chamado or chamado.get("excluido"):
+        flash("Chamado não encontrado.", "danger")
+        return voltar_para_lista()
+    return registrar_acao_chamado(chamado_id, "arquivado", True, "arquivado", "Chamado arquivado. O histórico foi preservado.")
+
+
+@chamados_bp.route("/chamados/<chamado_id>/excluir", methods=["POST"])
+def enviar_para_lixeira(chamado_id):
+    chamado = buscar_chamado(chamado_id)
+    if not chamado:
+        flash("Chamado não encontrado.", "danger")
+        return voltar_para_lista()
+    return registrar_acao_chamado(chamado_id, "excluido", True, "enviado_lixeira", "Chamado enviado para a lixeira.")
+
+
+@chamados_bp.route("/chamados/arquivados")
+def listar_arquivados():
+    itens = list(get_database()["chamados"].find({"usuario_id": obter_usuario_id(), "arquivado": True, "excluido": {"$ne": True}}).sort("atualizado_em", -1))
+    return render_template("chamados_arquivados.html", chamados=[preparar_chamado_para_template(x) for x in itens], titulo_lista="Chamados arquivados", lixeira=False)
+
+
+@chamados_bp.route("/chamados/lixeira")
+def listar_lixeira():
+    itens = list(get_database()["chamados"].find({"usuario_id": obter_usuario_id(), "excluido": True}).sort("atualizado_em", -1))
+    return render_template("chamados_arquivados.html", chamados=[preparar_chamado_para_template(x) for x in itens], titulo_lista="Lixeira", lixeira=True)
+
+
+@chamados_bp.route("/chamados/<chamado_id>/restaurar", methods=["POST"])
+def restaurar_chamado(chamado_id):
+    chamado = buscar_chamado(chamado_id)
+    if not chamado or (not chamado.get("excluido") and not chamado.get("arquivado")):
+        flash("Chamado não encontrado na área de recuperação.", "danger")
+        return voltar_para_lista()
+    estava_na_lixeira = chamado.get("excluido", False)
+    data = agora()
+    get_database()["chamados"].update_one({"_id": chamado["_id"], "usuario_id": obter_usuario_id()}, {
+        "$set": {"excluido": False, "arquivado": False, "atualizado_em": data},
+        "$push": {"historico": {"acao": "restaurado", "descricao": "Chamado restaurado para a lista ativa.", "data": data, "usuario_nome": session.get("usuario_nome", "Usuário")}}
+    })
+    flash("Chamado restaurado com sucesso.", "success")
+    return voltar_para_lista()
+
+
+@chamados_bp.route("/chamados/<chamado_id>/excluir-permanentemente", methods=["POST"])
+def excluir_permanentemente(chamado_id):
+    chamado = buscar_chamado(chamado_id)
+    if not chamado or not chamado.get("excluido"):
+        flash("Somente chamados na lixeira podem ser excluídos permanentemente.", "warning")
+        return redirect(url_for("chamados.listar_lixeira"))
+    get_database()["chamados"].delete_one({"_id": chamado["_id"], "usuario_id": obter_usuario_id(), "excluido": True})
+    flash("Chamado excluído permanentemente.", "success")
+    return redirect(url_for("chamados.listar_lixeira"))

@@ -1,0 +1,31 @@
+{% extends "index.html" %}
+{% block title %}{{ chamado.numero }} | TaskBerry{% endblock %}
+{% block content %}
+<div class="dashboard-layout calls-layout">
+  {% include 'components/sidebar.html' %}
+  <main class="dashboard-main calls-main">
+    <header class="dashboard-header calls-header">
+      <button class="sidebar-toggle" id="sidebarToggle" type="button" aria-label="Abrir menu"><i class="bi bi-list"></i></button>
+      <div class="calls-header-context"><span>GESTÃO OPERACIONAL</span><strong>Detalhes do chamado</strong></div>
+    </header>
+    <section class="dashboard-content calls-content">
+      {% with mensagens = get_flashed_messages(with_categories=true) %}{% if mensagens %}{% for categoria, mensagem in mensagens %}<div class="alert alert-{{ categoria }}">{{ mensagem }}</div>{% endfor %}{% endif %}{% endwith %}
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+        <div><a class="calls-back-link" href="{{ url_for('chamados.listar_chamados') }}"><i class="bi bi-arrow-left"></i> Voltar para chamados</a><div class="calls-eyebrow mt-3">{{ chamado.numero }}</div><h1>{{ chamado.titulo }}</h1><p class="text-muted mb-0">{{ chamado.cliente_nome }} · {{ chamado.status_label }}</p></div>
+        <div class="d-flex gap-2 flex-wrap"><a class="btn btn-outline-primary" href="{{ url_for('chamados.editar_chamado', chamado_id=chamado._id) }}"><i class="bi bi-pencil"></i> Editar</a><form method="POST" action="{{ url_for('chamados.arquivar_chamado', chamado_id=chamado._id) }}" onsubmit="return confirm('Arquivar este chamado?');"><button class="btn btn-outline-secondary"><i class="bi bi-archive"></i> Arquivar</button></form></div>
+      </div>
+      <div class="row g-3">
+        <div class="col-lg-8">
+          <section class="calls-form-panel mb-3"><h2>Descrição do serviço</h2><p style="white-space:pre-wrap">{{ chamado.descricao or 'Nenhuma descrição informada.' }}</p><hr><h2>Observações internas</h2><p style="white-space:pre-wrap">{{ chamado.observacoes or 'Nenhuma observação registrada.' }}</p></section>
+          <section class="calls-form-panel mb-3"><h2>Materiais previstos</h2>{% if chamado.materiais_previstos %}<ul>{% for item in chamado.materiais_previstos %}<li>{{ item.nome }} · {{ item.quantidade_prevista }} {{ item.unidade_medida or '' }} <small class="text-muted">(consumo não registrado por este vínculo)</small></li>{% endfor %}</ul>{% else %}<p class="text-muted">Nenhum material vinculado.</p>{% endif %}<hr><h2>Ferramentas previstas</h2>{% if chamado.ferramentas_previstas %}<ul>{% for item in chamado.ferramentas_previstas %}<li>{{ item.nome }} {% if item.codigo %}· {{ item.codigo }}{% endif %}</li>{% endfor %}</ul>{% else %}<p class="text-muted">Nenhuma ferramenta vinculada.</p>{% endif %}</section>
+          <section class="calls-form-panel"><h2>Histórico</h2>{% if chamado.historico %}<ul class="list-unstyled">{% for item in chamado.historico|reverse %}<li class="mb-3"><strong>{{ item.descricao }}</strong><br><small class="text-muted">{{ item.data.strftime('%d/%m/%Y %H:%M') if item.data else '' }} · {{ item.usuario_nome or 'Usuário' }}</small></li>{% endfor %}</ul>{% else %}<p class="text-muted">Sem histórico.</p>{% endif %}</section>
+        </div>
+        <div class="col-lg-4">
+          <section class="calls-form-panel mb-3"><h2>Informações</h2><p><strong>Prioridade:</strong> {{ chamado.prioridade_label }}</p><p><strong>Início:</strong> {{ chamado.data_inicio.strftime('%d/%m/%Y') if chamado.data_inicio else 'Não informado' }}</p><p><strong>Previsão:</strong> {{ chamado.previsao_termino.strftime('%d/%m/%Y') if chamado.previsao_termino else 'Não informado' }}</p><p><strong>Endereço:</strong> {{ chamado.endereco_resumido or 'Não informado' }}</p><p><strong>Responsável pelo pagamento:</strong> {{ chamado.responsavel_pagamento or 'Não informado' }}</p></section>
+          <section class="calls-form-panel"><h2>Equipe prevista</h2>{% if chamado.equipe_prevista %}<ul>{% for pessoa in chamado.equipe_prevista %}<li>{{ pessoa.nome }}{% if pessoa.cargo %} · {{ pessoa.cargo }}{% endif %}</li>{% endfor %}</ul>{% else %}<p class="text-muted">Nenhum funcionário vinculado.</p>{% endif %}<hr><h2>Valores do contrato</h2><p>Contratado: R$ {{ '%.2f'|format(chamado.valor_contratado or 0)|replace('.', ',') }}</p><p>Desconto: R$ {{ '%.2f'|format(chamado.desconto or 0)|replace('.', ',') }}</p><p><strong>Valor final: R$ {{ '%.2f'|format(chamado.valor_final or 0)|replace('.', ',') }}</strong></p><p>Recebido: R$ {{ '%.2f'|format(chamado.valor_recebido or 0)|replace('.', ',') }}</p><p>Saldo pendente: R$ {{ '%.2f'|format(chamado.saldo_pendente or 0)|replace('.', ',') }}</p><small class="text-muted">Os valores ainda não geram lançamentos no ERP.</small></section>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+{% endblock %}

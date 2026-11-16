@@ -9715,3 +9715,306 @@ a {
         font-size: 11px;
     }
 }
+
+
+/* =========================================================
+   TASKBERRY | CHAMADOS, DETALHES E ARQUIVAMENTO
+   Correção de layout e identidade visual
+========================================================= */
+
+/* Evita que o conteúdo ultrapasse a área principal */
+
+.calls-layout {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+.calls-main {
+    min-width: 0;
+    max-width: calc(100% - 255px);
+    flex: 1 1 auto;
+    overflow-x: clip;
+}
+
+.calls-content {
+    width: 100%;
+    max-width: 1600px;
+    min-width: 0;
+    padding: 34px 38px 45px;
+    overflow-x: clip;
+}
+
+.calls-content *,
+.calls-content *::before,
+.calls-content *::after {
+    box-sizing: border-box;
+}
+
+.calls-content .row {
+    --bs-gutter-x: 1.25rem;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+.calls-content .row > * {
+    min-width: 0;
+}
+
+/* Cabeçalho da tela de detalhes */
+
+.calls-content > .d-flex.justify-content-between {
+    align-items: flex-start !important;
+    gap: 24px;
+    margin-bottom: 30px !important;
+}
+
+.calls-content .calls-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--berry-primary);
+    font-size: .88rem;
+    font-weight: 700;
+    transition: color .2s ease;
+}
+
+.calls-content .calls-back-link:hover {
+    color: var(--berry-dark);
+}
+
+.calls-content .calls-eyebrow {
+    display: block;
+    margin-top: 18px;
+    color: var(--berry-primary);
+    font-size: .72rem;
+    font-weight: 850;
+    letter-spacing: 1.8px;
+}
+
+.calls-content h1 {
+    margin: 9px 0 7px;
+    color: var(--text-primary);
+    font-size: clamp(1.65rem, 3vw, 2.4rem);
+    font-weight: 800;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+}
+
+.calls-content .text-muted {
+    color: var(--text-secondary) !important;
+}
+
+/* Painéis de informações */
+
+.calls-content .calls-form-panel {
+    min-width: 0;
+    height: auto;
+    margin-bottom: 18px;
+    padding: 25px;
+    background: var(--white);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-medium);
+    box-shadow: var(--shadow-soft);
+    overflow-wrap: anywhere;
+}
+
+.calls-content .calls-form-panel h2 {
+    margin: 0 0 17px;
+    color: var(--text-primary);
+    font-size: 1.12rem;
+    font-weight: 800;
+}
+
+.calls-content .calls-form-panel h2:not(:first-child) {
+    margin-top: 8px;
+}
+
+.calls-content .calls-form-panel p {
+    margin-bottom: 12px;
+    color: var(--text-secondary);
+    font-size: .92rem;
+    line-height: 1.7;
+}
+
+.calls-content .calls-form-panel strong {
+    color: var(--text-primary);
+    font-weight: 800;
+}
+
+.calls-content .calls-form-panel hr {
+    margin: 22px 0;
+    border-color: var(--border-color);
+    opacity: 1;
+}
+
+.calls-content .calls-form-panel ul {
+    padding-left: 20px;
+    margin-bottom: 10px;
+}
+
+.calls-content .calls-form-panel li {
+    margin-bottom: 10px;
+    color: var(--text-primary);
+    font-size: .9rem;
+    line-height: 1.6;
+}
+
+.calls-content .calls-form-panel li small {
+    display: inline-block;
+    margin-left: 4px;
+}
+
+/* Botões */
+
+.calls-content .btn {
+    min-height: 39px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    border-radius: 9px;
+    font-size: .86rem;
+    font-weight: 700;
+    white-space: normal;
+    transition: all .2s ease;
+}
+
+.calls-content .btn-outline-primary {
+    color: var(--berry-primary);
+    border-color: var(--berry-primary);
+}
+
+.calls-content .btn-outline-primary:hover {
+    color: #fff;
+    background: var(--berry-primary);
+    border-color: var(--berry-primary);
+}
+
+.calls-content .btn-outline-secondary {
+    color: #71639E;
+    border-color: #CFC4DF;
+}
+
+.calls-content .btn-outline-secondary:hover {
+    color: #fff;
+    background: #71639E;
+    border-color: #71639E;
+}
+
+/* Histórico */
+
+.calls-content .list-unstyled {
+    padding-left: 0;
+}
+
+.calls-content .list-unstyled li {
+    position: relative;
+    padding: 0 0 16px 18px;
+    border-left: 2px solid var(--berry-light);
+}
+
+.calls-content .list-unstyled li::before {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: -6px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--berry-primary);
+}
+
+.calls-content .list-unstyled li strong {
+    display: block;
+    margin-bottom: 5px;
+}
+
+/* Listagem de arquivados e lixeira */
+
+.calls-content .calls-empty-state {
+    margin-top: 24px;
+    padding: 45px 25px;
+    text-align: center;
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-medium);
+}
+
+.calls-content .calls-empty-state h3 {
+    color: var(--text-primary);
+    font-size: 1.2rem;
+    font-weight: 800;
+}
+
+.calls-content .calls-empty-state p {
+    margin-top: 8px;
+    color: var(--text-secondary);
+}
+
+.calls-content .calls-form-panel h3 {
+    color: var(--text-primary);
+    font-size: 1.08rem;
+    font-weight: 800;
+}
+
+/* Responsividade */
+
+@media (max-width: 992px) {
+    .calls-content {
+        padding: 28px 24px 38px;
+    }
+
+    .calls-content .calls-form-panel {
+        padding: 21px;
+    }
+}
+
+@media (max-width: 768px) {
+    .calls-main {
+        width: 100%;
+        max-width: 100%;
+        margin-left: 0;
+    }
+
+    .calls-content {
+        padding: 24px 17px 35px;
+    }
+
+    .calls-content > .d-flex.justify-content-between {
+        flex-direction: column;
+        align-items: flex-start !important;
+    }
+
+    .calls-content .calls-form-panel {
+        padding: 19px;
+    }
+
+    .calls-content .btn {
+        min-height: 38px;
+    }
+}
+
+@media (max-width: 480px) {
+    .calls-content {
+        padding: 20px 13px 30px;
+    }
+
+    .calls-content .calls-form-panel {
+        padding: 16px;
+        border-radius: 12px;
+    }
+
+    .calls-content h1 {
+        font-size: 1.65rem;
+    }
+
+    .calls-content .d-flex.gap-2 {
+        width: 100%;
+    }
+
+    .calls-content .d-flex.gap-2 form,
+    .calls-content .d-flex.gap-2 > a {
+        flex: 1;
+    }
+}
