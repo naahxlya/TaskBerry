@@ -27,7 +27,6 @@
 
             <!-- CABEÇALHO -->
             <div class="materials-welcome">
-
                 <div>
                     <span class="materials-eyebrow">
                         <i class="bi bi-box-seam"></i>
@@ -41,17 +40,7 @@
                         e registre o consumo do empreendimento.
                     </p>
                 </div>
-
-                <button type="button"
-                        class="dashboard-primary-button"
-                        data-bs-toggle="modal"
-                        data-bs-target="#modalNovoMaterial">
-                    <i class="bi bi-plus-lg"></i>
-                    Novo material
-                </button>
-
             </div>
-
 
             <!-- MENSAGENS -->
             {% with mensagens = get_flashed_messages(with_categories=true) %}
@@ -68,59 +57,342 @@
             {% endwith %}
 
 
-            <!-- INDICADORES -->
-            <div class="materials-stats">
+            <!-- CADASTRO E RESUMO -->
+            <div class="materials-workspace">
 
-                <div class="materials-stat-card">
-                    <div class="materials-stat-icon purple">
-                        <i class="bi bi-boxes"></i>
-                    </div>
-                    <div>
-                        <span>Itens cadastrados</span>
-                        <strong>{{ total_materiais }}</strong>
-                        <small>Materiais diferentes</small>
-                    </div>
-                </div>
+                <!-- FORMULÁRIO FIXO -->
+                <section class="materials-registration-panel">
 
-                <div class="materials-stat-card">
-                    <div class="materials-stat-icon green">
-                        <i class="bi bi-box-seam"></i>
-                    </div>
-                    <div>
-                        <span>Disponíveis</span>
-                        <strong>{{ total_disponiveis }}</strong>
-                        <small>Com saldo em estoque</small>
-                    </div>
-                </div>
+                    <div class="materials-registration-heading">
+                        <div class="materials-registration-icon">
+                            <i class="bi bi-box-seam"></i>
+                        </div>
 
-                <div class="materials-stat-card">
-                    <div class="materials-stat-icon orange">
-                        <i class="bi bi-exclamation-triangle"></i>
+                        <div>
+                            <span>ENTRADA DE ESTOQUE</span>
+                            <h5>Cadastrar material</h5>
+                            <p>Preencha os dados para adicionar um novo item.</p>
+                        </div>
                     </div>
-                    <div>
-                        <span>Estoque baixo</span>
-                        <strong>{{ total_estoque_baixo }}</strong>
-                        <small>Precisam de atenção</small>
-                    </div>
-                </div>
 
-                <div class="materials-stat-card">
-                    <div class="materials-stat-icon lilac">
-                        <i class="bi bi-wallet2"></i>
+                    <form id="formulario-material"
+                          method="POST"
+                          action="{{ url_for('materiais.cadastrar_material') }}"
+                          class="materials-registration-form">
+
+                        <!-- IDENTIFICAÇÃO -->
+                        <div class="materials-form-section">
+                            <h6>
+                                <i class="bi bi-tag me-2"></i>
+                                Identificação
+                            </h6>
+                        </div>
+
+                        <div class="row g-3">
+
+                            <div class="col-md-6">
+                                <label class="form-label">Nome do material *</label>
+                                <input type="text" name="nome"
+                                       class="form-control" maxlength="120"
+                                       required
+                                       placeholder="Ex.: Tinta acrílica branca">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Categoria *</label>
+                                <input type="text" name="categoria"
+                                       class="form-control" maxlength="80"
+                                       required
+                                       placeholder="Ex.: Material de pintura">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Marca</label>
+                                <input type="text" name="marca"
+                                       class="form-control" maxlength="80"
+                                       placeholder="Ex.: Suvinil">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Unidade de medida *</label>
+                                <select name="unidade_medida"
+                                        class="form-select" required>
+                                    <option value="">Selecione</option>
+                                    <option value="unidade">Unidade</option>
+                                    <option value="litros">Litros</option>
+                                    <option value="kg">Quilograma (kg)</option>
+                                    <option value="gramas">Gramas</option>
+                                    <option value="metros">Metros</option>
+                                    <option value="m²">Metro quadrado (m²)</option>
+                                    <option value="m³">Metro cúbico (m³)</option>
+                                    <option value="caixa">Caixa</option>
+                                    <option value="pacote">Pacote</option>
+                                    <option value="rolo">Rolo</option>
+                                    <option value="par">Par</option>
+                                    <option value="outro">Outro</option>
+                                </select>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label">Descrição</label>
+                                <textarea name="descricao"
+                                          class="form-control"
+                                          rows="2" maxlength="500"
+                                          placeholder="Detalhes e características do material..."></textarea>
+                            </div>
+
+                        </div>
+
+
+                        <!-- ESTOQUE INICIAL -->
+                        <div class="materials-form-section mt-4">
+                            <h6>
+                                <i class="bi bi-boxes me-2"></i>
+                                Estoque inicial
+                            </h6>
+                        </div>
+
+                        <div class="row g-3">
+
+                            <div class="col-md-6">
+                                <label class="form-label">
+                                    Capacidade por unidade *
+                                </label>
+
+                                <input type="number"
+                                       name="capacidade_por_unidade"
+                                       class="form-control"
+                                       min="0.01" step="0.01"
+                                       value="1" required>
+
+                                <small class="form-text">
+                                    Ex.: uma lata contém 18 litros.
+                                    Use 1 para unidade simples.
+                                </small>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">
+                                    Quantidade de unidades no estoque *
+                                </label>
+
+                                <input type="number"
+                                       name="quantidade_unidades"
+                                       class="form-control"
+                                       min="0" step="1"
+                                       value="0" required>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">
+                                    Conteúdo restante da última unidade
+                                </label>
+
+                                <select name="percentual_aberto"
+                                        class="form-select">
+
+                                    {% for percentual in range(10, 101, 10) %}
+                                        <option value="{{ percentual }}"
+                                            {% if percentual == 100 %}selected{% endif %}>
+                                            {{ percentual }}% restante
+                                        </option>
+                                    {% endfor %}
+
+                                </select>
+
+                                <small class="form-text">
+                                    Se todas as unidades estiverem inteiras,
+                                    mantenha 100%. Se a última estiver aberta,
+                                    informe quanto ainda resta nela.
+                                </small>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">
+                                    Estoque mínimo (unidades equivalentes)
+                                </label>
+
+                                <input type="number"
+                                       name="estoque_minimo"
+                                       class="form-control"
+                                       min="0" step="0.01"
+                                       value="0">
+                            </div>
+
+                        </div>
+
+
+                        <!-- COMPRA E AQUISIÇÃO -->
+                        <div class="materials-form-section mt-4">
+                            <h6>
+                                <i class="bi bi-receipt me-2"></i>
+                                Compra e aquisição
+                            </h6>
+                        </div>
+
+                        <div class="row g-3">
+
+                            <div class="col-md-6">
+                                <label class="form-label">
+                                    Valor por unidade (R$)
+                                </label>
+
+                                <input type="text"
+                                       name="valor_unitario"
+                                       class="form-control"
+                                       inputmode="decimal"
+                                       placeholder="Ex.: 150,00"
+                                       value="0">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Fornecedor</label>
+
+                                <input type="text"
+                                       name="fornecedor"
+                                       class="form-control"
+                                       maxlength="120"
+                                       placeholder="Nome do fornecedor">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Data da compra</label>
+
+                                <input type="date"
+                                       name="data_compra"
+                                       class="form-control">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">
+                                    Localização no estoque
+                                </label>
+
+                                <input type="text"
+                                       name="localizacao"
+                                       class="form-control"
+                                       maxlength="120"
+                                       placeholder="Ex.: Depósito, prateleira 2">
+                            </div>
+
+                        </div>
+
+
+                        <!-- INFORMAÇÕES ADICIONAIS -->
+                        <div class="materials-form-section mt-4">
+                            <h6>
+                                <i class="bi bi-card-text me-2"></i>
+                                Informações adicionais
+                            </h6>
+                        </div>
+
+                        <textarea name="observacoes"
+                                  class="form-control"
+                                  rows="3" maxlength="1000"
+                                  placeholder="Observações sobre o material..."></textarea>
+
+                        <div class="materials-info-notice mt-3">
+                            <i class="bi bi-info-circle"></i>
+                            O registro da aquisição será armazenado no histórico
+                            de estoque. A integração com o ERP será implementada
+                            na etapa financeira.
+                        </div>
+
+                        <div class="materials-registration-footer">
+                            <button type="reset"
+                                    class="materials-secondary-button">
+                                Limpar formulário
+                            </button>
+
+                            <button type="submit"
+                                    class="materials-primary-button">
+                                <i class="bi bi-check2-circle me-2"></i>
+                                Cadastrar material
+                            </button>
+                        </div>
+
+                    </form>
+
+                </section>
+
+
+                <!-- RESUMO LATERAL -->
+                <aside class="materials-overview">
+
+                    <div class="materials-overview-heading">
+                        <span>VISÃO GERAL</span>
+                        <h5>Resumo do estoque</h5>
+                        <p>Acompanhe a situação dos seus materiais.</p>
                     </div>
-                    <div>
-                        <span>Valor estimado em estoque</span>
+
+                    <div class="materials-overview-card purple">
+                        <div class="materials-overview-icon">
+                            <i class="bi bi-boxes"></i>
+                        </div>
+
+                        <div>
+                            <span>Itens cadastrados</span>
+                            <strong>{{ total_materiais }}</strong>
+                            <small>Materiais diferentes</small>
+                        </div>
+                    </div>
+
+                    <div class="materials-overview-card green">
+                        <div class="materials-overview-icon">
+                            <i class="bi bi-check-circle"></i>
+                        </div>
+
+                        <div>
+                            <span>Disponíveis</span>
+                            <strong>{{ total_disponiveis }}</strong>
+                            <small>Com saldo em estoque</small>
+                        </div>
+                    </div>
+
+                    <div class="materials-overview-card orange">
+                        <div class="materials-overview-icon">
+                            <i class="bi bi-exclamation-triangle"></i>
+                        </div>
+
+                        <div>
+                            <span>Estoque baixo</span>
+                            <strong>{{ total_estoque_baixo }}</strong>
+                            <small>Precisam de atenção</small>
+                        </div>
+                    </div>
+
+                    <div class="materials-overview-value">
+                        <span>
+                            <i class="bi bi-wallet2 me-2"></i>
+                            Valor estimado em estoque
+                        </span>
+
                         <strong>
                             R$ {{ "{:,.2f}".format(valor_total_estoque).replace(",", "X").replace(".", ",").replace("X", ".") }}
                         </strong>
+
                         <small>Baseado no custo cadastrado</small>
                     </div>
-                </div>
+
+                    <div class="materials-overview-tip">
+                        <i class="bi bi-lightbulb"></i>
+
+                        <div>
+                            <strong>Dica de organização</strong>
+
+                            <p>
+                                Mantenha as quantidades e os estoques mínimos
+                                atualizados para evitar falta de materiais.
+                            </p>
+                        </div>
+                    </div>
+
+                </aside>
 
             </div>
 
 
-            <!-- PAINEL DE MATERIAIS -->
+            <!-- ESTOQUE DO EMPREENDIMENTO -->
             <div class="materials-panel">
 
                 <div class="materials-panel-heading">
@@ -142,6 +414,7 @@
 
                     <div class="materials-search">
                         <i class="bi bi-search"></i>
+
                         <input type="search"
                                name="busca"
                                value="{{ busca }}"
@@ -150,6 +423,7 @@
 
                     <select name="categoria" class="form-select">
                         <option value="">Todas as categorias</option>
+
                         {% for item_categoria in categorias %}
                             <option value="{{ item_categoria }}"
                                 {% if categoria_selecionada == item_categoria %}selected{% endif %}>
@@ -160,21 +434,25 @@
 
                     <select name="estoque" class="form-select">
                         <option value="">Todo o estoque</option>
+
                         <option value="disponivel"
                             {% if filtro_estoque == "disponivel" %}selected{% endif %}>
                             Disponíveis
                         </option>
+
                         <option value="baixo"
                             {% if filtro_estoque == "baixo" %}selected{% endif %}>
                             Estoque baixo
                         </option>
+
                         <option value="zerado"
                             {% if filtro_estoque == "zerado" %}selected{% endif %}>
                             Sem estoque
                         </option>
                     </select>
 
-                    <button type="submit" class="materials-filter-button">
+                    <button type="submit"
+                            class="materials-filter-button">
                         Filtrar
                     </button>
 
@@ -252,17 +530,18 @@
                                             <div class="materials-progress-info">
                                                 <span>
                                                     {% if material.percentual_aberto > 0 %}
-                                                        Unidade aberta:
+                                                        Última unidade:
                                                         {{ material.percentual_aberto }}%
+                                                    {% elif material.quantidade_fechada > 0 %}
+                                                        Todas inteiras
                                                     {% else %}
-                                                        Unidades fechadas
+                                                        Sem unidades
                                                     {% endif %}
                                                 </span>
                                             </div>
 
                                             <div class="materials-progress">
-                                                <div style="width: {{ material.percentual_visual }}%;">
-                                                </div>
+                                                <div style="width: {{ material.percentual_visual }}%;"></div>
                                             </div>
                                         </td>
 
@@ -337,30 +616,36 @@
                 {% else %}
 
                     <div class="materials-empty-state">
+
                         <div class="materials-empty-icon">
                             <i class="bi bi-box-seam"></i>
                         </div>
 
                         {% if busca or categoria_selecionada or filtro_estoque %}
+
                             <h5>Nenhum material encontrado</h5>
+
                             <p>
                                 Tente alterar os filtros ou realizar uma nova pesquisa.
                             </p>
+
                         {% else %}
+
                             <h5>Seu estoque começa aqui!</h5>
+
                             <p>
                                 Cadastre tintas, peças, insumos, produtos e outros
                                 materiais utilizados no empreendimento.
                             </p>
 
-                            <button type="button"
-                                    class="dashboard-primary-button"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#modalNovoMaterial">
-                                <i class="bi bi-plus-lg"></i>
+                            <a href="#formulario-material"
+                               class="materials-primary-button">
+                                <i class="bi bi-plus-lg me-2"></i>
                                 Cadastrar primeiro material
-                            </button>
+                            </a>
+
                         {% endif %}
+
                     </div>
 
                 {% endif %}
@@ -406,6 +691,7 @@
                                 <div class="materials-history-description">
                                     <strong>{{ movimento.material_nome }}</strong>
                                     <span>{{ movimento.descricao }}</span>
+
                                     <small>
                                         {{ movimento.responsavel }}
                                         · {{ movimento.data.strftime("%d/%m/%Y %H:%M") }}
@@ -446,216 +732,17 @@
 
 
 <!-- =====================================================
-     MODAL: NOVO MATERIAL
-====================================================== -->
-
-<div class="modal fade" id="modalNovoMaterial" tabindex="-1" aria-hidden="true">
-
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable materials-modal-dialog">
-
-        <div class="modal-content materials-modal">
-
-            <form method="POST"
-                  action="{{ url_for('materiais.cadastrar_material') }}">
-
-                <div class="modal-header">
-                    <div>
-                        <h5 class="modal-title">Cadastrar material</h5>
-                        <p class="text-muted small mb-0">
-                            Informe os dados do material e seu estoque inicial.
-                        </p>
-                    </div>
-                    <button type="button" class="btn-close"
-                            data-bs-dismiss="modal"></button>
-                </div>
-
-                <div class="modal-body">
-
-                    <div class="materials-form-section">
-                        <h6><i class="bi bi-box me-2"></i>Identificação</h6>
-                    </div>
-
-                    <div class="row g-3">
-
-                        <div class="col-md-6">
-                            <label class="form-label">Nome do material *</label>
-                            <input type="text" name="nome"
-                                   class="form-control" maxlength="120" required
-                                   placeholder="Ex.: Tinta acrílica branca">
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label">Categoria *</label>
-                            <input type="text" name="categoria"
-                                   class="form-control" maxlength="80" required
-                                   placeholder="Ex.: Material de pintura">
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label">Marca</label>
-                            <input type="text" name="marca"
-                                   class="form-control" maxlength="80">
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label">Unidade de medida *</label>
-                            <select name="unidade_medida" class="form-select" required>
-                                <option value="">Selecione</option>
-                                <option value="unidade">Unidade</option>
-                                <option value="litros">Litros</option>
-                                <option value="kg">Quilograma (kg)</option>
-                                <option value="gramas">Gramas</option>
-                                <option value="metros">Metros</option>
-                                <option value="m²">Metro quadrado (m²)</option>
-                                <option value="m³">Metro cúbico (m³)</option>
-                                <option value="caixa">Caixa</option>
-                                <option value="pacote">Pacote</option>
-                                <option value="rolo">Rolo</option>
-                                <option value="par">Par</option>
-                                <option value="outro">Outro</option>
-                            </select>
-                        </div>
-
-                        <div class="col-12">
-                            <label class="form-label">Descrição</label>
-                            <textarea name="descricao" class="form-control"
-                                      rows="2" maxlength="500"
-                                      placeholder="Detalhes e características do material..."></textarea>
-                        </div>
-
-                    </div>
-
-
-                    <div class="materials-form-section mt-4">
-                        <h6><i class="bi bi-boxes me-2"></i>Estoque inicial</h6>
-                    </div>
-
-                    <div class="row g-3">
-
-                        <div class="col-md-6">
-                            <label class="form-label">Capacidade por unidade *</label>
-                            <input type="number" name="capacidade_por_unidade"
-                                   class="form-control" min="0.01" step="0.01"
-                                   value="1" required>
-                            <small class="form-text">
-                                Ex.: uma lata contém 18 litros. Use 1 para unidade simples.
-                            </small>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label">Unidades fechadas</label>
-                            <input type="number" name="quantidade_fechada"
-                                   class="form-control" min="0" step="1"
-                                   value="0" required>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label">Percentual da unidade aberta</label>
-                            <select name="percentual_aberto" class="form-select">
-                                {% for percentual in range(0, 101, 10) %}
-                                    <option value="{{ percentual }}"
-                                        {% if percentual == 0 %}selected{% endif %}>
-                                        {{ percentual }}% restante
-                                    </option>
-                                {% endfor %}
-                            </select>
-                            <small class="form-text">
-                                Informe o conteúdo restante da unidade aberta, se houver.
-                            </small>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label">Estoque mínimo (unidades equivalentes)</label>
-                            <input type="number" name="estoque_minimo"
-                                   class="form-control" min="0" step="0.01"
-                                   value="0">
-                        </div>
-
-                    </div>
-
-
-                    <div class="materials-form-section mt-4">
-                        <h6><i class="bi bi-receipt me-2"></i>Compra e aquisição</h6>
-                    </div>
-
-                    <div class="row g-3">
-
-                        <div class="col-md-6">
-                            <label class="form-label">Valor por unidade (R$)</label>
-                            <input type="text" name="valor_unitario"
-                                   class="form-control" inputmode="decimal"
-                                   placeholder="Ex.: 150,00" value="0">
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label">Fornecedor</label>
-                            <input type="text" name="fornecedor"
-                                   class="form-control" maxlength="120">
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label">Data da compra</label>
-                            <input type="date" name="data_compra"
-                                   class="form-control">
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label">Localização no estoque</label>
-                            <input type="text" name="localizacao"
-                                   class="form-control" maxlength="120"
-                                   placeholder="Ex.: Depósito, prateleira 2">
-                        </div>
-
-                    </div>
-
-
-                    <div class="materials-form-section mt-4">
-                        <h6><i class="bi bi-card-text me-2"></i>Informações adicionais</h6>
-                    </div>
-
-                    <textarea name="observacoes" class="form-control"
-                              rows="3" maxlength="1000"
-                              placeholder="Observações sobre o material..."></textarea>
-
-                    <div class="materials-info-notice mt-3">
-                        <i class="bi bi-info-circle"></i>
-                        O registro da aquisição será armazenado no histórico de estoque.
-                        A integração com o ERP será implementada na etapa financeira.
-                    </div>
-
-                </div>
-
-                <div class="modal-footer">
-                    <button type="button" class="materials-secondary-button"
-                            data-bs-dismiss="modal">
-                        Cancelar
-                    </button>
-
-                    <button type="submit" class="materials-primary-button">
-                        <i class="bi bi-check2-circle me-2"></i>
-                        Cadastrar material
-                    </button>
-                </div>
-
-            </form>
-
-        </div>
-
-    </div>
-
-</div>
-
-
-<!-- =====================================================
-     MODAIS INDIVIDUAIS
+     MODAIS DOS MATERIAIS
 ====================================================== -->
 
 {% for material in materiais %}
 
 
-<!-- VISUALIZAR -->
-<div class="modal fade" id="modalVisualizar{{ material._id }}"
-     tabindex="-1" aria-hidden="true">
+<!-- VISUALIZAR MATERIAL -->
+<div class="modal fade"
+     id="modalVisualizar{{ material._id }}"
+     tabindex="-1"
+     aria-hidden="true">
 
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable materials-modal-dialog">
 
@@ -668,7 +755,9 @@
                         Informações e situação atual do estoque.
                     </p>
                 </div>
-                <button type="button" class="btn-close"
+
+                <button type="button"
+                        class="btn-close"
                         data-bs-dismiss="modal"></button>
             </div>
 
@@ -678,42 +767,55 @@
                     <div class="materials-detail-icon">
                         <i class="bi bi-box-seam"></i>
                     </div>
+
                     <div>
                         <h4>{{ material.nome }}</h4>
-                        <p>{{ material.categoria }} · {{ material.marca or "Marca não informada" }}</p>
+                        <p>
+                            {{ material.categoria }} ·
+                            {{ material.marca or "Marca não informada" }}
+                        </p>
                     </div>
                 </div>
 
                 <div class="materials-detail-grid">
 
                     <div>
-                        <span>Unidades fechadas</span>
-                        <strong>{{ material.quantidade_fechada }}</strong>
+                        <span>Quantidade de unidades</span>
+                        <strong>{{ material.quantidade_unidades }}</strong>
                     </div>
 
                     <div>
-                        <span>Unidade aberta</span>
-                        <strong>{{ material.percentual_aberto }}% restante</strong>
+                        <span>Conteúdo restante da última unidade</span>
+                        <strong>{{ material.percentual_formulario }}%</strong>
                     </div>
 
                     <div>
                         <span>Saldo equivalente</span>
-                        <strong>{{ "%.2f"|format(material.saldo_equivalente)|replace(".", ",") }}</strong>
+                        <strong>
+                            {{ "%.2f"|format(material.saldo_equivalente)|replace(".", ",") }}
+                        </strong>
                     </div>
 
                     <div>
                         <span>Capacidade por unidade</span>
-                        <strong>{{ material.capacidade_por_unidade }} {{ material.unidade_medida }}</strong>
+                        <strong>
+                            {{ material.capacidade_por_unidade }}
+                            {{ material.unidade_medida }}
+                        </strong>
                     </div>
 
                     <div>
                         <span>Valor unitário</span>
-                        <strong>R$ {{ "{:,.2f}".format(material.valor_unitario).replace(",", "X").replace(".", ",").replace("X", ".") }}</strong>
+                        <strong>
+                            R$ {{ "{:,.2f}".format(material.valor_unitario).replace(",", "X").replace(".", ",").replace("X", ".") }}
+                        </strong>
                     </div>
 
                     <div>
                         <span>Valor estimado em estoque</span>
-                        <strong>R$ {{ "{:,.2f}".format(material.valor_estoque).replace(",", "X").replace(".", ",").replace("X", ".") }}</strong>
+                        <strong>
+                            R$ {{ "{:,.2f}".format(material.valor_estoque).replace(",", "X").replace(".", ",").replace("X", ".") }}
+                        </strong>
                     </div>
 
                     <div>
@@ -746,22 +848,21 @@
 
                 <div class="materials-detail-description mt-4">
                     <strong>Descrição</strong>
-                    <p>{{ material.descricao or "Nenhuma descrição informada." }}</p>
+                    <p>
+                        {{ material.descricao or "Nenhuma descrição informada." }}
+                    </p>
 
                     <strong>Observações</strong>
-                    <p>{{ material.observacoes or "Nenhuma observação cadastrada." }}</p>
-                </div>
-
-                <div class="materials-info-notice">
-                    <i class="bi bi-info-circle"></i>
-                    O material ainda não está vinculado a uma obra.
-                    Essa associação será feita na tela de chamados.
+                    <p>
+                        {{ material.observacoes or "Nenhuma observação cadastrada." }}
+                    </p>
                 </div>
 
             </div>
 
             <div class="modal-footer">
-                <button type="button" class="materials-secondary-button"
+                <button type="button"
+                        class="materials-secondary-button"
                         data-bs-dismiss="modal">
                     Fechar
                 </button>
@@ -774,9 +875,11 @@
 </div>
 
 
-<!-- EDITAR -->
-<div class="modal fade" id="modalEditar{{ material._id }}"
-     tabindex="-1" aria-hidden="true">
+<!-- EDITAR MATERIAL -->
+<div class="modal fade"
+     id="modalEditar{{ material._id }}"
+     tabindex="-1"
+     aria-hidden="true">
 
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable materials-modal-dialog">
 
@@ -792,7 +895,9 @@
                             Atualize os dados do cadastro.
                         </p>
                     </div>
-                    <button type="button" class="btn-close"
+
+                    <button type="button"
+                            class="btn-close"
                             data-bs-dismiss="modal"></button>
                 </div>
 
@@ -802,98 +907,136 @@
 
                         <div class="col-md-6">
                             <label class="form-label">Nome *</label>
-                            <input type="text" name="nome" class="form-control"
-                                   value="{{ material.nome }}" required>
+                            <input type="text"
+                                   name="nome"
+                                   class="form-control"
+                                   value="{{ material.nome }}"
+                                   required>
                         </div>
 
                         <div class="col-md-6">
                             <label class="form-label">Categoria *</label>
-                            <input type="text" name="categoria" class="form-control"
-                                   value="{{ material.categoria }}" required>
+                            <input type="text"
+                                   name="categoria"
+                                   class="form-control"
+                                   value="{{ material.categoria }}"
+                                   required>
                         </div>
 
                         <div class="col-md-6">
                             <label class="form-label">Marca</label>
-                            <input type="text" name="marca" class="form-control"
+                            <input type="text"
+                                   name="marca"
+                                   class="form-control"
                                    value="{{ material.marca or '' }}">
                         </div>
 
                         <div class="col-md-6">
                             <label class="form-label">Unidade de medida *</label>
-                            <input type="text" name="unidade_medida" class="form-control"
-                                   value="{{ material.unidade_medida }}" required>
+                            <input type="text"
+                                   name="unidade_medida"
+                                   class="form-control"
+                                   value="{{ material.unidade_medida }}"
+                                   required>
                         </div>
 
                         <div class="col-md-6">
                             <label class="form-label">Capacidade por unidade *</label>
-                            <input type="number" name="capacidade_por_unidade"
-                                   class="form-control" min="0.01" step="0.01"
-                                   value="{{ material.capacidade_por_unidade }}" required>
+                            <input type="number"
+                                   name="capacidade_por_unidade"
+                                   class="form-control"
+                                   min="0.01"
+                                   step="0.01"
+                                   value="{{ material.capacidade_por_unidade }}"
+                                   required>
                         </div>
 
                         <div class="col-md-6">
-                            <label class="form-label">Unidades fechadas</label>
-                            <input type="number" name="quantidade_fechada"
-                                   class="form-control" min="0" step="1"
-                                   value="{{ material.quantidade_fechada }}" required>
+                            <label class="form-label">
+                                Quantidade de unidades no estoque *
+                            </label>
+
+                            <input type="number"
+                                   name="quantidade_unidades"
+                                   class="form-control"
+                                   min="0"
+                                   step="1"
+                                   value="{{ material.quantidade_unidades }}"
+                                   required>
                         </div>
 
                         <div class="col-md-6">
-                            <label class="form-label">Percentual restante da unidade aberta</label>
-                            <select name="percentual_aberto" class="form-select">
-                                {% for percentual in range(0, 101, 10) %}
+                            <label class="form-label">
+                                Conteúdo restante da última unidade
+                            </label>
+
+                            <select name="percentual_aberto"
+                                    class="form-select">
+
+                                {% for percentual in range(10, 101, 10) %}
                                     <option value="{{ percentual }}"
-                                        {% if material.percentual_aberto == percentual %}selected{% endif %}>
+                                        {% if material.percentual_formulario == percentual %}selected{% endif %}>
                                         {{ percentual }}%
                                     </option>
                                 {% endfor %}
+
                             </select>
                         </div>
 
                         <div class="col-md-6">
                             <label class="form-label">Estoque mínimo</label>
-                            <input type="number" name="estoque_minimo"
-                                   class="form-control" min="0" step="0.01"
+                            <input type="number"
+                                   name="estoque_minimo"
+                                   class="form-control"
+                                   min="0"
+                                   step="0.01"
                                    value="{{ material.estoque_minimo }}">
                         </div>
 
                         <div class="col-md-6">
                             <label class="form-label">Valor unitário (R$)</label>
-                            <input type="text" name="valor_unitario"
-                                   class="form-control" inputmode="decimal"
+                            <input type="text"
+                                   name="valor_unitario"
+                                   class="form-control"
+                                   inputmode="decimal"
                                    value="{{ material.valor_unitario }}">
                         </div>
 
                         <div class="col-md-6">
                             <label class="form-label">Fornecedor</label>
-                            <input type="text" name="fornecedor"
+                            <input type="text"
+                                   name="fornecedor"
                                    class="form-control"
                                    value="{{ material.fornecedor or '' }}">
                         </div>
 
                         <div class="col-md-6">
                             <label class="form-label">Data da compra</label>
-                            <input type="date" name="data_compra"
+                            <input type="date"
+                                   name="data_compra"
                                    class="form-control"
                                    value="{{ material.data_compra.strftime('%Y-%m-%d') if material.data_compra else '' }}">
                         </div>
 
                         <div class="col-md-6">
                             <label class="form-label">Localização</label>
-                            <input type="text" name="localizacao"
+                            <input type="text"
+                                   name="localizacao"
                                    class="form-control"
                                    value="{{ material.localizacao or '' }}">
                         </div>
 
                         <div class="col-12">
                             <label class="form-label">Descrição</label>
-                            <textarea name="descricao" class="form-control"
+                            <textarea name="descricao"
+                                      class="form-control"
                                       rows="2">{{ material.descricao or '' }}</textarea>
                         </div>
 
                         <div class="col-12">
                             <label class="form-label">Observações</label>
-                            <textarea name="observacoes" class="form-control"
+                            <textarea name="observacoes"
+                                      class="form-control"
                                       rows="2">{{ material.observacoes or '' }}</textarea>
                         </div>
 
@@ -901,19 +1044,22 @@
 
                     <div class="materials-info-notice mt-3">
                         <i class="bi bi-info-circle"></i>
-                        Alterar o saldo manualmente gera uma movimentação de ajuste
-                        no histórico. Para consumo normal, utilize a opção Registrar consumo.
+                        A alteração manual da quantidade gera um ajuste
+                        no histórico. Para registrar o uso normal,
+                        utilize a opção Registrar consumo.
                     </div>
 
                 </div>
 
                 <div class="modal-footer">
-                    <button type="button" class="materials-secondary-button"
+                    <button type="button"
+                            class="materials-secondary-button"
                             data-bs-dismiss="modal">
                         Cancelar
                     </button>
 
-                    <button type="submit" class="materials-primary-button">
+                    <button type="submit"
+                            class="materials-primary-button">
                         <i class="bi bi-check2-circle me-2"></i>
                         Salvar alterações
                     </button>
@@ -928,9 +1074,11 @@
 </div>
 
 
-<!-- CONSUMO -->
-<div class="modal fade" id="modalConsumo{{ material._id }}"
-     tabindex="-1" aria-hidden="true">
+<!-- REGISTRAR CONSUMO -->
+<div class="modal fade"
+     id="modalConsumo{{ material._id }}"
+     tabindex="-1"
+     aria-hidden="true">
 
     <div class="modal-dialog modal-dialog-centered">
 
@@ -942,9 +1090,13 @@
                 <div class="modal-header">
                     <div>
                         <h5 class="modal-title">Registrar consumo</h5>
-                        <p class="text-muted small mb-0">{{ material.nome }}</p>
+                        <p class="text-muted small mb-0">
+                            {{ material.nome }}
+                        </p>
                     </div>
-                    <button type="button" class="btn-close"
+
+                    <button type="button"
+                            class="btn-close"
                             data-bs-dismiss="modal"></button>
                 </div>
 
@@ -952,6 +1104,7 @@
 
                     <div class="materials-consumption-summary">
                         <span>Saldo atual equivalente</span>
+
                         <strong>
                             {{ "%.2f"|format(material.saldo_equivalente)|replace(".", ",") }}
                             {{ material.unidade_medida }}
@@ -959,9 +1112,13 @@
 
                         <small>
                             {% if material.percentual_aberto > 0 %}
-                                Unidade aberta com {{ material.percentual_aberto }}% restante.
+                                Última unidade aberta com
+                                {{ material.percentual_aberto }}% restante.
+                            {% elif material.quantidade_fechada > 0 %}
+                                Todas as unidades estão inteiras.
+                                Uma será aberta para registrar o consumo.
                             {% else %}
-                                Não há unidade aberta. Uma unidade fechada será aberta para o consumo.
+                                Não há unidades disponíveis.
                             {% endif %}
                         </small>
                     </div>
@@ -970,29 +1127,38 @@
                         Percentual consumido da unidade *
                     </label>
 
-                    <select name="percentual_consumido" class="form-select" required>
+                    <select name="percentual_consumido"
+                            class="form-select"
+                            required>
+
                         <option value="">Selecione</option>
+
                         {% for percentual in range(10, 101, 10) %}
-                            <option value="{{ percentual }}">{{ percentual }}%</option>
+                            <option value="{{ percentual }}">
+                                {{ percentual }}%
+                            </option>
                         {% endfor %}
+
                     </select>
 
                     <div class="materials-info-notice mt-3">
                         <i class="bi bi-info-circle"></i>
-                        O percentual será descontado da unidade aberta.
-                        Se o conteúdo atual for menor que o consumo informado,
+                        O percentual será descontado da unidade em uso.
+                        Se o consumo for maior que o conteúdo restante,
                         o sistema não permitirá a operação.
                     </div>
 
                 </div>
 
                 <div class="modal-footer">
-                    <button type="button" class="materials-secondary-button"
+                    <button type="button"
+                            class="materials-secondary-button"
                             data-bs-dismiss="modal">
                         Cancelar
                     </button>
 
-                    <button type="submit" class="materials-primary-button">
+                    <button type="submit"
+                            class="materials-primary-button">
                         Confirmar consumo
                     </button>
                 </div>
@@ -1006,9 +1172,11 @@
 </div>
 
 
-<!-- ARQUIVAR -->
-<div class="modal fade" id="modalArquivar{{ material._id }}"
-     tabindex="-1" aria-hidden="true">
+<!-- ARQUIVAR MATERIAL -->
+<div class="modal fade"
+     id="modalArquivar{{ material._id }}"
+     tabindex="-1"
+     aria-hidden="true">
 
     <div class="modal-dialog modal-dialog-centered">
 
@@ -1019,7 +1187,9 @@
 
                 <div class="modal-header">
                     <h5 class="modal-title">Arquivar material</h5>
-                    <button type="button" class="btn-close"
+
+                    <button type="button"
+                            class="btn-close"
                             data-bs-dismiss="modal"></button>
                 </div>
 
@@ -1039,12 +1209,14 @@
                 </div>
 
                 <div class="modal-footer">
-                    <button type="button" class="materials-secondary-button"
+                    <button type="button"
+                            class="materials-secondary-button"
                             data-bs-dismiss="modal">
                         Cancelar
                     </button>
 
-                    <button type="submit" class="materials-danger-button">
+                    <button type="submit"
+                            class="materials-danger-button">
                         Confirmar arquivamento
                     </button>
                 </div>

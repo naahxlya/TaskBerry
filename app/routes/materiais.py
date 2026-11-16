@@ -106,25 +106,75 @@ def registrar_movimentacao(
     db["movimentacoes_estoque"].insert_one(registro)
 
 
+# =====================================================
+# CÁLCULO E CONVERSÃO DO ESTOQUE
+# =====================================================
+
 def calcular_saldo(quantidade_fechada, percentual_aberto):
-    return round(
-        quantidade_fechada + (percentual_aberto / 100),
-        2
-    )
+    """
+    Calcula o saldo equivalente.
+
+    quantidade_fechada:
+        Quantidade de unidades inteiras e fechadas.
+
+    percentual_aberto:
+        Percentual restante de uma unidade que já foi aberta.
+        Zero significa que não existe unidade aberta.
+    """
+
+    saldo = quantidade_fechada + (percentual_aberto / 100)
+
+    return round(max(saldo, 0), 2)
+
+
+def converter_estoque_do_formulario(quantidade_unidades, percentual):
+    """
+    Converte os valores apresentados no formulário para o formato
+    interno já utilizado pelo banco de dados.
+
+    Na interface:
+        5 unidades e 100% = 5 unidades inteiras.
+        5 unidades e 75% = 4 inteiras e uma aberta com 75%.
+        5 unidades e 50% = 4 inteiras e uma aberta com 50%.
+
+    No banco:
+        Unidades fechadas e percentual da unidade aberta são
+        armazenados separadamente.
+    """
+
+    if quantidade_unidades <= 0:
+        return 0, 0
+
+    if percentual >= 100:
+        return quantidade_unidades, 0
+
+    return quantidade_unidades - 1, percentual
 
 
 def formatar_material(material):
-    material["saldo_equivalente"] = calcular_saldo(
-        material.get("quantidade_fechada", 0),
-        material.get("percentual_aberto", 0)
-    )
-    
-    percentual_aberto = material.get("percentual_aberto", 0)
     quantidade_fechada = material.get("quantidade_fechada", 0)
+    percentual_aberto = material.get("percentual_aberto", 0)
+
+    material["saldo_equivalente"] = calcular_saldo(
+        quantidade_fechada,
+        percentual_aberto
+    )
+
+    # Quantidade total apresentada ao usuário.
+    material["quantidade_unidades"] = (
+        quantidade_fechada + (1 if percentual_aberto > 0 else 0)
+    )
+
+    # Percentual apresentado no formulário.
+    # Quando não há unidade aberta, todas estão inteiras.
+    material["percentual_formulario"] = (
+        percentual_aberto if percentual_aberto > 0
+        else 100 if quantidade_fechada > 0
+        else 0
+    )
 
     material["percentual_visual"] = (
-        percentual_aberto
-        if percentual_aberto > 0
+        percentual_aberto if percentual_aberto > 0
         else 100 if quantidade_fechada > 0
         else 0
     )
@@ -163,6 +213,10 @@ def validar_percentual(valor):
     return percentual
 
 
+# =====================================================
+# LISTAGEM DE MATERIAIS
+# =====================================================
+
 @materiais_bp.route("/materiais")
 def listar_materiais():
     usuario_id = obter_usuario_id()
@@ -184,6 +238,7 @@ def listar_materiais():
 
     if busca:
         termo = re.escape(busca)
+
         filtro["$or"] = [
             {"nome": {"$regex": termo, "$options": "i"}},
             {"marca": {"$regex": termo, "$options": "i"}},
@@ -237,11 +292,13 @@ def listar_materiais():
             item for item in materiais
             if item["estoque_baixo"]
         ]
+
     elif filtro_estoque == "disponivel":
         materiais = [
             item for item in materiais
             if item["saldo_equivalente"] > 0
         ]
+
     elif filtro_estoque == "zerado":
         materiais = [
             item for item in materiais
@@ -270,9 +327,16 @@ def listar_materiais():
     )
 
 
+# =====================================================
+# CADASTRAR MATERIAL
+# =====================================================
+
 @materiais_bp.route("/materiais/novo", methods=["POST"])
 def cadastrar_material():
     usuario_id = obter_usuario_id()
+
+    if not usuario_id:
+        return redirect(url_for("inicio"))
 
     nome = request.form.get("nome", "").strip()
     categoria = request.form.get("categoria", "").strip()
@@ -284,36 +348,51 @@ def cadastrar_material():
     observacoes = request.form.get("observacoes", "").strip()
 
     try:
-        quantidade_fechada = converter_inteiro(
-            request.form.get("quantidade_fechada")
+        quantidade_unidades = converter_inteiro(
+            request.form.get("quantidade_unidades", "0")
         )
-        percentual_aberto = validar_percentual(
-            request.form.get("percentual_aberto", "0")
+
+        percentual_formulario = validar_percentual(
+            request.form.get("percentual_aberto", "100")
         )
+
+        quantidade_fechada, percentual_aberto = (
+            converter_estoque_do_formulario(
+                quantidade_unidades,
+                percentual_formulario
+            )
+        )
+
         capacidade = converter_numero(
             request.form.get("capacidade_por_unidade", "1"),
             permitir_zero=False
         )
+
         valor_unitario = converter_numero(
             request.form.get("valor_unitario")
         )
+
         estoque_minimo = converter_numero(
             request.form.get("estoque_minimo", "0")
         )
+
         data_compra = converter_data(
             request.form.get("data_compra", "")
         )
 
     except (InvalidOperation, ValueError, TypeError):
-        flash("Confira os valores numéricos, percentuais e datas.", "danger")
+        flash(
+            "Confira os valores numéricos, percentuais e datas.",
+            "danger"
+        )
         return voltar_para_lista()
 
     if not nome or not categoria or not unidade_medida:
-        flash("Nome, categoria e unidade de medida são obrigatórios.", "danger")
+        flash(
+            "Nome, categoria e unidade de medida são obrigatórios.",
+            "danger"
+        )
         return voltar_para_lista()
-
-    if not usuario_id:
-        return redirect(url_for("inicio"))
 
     novo_material = {
         "usuario_id": usuario_id,
@@ -378,6 +457,10 @@ def cadastrar_material():
     return voltar_para_lista()
 
 
+# =====================================================
+# EDITAR MATERIAL
+# =====================================================
+
 @materiais_bp.route(
     "/materiais/<material_id>/editar",
     methods=["POST"]
@@ -399,32 +482,50 @@ def editar_material(material_id):
     observacoes = request.form.get("observacoes", "").strip()
 
     try:
-        quantidade_fechada = converter_inteiro(
-            request.form.get("quantidade_fechada")
+        quantidade_unidades = converter_inteiro(
+            request.form.get("quantidade_unidades", "0")
         )
-        percentual_aberto = validar_percentual(
-            request.form.get("percentual_aberto", "0")
+
+        percentual_formulario = validar_percentual(
+            request.form.get("percentual_aberto", "100")
         )
+
+        quantidade_fechada, percentual_aberto = (
+            converter_estoque_do_formulario(
+                quantidade_unidades,
+                percentual_formulario
+            )
+        )
+
         capacidade = converter_numero(
             request.form.get("capacidade_por_unidade", "1"),
             permitir_zero=False
         )
+
         valor_unitario = converter_numero(
             request.form.get("valor_unitario")
         )
+
         estoque_minimo = converter_numero(
             request.form.get("estoque_minimo", "0")
         )
+
         data_compra = converter_data(
             request.form.get("data_compra", "")
         )
 
     except (InvalidOperation, ValueError, TypeError):
-        flash("Confira os valores numéricos, percentuais e datas.", "danger")
+        flash(
+            "Confira os valores numéricos, percentuais e datas.",
+            "danger"
+        )
         return voltar_para_lista()
 
     if not nome or not categoria or not unidade_medida:
-        flash("Nome, categoria e unidade de medida são obrigatórios.", "danger")
+        flash(
+            "Nome, categoria e unidade de medida são obrigatórios.",
+            "danger"
+        )
         return voltar_para_lista()
 
     saldo_anterior = calcular_saldo(
@@ -487,6 +588,10 @@ def editar_material(material_id):
     return voltar_para_lista()
 
 
+# =====================================================
+# REGISTRAR CONSUMO
+# =====================================================
+
 @materiais_bp.route(
     "/materiais/<material_id>/consumir",
     methods=["POST"]
@@ -502,8 +607,12 @@ def consumir_material(material_id):
         percentual_consumido = validar_percentual(
             request.form.get("percentual_consumido")
         )
+
     except (InvalidOperation, ValueError):
-        flash("Selecione um percentual válido, de 10 em 10%.", "danger")
+        flash(
+            "Selecione um percentual válido, de 10 em 10%.",
+            "danger"
+        )
         return voltar_para_lista()
 
     if percentual_consumido <= 0:
@@ -513,10 +622,14 @@ def consumir_material(material_id):
     percentual_atual = material.get("percentual_aberto", 0)
     quantidade_fechada = material.get("quantidade_fechada", 0)
 
-    # Se não houver unidade aberta, abre uma unidade fechada.
+    # Se não existe unidade aberta, abre uma unidade fechada.
     if percentual_atual == 0:
+
         if quantidade_fechada <= 0:
-            flash("Não há unidades disponíveis para consumo.", "warning")
+            flash(
+                "Não há unidades disponíveis para consumo.",
+                "warning"
+            )
             return voltar_para_lista()
 
         quantidade_fechada -= 1
@@ -526,12 +639,14 @@ def consumir_material(material_id):
 
     if novo_percentual < 0:
         flash(
-            "O consumo informado é maior que o conteúdo disponível na unidade aberta.",
+            "O consumo informado é maior que o conteúdo disponível "
+            "na unidade aberta.",
             "warning"
         )
         return voltar_para_lista()
 
-    # Quando a unidade é totalmente consumida, não permanece aberta.
+    # Quando a unidade é totalmente consumida, ela deixa de existir
+    # como unidade aberta. A próxima será aberta no próximo consumo.
     if novo_percentual == 0:
         novo_percentual = 0
 
@@ -553,6 +668,7 @@ def consumir_material(material_id):
         )
 
         material_atualizado = dict(material)
+
         material_atualizado.update({
             "quantidade_fechada": quantidade_fechada,
             "percentual_aberto": novo_percentual
@@ -570,14 +686,24 @@ def consumir_material(material_id):
             }
         )
 
-        flash("Consumo registrado e estoque atualizado!", "success")
+        flash(
+            "Consumo registrado e estoque atualizado!",
+            "success"
+        )
 
     except Exception:
         current_app.logger.exception("Erro ao registrar consumo.")
-        flash("Não foi possível registrar o consumo.", "danger")
+        flash(
+            "Não foi possível registrar o consumo.",
+            "danger"
+        )
 
     return voltar_para_lista()
 
+
+# =====================================================
+# ARQUIVAR MATERIAL
+# =====================================================
 
 @materiais_bp.route(
     "/materiais/<material_id>/excluir",
@@ -622,6 +748,9 @@ def excluir_material(material_id):
 
     except Exception:
         current_app.logger.exception("Erro ao arquivar material.")
-        flash("Não foi possível arquivar o material.", "danger")
+        flash(
+            "Não foi possível arquivar o material.",
+            "danger"
+        )
 
     return voltar_para_lista()

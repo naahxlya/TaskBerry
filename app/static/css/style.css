@@ -4719,3 +4719,317 @@ a {
         grid-template-columns: 1fr;
     }
 }
+
+/* =========================================
+   TASKBERRY - NOVO LAYOUT DE MATERIAIS
+========================================= */
+
+.materials-workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(250px, .8fr);
+    align-items: start;
+    gap: 22px;
+    margin: 8px 0 25px;
+}
+
+/* PAINEL DE CADASTRO */
+
+.materials-registration-panel {
+    min-width: 0;
+    padding: 25px;
+    background: #FFFFFF;
+    border: 1px solid var(--tb-border);
+    border-radius: 16px;
+    box-shadow: 0 4px 18px rgba(60, 40, 80, .035);
+}
+
+.materials-registration-heading {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 25px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--tb-border);
+}
+
+.materials-registration-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 14px;
+    background: #F0E9F9;
+    color: var(--tb-purple);
+    font-size: 1.35rem;
+}
+
+.materials-registration-heading span,
+.materials-overview-heading span {
+    color: var(--tb-purple);
+    font-size: .65rem;
+    font-weight: 900;
+    letter-spacing: 1px;
+}
+
+.materials-registration-heading h5 {
+    margin: 3px 0;
+    color: var(--tb-text);
+    font-size: 1.05rem;
+    font-weight: 900;
+}
+
+.materials-registration-heading p {
+    margin: 0;
+    color: var(--tb-muted);
+    font-size: .75rem;
+}
+
+.materials-registration-form .form-label {
+    margin-bottom: 6px;
+    color: #574C65;
+    font-size: .76rem;
+    font-weight: 850;
+}
+
+.materials-registration-form .form-control,
+.materials-registration-form .form-select {
+    min-height: 43px;
+    border: 1px solid #E8E2ED;
+    border-radius: 9px;
+    background-color: #FCFBFD;
+    color: var(--tb-text);
+    font-family: inherit;
+    font-size: .79rem;
+    box-shadow: none;
+}
+
+.materials-registration-form textarea.form-control {
+    min-height: 75px;
+}
+
+.materials-registration-form .form-control:focus,
+.materials-registration-form .form-select:focus {
+    border-color: #A582D0;
+    box-shadow: 0 0 0 3px rgba(112, 65, 184, .08);
+}
+
+
+.materials-registration-form .form-text {
+    display: block;
+    margin-top: 5px;
+    color: var(--tb-muted);
+    font-size: .67rem;
+    line-height: 1.4;
+}
+
+/* BOTÕES DO CADASTRO */
+
+.materials-registration-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+/* RESUMO LATERAL */
+
+.materials-overview {
+    position: sticky;
+    top: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+    padding: 22px;
+    background: #FFFFFF;
+    border: 1px solid var(--tb-border);
+    border-radius: 16px;
+    box-shadow: 0 4px 18px rgba(60, 40, 80, .035);
+}
+
+.materials-overview-heading {
+    margin-bottom: 5px;
+}
+
+.materials-overview-heading h5 {
+    margin: 5px 0;
+    color: var(--tb-text);
+    font-size: 1rem;
+    font-weight: 900;
+}
+
+.materials-overview-heading p {
+    margin: 0;
+    color: var(--tb-muted);
+    font-size: .74rem;
+}
+
+.materials-overview-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px;
+    border: 1px solid transparent;
+    border-radius: 12px;
+}
+
+.materials-overview-card.purple {
+    background: #F5F0FC;
+    border-color: #EDE3FA;
+}
+
+.materials-overview-card.green {
+    background: #EFF8F2;
+    border-color: #E0F0E5;
+}
+
+.materials-overview-card.orange {
+    background: #FFF6EB;
+    border-color: #F8EAD6;
+}
+
+.materials-overview-icon {
+    width: 39px;
+    height: 39px;
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 11px;
+    background: rgba(255, 255, 255, .8);
+    font-size: 1rem;
+}
+
+.materials-overview-card.purple .materials-overview-icon {
+    color: #7041B8;
+}
+
+.materials-overview-card.green .materials-overview-icon {
+    color: #25834D;
+}
+
+.materials-overview-card.orange .materials-overview-icon {
+    color: #C17A25;
+}
+
+.materials-overview-card > div:last-child {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.materials-overview-card span {
+    color: #756C80;
+    font-size: .71rem;
+    font-weight: 750;
+}
+
+.materials-overview-card strong {
+    color: var(--tb-text);
+    font-size: 1.25rem;
+    font-weight: 900;
+}
+
+.materials-overview-value {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 3px;
+    padding: 17px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #7041B8, #8C60C5);
+    color: #FFFFFF;
+}
+
+.materials-overview-value span {
+    font-size: .72rem;
+    font-weight: 700;
+    opacity: .9;
+}
+
+.materials-overview-value strong {
+    font-size: 1.35rem;
+    font-weight: 900;
+    overflow-wrap: anywhere;
+}
+
+.materials-overview-value small {
+    font-size: .65rem;
+    opacity: .8;
+}
+
+.materials-overview-tip {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-top: 3px;
+    padding: 13px;
+    border: 1px solid #EAE2F5;
+    border-radius: 11px;
+    background: #FAF8FD;
+}
+
+.materials-overview-tip > i {
+    color: var(--tb-purple);
+    font-size: 1rem;
+}
+
+.materials-overview-tip strong {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--tb-text);
+    font-size: .72rem;
+    font-weight: 900;
+}
+
+.materials-overview-tip p {
+    margin: 0;
+    color: var(--tb-muted);
+    font-size: .68rem;
+    line-height: 1.5;
+}
+
+/* RESPONSIVIDADE DO NOVO LAYOUT */
+
+@media (max-width: 1100px) {
+    .materials-workspace {
+        grid-template-columns: minmax(0, 1.2fr) minmax(230px, .8fr);
+        gap: 15px;
+    }
+
+    .materials-registration-panel,
+    .materials-overview {
+        padding: 18px;
+    }
+}
+
+@media (max-width: 768px) {
+    .materials-workspace {
+        grid-template-columns: 1fr;
+    }
+    .materials-registration-footer {
+        flex-direction: column-reverse;
+        align-items: stretch;
+    }
+
+    .materials-registration-footer button {
+        width: 100%;
+    }
+
+    .materials-overview {
+        position: static;
+        order: -1;
+    }
+
+    .materials-registration-panel {
+        padding: 19px;
+    }
+
+    .materials-overview {
+        padding: 19px;
+    }
+}
