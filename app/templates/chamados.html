@@ -1,16 +1,34 @@
 {% extends "index.html" %}
 
-{% block title %}Chamados e obras | TaskBerry{% endblock %}
+{% block title %}
+    Chamados e obras | TaskBerry
+{% endblock %}
+
+{% block extra_css %}
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/tom-select@2.4.3/dist/css/tom-select.bootstrap5.min.css"
+    >
+     <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/tom-select@2.4.3/dist/css/tom-select.bootstrap5.min.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.19/index.global.min.css"
+    >
+{% endblock %}
 
 {% block content %}
 
-<div class="dashboard-layout">
+<div class="dashboard-layout calls-layout">
 
     {% include 'components/sidebar.html' %}
 
-    <main class="dashboard-main">
+    <main class="dashboard-main calls-main">
 
-        <header class="dashboard-header">
+        <header class="dashboard-header calls-header">
             <button
                 class="sidebar-toggle"
                 id="sidebarToggle"
@@ -19,13 +37,1954 @@
             >
                 <i class="bi bi-list"></i>
             </button>
+
+            <div class="calls-header-context">
+                <span>GESTÃO OPERACIONAL</span>
+                <strong>Chamados e obras</strong>
+            </div>
         </header>
 
-        <section class="dashboard-content">
+        <section class="dashboard-content calls-content">
+
+            <!-- MENSAGENS DO SISTEMA -->
+
+            {% with mensagens = get_flashed_messages(with_categories=true) %}
+                {% if mensagens %}
+                    <div class="calls-flashes">
+                        {% for categoria, mensagem in mensagens %}
+                            <div class="alert alert-{{ categoria }} alert-dismissible fade show" role="alert">
+                                {{ mensagem }}
+
+                                <button
+                                    type="button"
+                                    class="btn-close"
+                                    data-bs-dismiss="alert"
+                                    aria-label="Fechar"
+                                ></button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+
+            {% if chamado_edicao %}
+
+                <!-- =====================================
+                     FORMULÁRIO DE EDIÇÃO
+                ====================================== -->
+
+                <section class="calls-page-heading">
+                    <div>
+                        <a
+                            href="{{ url_for('chamados.listar_chamados') }}"
+                            class="calls-back-link"
+                        >
+                            <i class="bi bi-arrow-left"></i>
+                            Voltar para chamados
+                        </a>
+
+                        <span class="calls-eyebrow">EDIÇÃO DE REGISTRO</span>
+
+                        <h1>Editar chamado</h1>
+
+                        <p>
+                            Atualize as informações da obra sem perder
+                            o histórico de alterações.
+                        </p>
+                    </div>
+
+                    <span class="calls-number">
+                        {{ chamado_edicao.numero }}
+                    </span>
+                </section>
+
+                <form
+                    method="POST"
+                    action="{{ url_for(
+                        'chamados.atualizar_chamado',
+                        chamado_id=chamado_edicao._id
+                    ) }}"
+                    class="calls-form"
+                >
+
+                    <section class="calls-form-panel">
+
+                        <div class="calls-section-heading">
+                            <div class="calls-section-icon">
+                                <i class="bi bi-clipboard2-check"></i>
+                            </div>
+
+                            <div>
+                                <h2>Identificação do serviço</h2>
+                                <p>Informações principais do chamado.</p>
+                            </div>
+                        </div>
+
+                        <div class="calls-form-grid">
+
+                            <div class="calls-field calls-field-full">
+                                <label for="titulo">Nome da obra ou serviço *</label>
+
+                                <input
+                                    type="text"
+                                    id="titulo"
+                                    name="titulo"
+                                    class="form-control"
+                                    value="{{ chamado_edicao.titulo }}"
+                                    placeholder="Ex.: Pintura externa de residência"
+                                    required
+                                >
+                            </div>
+
+                            <div class="calls-field">
+                                <label for="cliente_id">Cliente *</label>
+
+                                <select
+                                    id="cliente_id"
+                                    name="cliente_id"
+                                    class="form-select calls-tom-select"
+                                    required
+                                >
+                                    <option value="">Selecione um cliente</option>
+
+                                    {% for cliente in clientes %}
+                                        <option
+                                            value="{{ cliente._id }}"
+                                            {% if chamado_edicao.cliente_id == cliente._id|string %}selected{% endif %}
+                                        >
+                                            {{ cliente.nome }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="calls-field">
+                                <label for="responsavel_pagamento">
+                                    Responsável pelo pagamento
+                                </label>
+
+                                <input
+                                    type="text"
+                                    id="responsavel_pagamento"
+                                    name="responsavel_pagamento"
+                                    class="form-control"
+                                    value="{{ chamado_edicao.responsavel_pagamento }}"
+                                    placeholder="Nome do responsável"
+                                >
+                            </div>
+
+                            <div class="calls-field">
+                                <label for="prioridade">Prioridade *</label>
+
+                                <select
+                                    id="prioridade"
+                                    name="prioridade"
+                                    class="form-select"
+                                    required
+                                >
+                                    {% for chave, nome in prioridades.items() %}
+                                        <option
+                                            value="{{ chave }}"
+                                            {% if chamado_edicao.prioridade == chave %}selected{% endif %}
+                                        >
+                                            {{ nome }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="calls-field">
+                                <label for="status">Situação *</label>
+
+                                <select
+                                    id="status"
+                                    name="status"
+                                    class="form-select"
+                                    required
+                                >
+                                    {% for chave, nome in status_opcoes.items() %}
+                                        <option
+                                            value="{{ chave }}"
+                                            {% if chamado_edicao.status == chave %}selected{% endif %}
+                                        >
+                                            {{ nome }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="calls-field calls-field-full">
+                                <label for="descricao">Descrição do serviço</label>
+
+                                <textarea
+                                    id="descricao"
+                                    name="descricao"
+                                    class="form-control"
+                                    rows="4"
+                                    placeholder="Descreva o que será realizado..."
+                                >{{ chamado_edicao.descricao }}</textarea>
+                            </div>
+
+                        </div>
+
+                    </section>
+
+
+                    <section class="calls-form-panel">
+
+                        <div class="calls-section-heading">
+                            <div class="calls-section-icon">
+                                <i class="bi bi-geo-alt"></i>
+                            </div>
+
+                            <div>
+                                <h2>Localização da obra</h2>
+                                <p>Endereço onde o serviço será executado.</p>
+                            </div>
+                        </div>
+
+                        {% set endereco = chamado_edicao.endereco or {} %}
+
+                        <div class="calls-form-grid">
+
+                            <div class="calls-field calls-field-full">
+                                <label for="rua">Rua ou avenida</label>
+                                <input
+                                    type="text"
+                                    id="rua"
+                                    name="rua"
+                                    class="form-control"
+                                    value="{{ endereco.get('rua', '') }}"
+                                >
+                            </div>
+
+                            <div class="calls-field">
+                                <label for="numero">Número</label>
+                                <input
+                                    type="text"
+                                    id="numero"
+                                    name="numero"
+                                    class="form-control"
+                                    value="{{ endereco.get('numero', '') }}"
+                                >
+                            </div>
+
+                            <div class="calls-field">
+                                <label for="complemento">Complemento</label>
+                                <input
+                                    type="text"
+                                    id="complemento"
+                                    name="complemento"
+                                    class="form-control"
+                                    value="{{ endereco.get('complemento', '') }}"
+                                >
+                            </div>
+
+                            <div class="calls-field">
+                                <label for="bairro">Bairro</label>
+                                <input
+                                    type="text"
+                                    id="bairro"
+                                    name="bairro"
+                                    class="form-control"
+                                    value="{{ endereco.get('bairro', '') }}"
+                                >
+                            </div>
+
+                            <div class="calls-field">
+                                <label for="cidade">Cidade</label>
+                                <input
+                                    type="text"
+                                    id="cidade"
+                                    name="cidade"
+                                    class="form-control"
+                                    value="{{ endereco.get('cidade', '') }}"
+                                >
+                            </div>
+
+                            <div class="calls-field">
+                                <label for="estado">Estado</label>
+                                <input
+                                    type="text"
+                                    id="estado"
+                                    name="estado"
+                                    class="form-control"
+                                    maxlength="2"
+                                    value="{{ endereco.get('estado', '') }}"
+                                >
+                            </div>
+
+                            <div class="calls-field">
+                                <label for="cep">CEP</label>
+                                <input
+                                    type="text"
+                                    id="cep"
+                                    name="cep"
+                                    class="form-control"
+                                    value="{{ endereco.get('cep', '') }}"
+                                >
+                            </div>
+
+                        </div>
+
+                    </section>
+
+
+                    <section class="calls-form-panel">
+
+                        <div class="calls-section-heading">
+                            <div class="calls-section-icon">
+                                <i class="bi bi-calendar3"></i>
+                            </div>
+
+                            <div>
+                                <h2>Programação</h2>
+                                <p>Planejamento e prazo de execução.</p>
+                            </div>
+                        </div>
+
+                        <div class="calls-form-grid">
+
+                            <div class="calls-field">
+                                <label for="data_inicio">Data de início *</label>
+                                <input
+                                    type="date"
+                                    id="data_inicio"
+                                    name="data_inicio"
+                                    class="form-control"
+                                    value="{{ chamado_edicao.data_inicio_input }}"
+                                    required
+                                >
+                            </div>
+
+                            <div class="calls-field">
+                                <label for="previsao_termino">
+                                    Previsão de término *
+                                </label>
+                                <input
+                                    type="date"
+                                    id="previsao_termino"
+                                    name="previsao_termino"
+                                    class="form-control"
+                                    value="{{ chamado_edicao.previsao_termino_input }}"
+                                    required
+                                >
+                            </div>
+
+                            <div class="calls-field calls-field-full">
+                                <label for="funcionarios_ids">
+                                    Equipe prevista
+                                </label>
+
+                                <select
+                                    id="funcionarios_ids"
+                                    name="funcionarios_ids"
+                                    class="form-select calls-tom-select"
+                                    multiple
+                                >
+                                    {% for funcionario in funcionarios %}
+                                        <option
+                                            value="{{ funcionario._id }}"
+                                            {% for membro in chamado_edicao.equipe_prevista %}
+                                                {% if membro.funcionario_id == funcionario._id|string %}selected{% endif %}
+                                            {% endfor %}
+                                        >
+                                            {{ funcionario.nome }}
+                                            {% if funcionario.cargo %}
+                                                · {{ funcionario.cargo }}
+                                            {% endif %}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+
+                                <small>
+                                    Selecione os funcionários previstos para a obra.
+                                    A presença real será registrada por dia em uma
+                                    etapa posterior.
+                                </small>
+                            </div>
+
+                        </div>
+
+                    </section>
+
+
+                    <section class="calls-form-panel">
+
+                        <div class="calls-section-heading">
+                            <div class="calls-section-icon">
+                                <i class="bi bi-cash-stack"></i>
+                            </div>
+
+                            <div>
+                                <h2>Valor contratado</h2>
+                                <p>Valores iniciais do serviço.</p>
+                            </div>
+                        </div>
+
+                        <div class="calls-form-grid">
+
+                            <div class="calls-field">
+                                <label for="valor_contratado">
+                                    Valor contratado (R$)
+                                </label>
+
+                                <input
+                                    type="text"
+                                    id="valor_contratado"
+                                    name="valor_contratado"
+                                    class="form-control"
+                                    value="{{ '%.2f'|format(chamado_edicao.valor_contratado or 0) }}"
+                                    placeholder="0,00"
+                                >
+                            </div>
+
+                            <div class="calls-field">
+                                <label for="desconto">Desconto (R$)</label>
+
+                                <input
+                                    type="text"
+                                    id="desconto"
+                                    name="desconto"
+                                    class="form-control"
+                                    value="{{ '%.2f'|format(chamado_edicao.desconto or 0) }}"
+                                    placeholder="0,00"
+                                >
+                            </div>
+
+                        </div>
+
+                        <div class="calls-financial-note">
+                            <i class="bi bi-info-circle"></i>
+                            Os recebimentos e despesas serão registrados
+                            em uma etapa própria, com integração ao ERP.
+                        </div>
+
+                    </section>
+
+
+                    <section class="calls-form-panel">
+
+                        <div class="calls-section-heading">
+                            <div class="calls-section-icon">
+                                <i class="bi bi-journal-text"></i>
+                            </div>
+
+                            <div>
+                                <h2>Observações internas</h2>
+                                <p>Informações úteis para a equipe.</p>
+                            </div>
+                        </div>
+
+                        <div class="calls-field">
+                            <label for="observacoes">Observações</label>
+
+                            <textarea
+                                id="observacoes"
+                                name="observacoes"
+                                class="form-control"
+                                rows="4"
+                                placeholder="Informações adicionais..."
+                            >{{ chamado_edicao.observacoes }}</textarea>
+                        </div>
+
+                    </section>
+
+
+                    <div class="calls-form-actions">
+                        <a
+                            href="{{ url_for('chamados.listar_chamados') }}"
+                            class="calls-button calls-button-light"
+                        >
+                            Cancelar
+                        </a>
+
+                        <button
+                            type="submit"
+                            class="calls-button calls-button-primary"
+                        >
+                            <i class="bi bi-check2-circle"></i>
+                            Salvar alterações
+                        </button>
+                    </div>
+
+                </form>
+
+
+            {% else %}
+
+                <!-- =====================================
+                     VISÃO GERAL
+                ====================================== -->
+
+                <section class="calls-hero">
+
+                    <div class="calls-hero-copy">
+
+                        <span class="calls-eyebrow">
+                            CENTRAL DE OPERAÇÕES
+                        </span>
+
+                        <h1>
+                            Obras em movimento<span>.</span>
+                        </h1>
+
+                        <p>
+                            Organize serviços, acompanhe prazos e mantenha
+                            cada atendimento sob controle.
+                        </p>
+
+                        <div class="calls-hero-actions">
+                            <a
+                                href="#novo-chamado"
+                                class="calls-button calls-button-primary"
+                            >
+                                <i class="bi bi-plus-lg"></i>
+                                Novo chamado
+                            </a>
+
+                            <a
+                                href="#lista-chamados"
+                                class="calls-button calls-button-light"
+                            >
+                                <i class="bi bi-list-ul"></i>
+                                Ver chamados
+                            </a>
+                        </div>
+
+                    </div>
+
+                    <div class="calls-hero-art" aria-hidden="true">
+                        <div class="calls-art-circle calls-art-circle-one"></div>
+                        <div class="calls-art-circle calls-art-circle-two"></div>
+
+                        <div class="calls-art-card">
+                            <i class="bi bi-clipboard2-check"></i>
+                            <span>Planejamento</span>
+                            <strong>em andamento</strong>
+                            <div class="calls-art-progress">
+                                <span></span>
+                            </div>
+                        </div>
+
+                        <div class="calls-art-mini">
+                            <i class="bi bi-calendar-check"></i>
+                            <span>Agenda organizada</span>
+                        </div>
+                    </div>
+
+                </section>
+
+
+                <!-- INDICADORES -->
+
+                <section class="calls-metrics">
+
+                    <article class="calls-metric-card">
+                        <div class="calls-metric-icon purple">
+                            <i class="bi bi-clipboard-data"></i>
+                        </div>
+
+                        <div>
+                            <span>Chamados no mês</span>
+                            <strong>{{ total_mes }}</strong>
+                            <small>Registros da competência atual</small>
+                        </div>
+                    </article>
+
+                    <article class="calls-metric-card">
+                        <div class="calls-metric-icon blue">
+                            <i class="bi bi-arrow-repeat"></i>
+                        </div>
+
+                        <div>
+                            <span>Em andamento</span>
+                            <strong>{{ em_andamento }}</strong>
+                            <small>Serviços em execução</small>
+                        </div>
+                    </article>
+
+                    <article class="calls-metric-card">
+                        <div class="calls-metric-icon orange">
+                            <i class="bi bi-hourglass-split"></i>
+                        </div>
+
+                        <div>
+                            <span>Aguardando</span>
+                            <strong>{{ aguardando }}</strong>
+                            <small>Dependem de alguma ação</small>
+                        </div>
+                    </article>
+
+                    <article class="calls-metric-card">
+                        <div class="calls-metric-icon green">
+                            <i class="bi bi-check2-circle"></i>
+                        </div>
+
+                        <div>
+                            <span>Concluídos</span>
+                            <strong>{{ concluidos }}</strong>
+                            <small>Finalizados neste mês</small>
+                        </div>
+                    </article>
+
+                </section>
+
+
+                <!-- VALOR CONTRATADO -->
+
+                <section class="calls-month-summary">
+                    <div>
+                        <span>VALOR CONTRATADO NA COMPETÊNCIA ATUAL</span>
+                        <strong>
+                            R$ {{ "%.2f"|format(valor_contratado_mes)|replace(".", ",") }}
+                        </strong>
+                        <small>
+                            Soma dos valores finais dos chamados registrados
+                            neste mês, incluindo os concluídos.
+                        </small>
+                    </div>
+
+                    <i class="bi bi-graph-up-arrow"></i>
+                </section>
+
+
+    <!-- =====================================
+        AGENDA DIÁRIA E CALENDÁRIO
+    ====================================== -->
+
+    <section class="calls-agenda-section" id="agenda-obras">
+
+        <div class="calls-agenda-heading">
+            <div>
+                <span class="calls-eyebrow">PLANEJAMENTO DE EXECUÇÃO</span>
+                <h2>Agenda de obras</h2>
+                <p>
+                    Visualize os serviços programados e acompanhe
+                    a ocupação da equipe ao longo do mês.
+                </p>
+            </div>
+
+            <div class="calls-agenda-date">
+                <i class="bi bi-calendar-week"></i>
+                <span id="calls-today-label">Carregando data...</span>
+            </div>
+        </div>
+
+
+        <!-- AGENDA DO DIA -->
+
+        <div class="calls-daily-panel">
+
+            <div class="calls-daily-heading">
+
+                <div>
+                    <span class="calls-eyebrow">ACOMPANHAMENTO DIÁRIO</span>
+                    <h3 id="calls-selected-date-title">Obras de hoje</h3>
+                    <p id="calls-selected-date-subtitle">
+                        Serviços programados para a data selecionada.
+                    </p>
+                </div>
+
+                <div class="calls-daily-navigation">
+                    <button
+                        type="button"
+                        id="calls-previous-day"
+                        class="calls-calendar-nav"
+                        aria-label="Dia anterior"
+                    >
+                        <i class="bi bi-chevron-left"></i>
+                    </button>
+
+                    <button
+                        type="button"
+                        id="calls-today"
+                        class="calls-calendar-today"
+                    >
+                        Hoje
+                    </button>
+
+                    <button
+                        type="button"
+                        id="calls-next-day"
+                        class="calls-calendar-nav"
+                        aria-label="Próximo dia"
+                    >
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+                </div>
+
+            </div>
+
+            <div id="calls-daily-events" class="calls-daily-events">
+
+                <div class="calls-agenda-loading">
+                    <span class="spinner-border spinner-border-sm"></span>
+                    Carregando obras...
+                </div>
+
+            </div>
+
+            <button
+                type="button"
+                id="calls-next-business-day"
+                class="calls-next-business-day"
+                hidden
+            >
+                <i class="bi bi-calendar2-plus"></i>
+                Ir para segunda-feira
+            </button>
+
+        </div>
+
+
+        <!-- CALENDÁRIO MENSAL -->
+
+        <div class="calls-calendar-panel">
+
+            <div class="calls-calendar-panel-heading">
+
+                <div>
+                    <h3>Visão do calendário</h3>
+                    <p>
+                        Clique em uma obra para consultar ou editar
+                        seus dados.
+                    </p>
+                </div>
+
+                <div class="calls-calendar-legend">
+                    <span>
+                        <i class="legend-blue"></i>
+                        Em andamento
+                    </span>
+
+                    <span>
+                        <i class="legend-orange"></i>
+                        Aguardando
+                    </span>
+
+                    <span>
+                        <i class="legend-green"></i>
+                        Concluído
+                    </span>
+
+                    <span>
+                        <i class="legend-gray"></i>
+                        A iniciar
+                    </span>
+                </div>
+
+            </div>
+
+            <div id="calls-calendar"></div>
+
+        </div>
+
+    </section>
+
+                <!-- LISTAGEM -->
+
+                <section class="calls-list-section" id="lista-chamados">
+
+                    <div class="calls-list-heading">
+
+                        <div>
+                            <span class="calls-eyebrow">ACOMPANHAMENTO</span>
+                            <h2>Seus chamados</h2>
+                            <p>
+                                Consulte os registros por mês, situação
+                                ou prioridade.
+                            </p>
+                        </div>
+
+                        <span class="calls-results-count">
+                            {{ chamados|length }} registro(s)
+                        </span>
+
+                    </div>
+
+
+                    <form
+                        method="GET"
+                        action="{{ url_for('chamados.listar_chamados') }}"
+                        class="calls-filters"
+                    >
+
+                        <div class="calls-filter-search">
+                            <i class="bi bi-search"></i>
+
+                            <input
+                                type="search"
+                                name="busca"
+                                value="{{ busca }}"
+                                placeholder="Buscar por chamado, cliente ou endereço..."
+                            >
+                        </div>
+
+                        <select name="competencia" class="form-select">
+                            <option value="todos" {% if competencia == 'todos' %}selected{% endif %}>
+                                Todos os meses
+                            </option>
+
+                            {% for mes in meses %}
+                                <option
+                                    value="{{ mes.valor }}"
+                                    {% if competencia == mes.valor %}selected{% endif %}
+                                >
+                                    {{ mes.nome }}
+                                </option>
+                            {% endfor %}
+                        </select>
+
+                        <select name="status" class="form-select">
+                            <option value="">Todas as situações</option>
+
+                            {% for chave, nome in status_opcoes.items() %}
+                                <option
+                                    value="{{ chave }}"
+                                    {% if status_filtro == chave %}selected{% endif %}
+                                >
+                                    {{ nome }}
+                                </option>
+                            {% endfor %}
+                        </select>
+
+                        <select name="prioridade" class="form-select">
+                            <option value="">Todas as prioridades</option>
+
+                            {% for chave, nome in prioridades.items() %}
+                                <option
+                                    value="{{ chave }}"
+                                    {% if prioridade_filtro == chave %}selected{% endif %}
+                                >
+                                    {{ nome }}
+                                </option>
+                            {% endfor %}
+                        </select>
+
+                        <button type="submit" class="calls-filter-button">
+                            Filtrar
+                        </button>
+
+                    </form>
+
+
+                    {% if chamados %}
+
+                        <div class="calls-card-list">
+
+                            {% for chamado in chamados %}
+
+                                <article class="calls-work-card">
+
+                                    <div class="calls-work-card-main">
+
+                                        <div class="calls-work-card-top">
+
+                                            <span class="calls-number">
+                                                {{ chamado.numero }}
+                                            </span>
+
+                                            <div class="calls-work-badges">
+
+                                                <span class="calls-status status-{{ chamado.status }}">
+                                                    {{ chamado.status_label }}
+                                                </span>
+
+                                                <span class="calls-priority priority-{{ chamado.prioridade }}">
+                                                    {{ chamado.prioridade_label }}
+                                                </span>
+
+                                            </div>
+
+                                        </div>
+
+
+                                        <h3>{{ chamado.titulo }}</h3>
+
+                                        <p class="calls-work-client">
+                                            <i class="bi bi-person"></i>
+                                            {{ chamado.cliente_nome }}
+                                        </p>
+
+                                        {% if chamado.endereco_resumido %}
+                                            <p class="calls-work-address">
+                                                <i class="bi bi-geo-alt"></i>
+                                                {{ chamado.endereco_resumido }}
+                                            </p>
+                                        {% endif %}
+
+
+                                        <div class="calls-work-details">
+
+                                            <div>
+                                                <span>Início</span>
+                                                <strong>
+                                                    {{ chamado.data_inicio.strftime('%d/%m/%Y') if chamado.data_inicio else 'Não informado' }}
+                                                </strong>
+                                            </div>
+
+                                            <div>
+                                                <span>Previsão de término</span>
+                                                <strong>
+                                                    {{ chamado.previsao_termino.strftime('%d/%m/%Y') if chamado.previsao_termino else 'Não informado' }}
+                                                </strong>
+                                            </div>
+
+                                            <div>
+                                                <span>Equipe prevista</span>
+                                                <strong>
+                                                    {{ chamado.equipe_prevista|length }}
+                                                    funcionário(s)
+                                                </strong>
+                                            </div>
+
+                                            <div>
+                                                <span>Valor contratado</span>
+                                                <strong>
+                                                    R$ {{ "%.2f"|format(chamado.valor_final or 0)|replace(".", ",") }}
+                                                </strong>
+                                            </div>
+
+                                        </div>
+
+                                    </div>
+
+
+                                    <div class="calls-work-card-actions">
+
+                                        <a
+                                            href="{{ url_for(
+                                                'chamados.editar_chamado',
+                                                chamado_id=chamado._id
+                                            ) }}"
+                                            class="calls-icon-button"
+                                            title="Editar chamado"
+                                            aria-label="Editar chamado"
+                                        >
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+
+                                        <form
+                                            method="POST"
+                                            action="{{ url_for(
+                                                'chamados.atualizar_situacao',
+                                                chamado_id=chamado._id
+                                            ) }}"
+                                            class="calls-status-form"
+                                        >
+
+                                            <label for="status-{{ chamado._id }}">
+                                                Atualizar situação
+                                            </label>
+
+                                            <select
+                                                id="status-{{ chamado._id }}"
+                                                name="status"
+                                                class="form-select"
+                                            >
+                                                {% for chave, nome in status_opcoes.items() %}
+                                                    <option
+                                                        value="{{ chave }}"
+                                                        {% if chamado.status == chave %}selected{% endif %}
+                                                    >
+                                                        {{ nome }}
+                                                    </option>
+                                                {% endfor %}
+                                            </select>
+
+                                        </form>
+
+                                    </div>
+
+                                </article>
+
+                            {% endfor %}
+
+                        </div>
+
+                    {% else %}
+
+                        <div class="calls-empty-state">
+
+                            <div class="calls-empty-icon">
+                                <i class="bi bi-clipboard2-plus"></i>
+                            </div>
+
+                            <h3>Nenhum chamado encontrado</h3>
+
+                            <p>
+                                Não há registros para os filtros selecionados.
+                                Você pode cadastrar uma nova obra ou consultar
+                                outra competência.
+                            </p>
+
+                            <a
+                                href="#novo-chamado"
+                                class="calls-button calls-button-primary"
+                            >
+                                <i class="bi bi-plus-lg"></i>
+                                Cadastrar primeiro chamado
+                            </a>
+
+                        </div>
+
+                    {% endif %}
+
+                </section>
+
+
+                <!-- CADASTRO -->
+
+                <section class="calls-register-section" id="novo-chamado">
+
+                    <div class="calls-register-heading">
+
+                        <div>
+                            <span class="calls-eyebrow">NOVO REGISTRO</span>
+                            <h2>Cadastrar uma obra</h2>
+                            <p>
+                                Preencha os dados principais para organizar
+                                o novo atendimento.
+                            </p>
+                        </div>
+
+                        <div class="calls-register-heading-icon">
+                            <i class="bi bi-plus-square"></i>
+                        </div>
+
+                    </div>
+
+
+                    {% if clientes %}
+
+                        <form
+                            method="POST"
+                            action="{{ url_for('chamados.cadastrar_chamado') }}"
+                            class="calls-form"
+                        >
+
+                            <section class="calls-form-panel">
+
+                                <div class="calls-section-heading">
+                                    <div class="calls-section-icon">
+                                        <i class="bi bi-clipboard2-check"></i>
+                                    </div>
+
+                                    <div>
+                                        <h2>Identificação do serviço</h2>
+                                        <p>Informações principais do chamado.</p>
+                                    </div>
+                                </div>
+
+                                <div class="calls-form-grid">
+
+                                    <div class="calls-field calls-field-full">
+                                        <label for="novo_titulo">
+                                            Nome da obra ou serviço *
+                                        </label>
+
+                                        <input
+                                            type="text"
+                                            id="novo_titulo"
+                                            name="titulo"
+                                            class="form-control"
+                                            placeholder="Ex.: Pintura externa de residência"
+                                            required
+                                        >
+                                    </div>
+
+                                    <div class="calls-field">
+                                        <label for="novo_cliente_id">Cliente *</label>
+
+                                        <select
+                                            id="novo_cliente_id"
+                                            name="cliente_id"
+                                            class="form-select calls-tom-select"
+                                            required
+                                        >
+                                            <option value="">Selecione um cliente</option>
+
+                                            {% for cliente in clientes %}
+                                                <option value="{{ cliente._id }}">
+                                                    {{ cliente.nome }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                    <div class="calls-field">
+                                        <label for="novo_responsavel">
+                                            Responsável pelo pagamento
+                                        </label>
+
+                                        <input
+                                            type="text"
+                                            id="novo_responsavel"
+                                            name="responsavel_pagamento"
+                                            class="form-control"
+                                            placeholder="Se diferente do cliente"
+                                        >
+                                    </div>
+
+                                    <div class="calls-field">
+                                        <label for="nova_prioridade">Prioridade *</label>
+
+                                        <select
+                                            id="nova_prioridade"
+                                            name="prioridade"
+                                            class="form-select"
+                                            required
+                                        >
+                                            {% for chave, nome in prioridades.items() %}
+                                                <option
+                                                    value="{{ chave }}"
+                                                    {% if chave == 'normal' %}selected{% endif %}
+                                                >
+                                                    {{ nome }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                    <div class="calls-field">
+                                        <label for="novo_status">Situação *</label>
+
+                                        <select
+                                            id="novo_status"
+                                            name="status"
+                                            class="form-select"
+                                            required
+                                        >
+                                            {% for chave, nome in status_opcoes.items() %}
+                                                <option
+                                                    value="{{ chave }}"
+                                                    {% if chave == 'a_iniciar' %}selected{% endif %}
+                                                >
+                                                    {{ nome }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                    <div class="calls-field calls-field-full">
+                                        <label for="nova_descricao">
+                                            Descrição do serviço
+                                        </label>
+
+                                        <textarea
+                                            id="nova_descricao"
+                                            name="descricao"
+                                            class="form-control"
+                                            rows="4"
+                                            placeholder="Descreva o que será realizado..."
+                                        ></textarea>
+                                    </div>
+
+                                </div>
+
+                            </section>
+
+
+                            <section class="calls-form-panel">
+
+                                <div class="calls-section-heading">
+                                    <div class="calls-section-icon">
+                                        <i class="bi bi-geo-alt"></i>
+                                    </div>
+
+                                    <div>
+                                        <h2>Localização da obra</h2>
+                                        <p>Endereço onde o serviço será executado.</p>
+                                    </div>
+                                </div>
+
+                                <div class="calls-form-grid">
+
+                                    <div class="calls-field calls-field-full">
+                                        <label for="nova_rua">Rua ou avenida</label>
+                                        <input
+                                            type="text"
+                                            id="nova_rua"
+                                            name="rua"
+                                            class="form-control"
+                                        >
+                                    </div>
+
+                                    <div class="calls-field">
+                                        <label for="novo_numero">Número</label>
+                                        <input
+                                            type="text"
+                                            id="novo_numero"
+                                            name="numero"
+                                            class="form-control"
+                                        >
+                                    </div>
+
+                                    <div class="calls-field">
+                                        <label for="novo_complemento">Complemento</label>
+                                        <input
+                                            type="text"
+                                            id="novo_complemento"
+                                            name="complemento"
+                                            class="form-control"
+                                        >
+                                    </div>
+
+                                    <div class="calls-field">
+                                        <label for="novo_bairro">Bairro</label>
+                                        <input
+                                            type="text"
+                                            id="novo_bairro"
+                                            name="bairro"
+                                            class="form-control"
+                                        >
+                                    </div>
+
+                                    <div class="calls-field">
+                                        <label for="nova_cidade">Cidade</label>
+                                        <input
+                                            type="text"
+                                            id="nova_cidade"
+                                            name="cidade"
+                                            class="form-control"
+                                        >
+                                    </div>
+
+                                    <div class="calls-field">
+                                        <label for="novo_estado">Estado</label>
+                                        <input
+                                            type="text"
+                                            id="novo_estado"
+                                            name="estado"
+                                            class="form-control"
+                                            maxlength="2"
+                                        >
+                                    </div>
+
+                                    <div class="calls-field">
+                                        <label for="novo_cep">CEP</label>
+                                        <input
+                                            type="text"
+                                            id="novo_cep"
+                                            name="cep"
+                                            class="form-control"
+                                        >
+                                    </div>
+
+                                </div>
+
+                            </section>
+
+
+                            <section class="calls-form-panel">
+
+                                <div class="calls-section-heading">
+                                    <div class="calls-section-icon">
+                                        <i class="bi bi-calendar3"></i>
+                                    </div>
+
+                                    <div>
+                                        <h2>Programação e equipe</h2>
+                                        <p>Defina o período e os funcionários previstos.</p>
+                                    </div>
+                                </div>
+
+                                <div class="calls-form-grid">
+
+                                    <div class="calls-field">
+                                        <label for="novo_inicio">Data de início *</label>
+                                        <input
+                                            type="date"
+                                            id="novo_inicio"
+                                            name="data_inicio"
+                                            class="form-control"
+                                            required
+                                        >
+                                    </div>
+
+                                    <div class="calls-field">
+                                        <label for="novo_termino">
+                                            Previsão de término *
+                                        </label>
+                                        <input
+                                            type="date"
+                                            id="novo_termino"
+                                            name="previsao_termino"
+                                            class="form-control"
+                                            required
+                                        >
+                                    </div>
+
+                                    <div class="calls-field calls-field-full">
+                                        <label for="nova_equipe">
+                                            Equipe prevista
+                                        </label>
+
+                                        <select
+                                            id="nova_equipe"
+                                            name="funcionarios_ids"
+                                            class="form-select calls-tom-select"
+                                            multiple
+                                        >
+                                            {% for funcionario in funcionarios %}
+                                                <option value="{{ funcionario._id }}">
+                                                    {{ funcionario.nome }}
+                                                    {% if funcionario.cargo %}
+                                                        · {{ funcionario.cargo }}
+                                                    {% endif %}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+
+                                        <small>
+                                            A presença real será registrada por dia
+                                            em uma etapa posterior.
+                                        </small>
+                                    </div>
+
+                                </div>
+
+                            </section>
+
+
+                            <section class="calls-form-panel">
+
+                                <div class="calls-section-heading">
+                                    <div class="calls-section-icon">
+                                        <i class="bi bi-cash-stack"></i>
+                                    </div>
+
+                                    <div>
+                                        <h2>Valor contratado</h2>
+                                        <p>Defina o valor inicial do serviço.</p>
+                                    </div>
+                                </div>
+
+                                <div class="calls-form-grid">
+
+                                    <div class="calls-field">
+                                        <label for="novo_valor">
+                                            Valor contratado (R$)
+                                        </label>
+
+                                        <input
+                                            type="text"
+                                            id="novo_valor"
+                                            name="valor_contratado"
+                                            class="form-control"
+                                            placeholder="0,00"
+                                        >
+                                    </div>
+
+                                    <div class="calls-field">
+                                        <label for="novo_desconto">Desconto (R$)</label>
+
+                                        <input
+                                            type="text"
+                                            id="novo_desconto"
+                                            name="desconto"
+                                            class="form-control"
+                                            placeholder="0,00"
+                                        >
+                                    </div>
+
+                                </div>
+
+                                <div class="calls-financial-note">
+                                    <i class="bi bi-info-circle"></i>
+                                    O cadastro do valor não gera uma entrada no ERP.
+                                    Os recebimentos serão lançados separadamente
+                                    na etapa financeira.
+                                </div>
+
+                            </section>
+
+
+                            <section class="calls-form-panel">
+
+                                <div class="calls-section-heading">
+                                    <div class="calls-section-icon">
+                                        <i class="bi bi-journal-text"></i>
+                                    </div>
+
+                                    <div>
+                                        <h2>Observações internas</h2>
+                                        <p>Informações adicionais para a equipe.</p>
+                                    </div>
+                                </div>
+
+                                <div class="calls-field">
+                                    <label for="novas_observacoes">
+                                        Observações
+                                    </label>
+
+                                    <textarea
+                                        id="novas_observacoes"
+                                        name="observacoes"
+                                        class="form-control"
+                                        rows="4"
+                                        placeholder="Informações adicionais..."
+                                    ></textarea>
+                                </div>
+
+                            </section>
+
+
+                            <div class="calls-form-actions">
+
+                                <button
+                                    type="reset"
+                                    class="calls-button calls-button-light"
+                                >
+                                    Limpar formulário
+                                </button>
+
+                                <button
+                                    type="submit"
+                                    class="calls-button calls-button-primary"
+                                >
+                                    <i class="bi bi-check2-circle"></i>
+                                    Cadastrar chamado
+                                </button>
+
+                            </div>
+
+                        </form>
+
+                    {% else %}
+
+                        <div class="calls-no-clients">
+                            <i class="bi bi-people"></i>
+
+                            <div>
+                                <strong>Você ainda não possui clientes cadastrados.</strong>
+
+                                <p>
+                                    Para registrar uma obra, primeiro cadastre
+                                    pelo menos um cliente.
+                                </p>
+
+                                <a
+                                    href="{{ url_for('clientes.listar_clientes') }}"
+                                    class="calls-button calls-button-primary"
+                                >
+                                    <i class="bi bi-person-plus"></i>
+                                    Cadastrar cliente
+                                </a>
+                            </div>
+                        </div>
+
+                    {% endif %}
+
+                </section>
+
+            {% endif %}
+
         </section>
 
     </main>
 
 </div>
+
+{% endblock %}
+
+
+
+{% block extra_js %}
+
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.4.3/dist/js/tom-select.complete.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.19/index.global.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.19/locales-all.global.min.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    // =========================================
+    // TOM SELECT
+    // =========================================
+
+    document.querySelectorAll(".calls-tom-select").forEach(function (campo) {
+
+        new TomSelect(campo, {
+            plugins: campo.multiple ? ["remove_button"] : [],
+            create: false,
+            maxOptions: 500,
+
+            placeholder: campo.multiple
+                ? "Pesquise e selecione..."
+                : "Selecione um cliente",
+
+            render: {
+                no_results: function () {
+                    return '<div class="no-results">Nenhum resultado encontrado.</div>';
+                }
+            }
+        });
+
+    });
+
+
+    // =========================================
+    // VALIDAÇÃO DE DATAS
+    // =========================================
+
+    const inicio = document.getElementById("novo_inicio")
+        || document.getElementById("data_inicio");
+
+    const termino = document.getElementById("novo_termino")
+        || document.getElementById("previsao_termino");
+
+    if (inicio && termino) {
+
+        inicio.addEventListener("change", function () {
+
+            termino.min = inicio.value;
+
+            if (termino.value && termino.value < inicio.value) {
+                termino.value = inicio.value;
+            }
+
+        });
+
+        termino.addEventListener("change", function () {
+
+            if (inicio.value && termino.value < inicio.value) {
+
+                alert(
+                    "A previsão de término não pode ser anterior ao início."
+                );
+
+                termino.value = inicio.value;
+
+            }
+
+        });
+
+    }
+
+
+    // =========================================
+    // CONFIRMAÇÃO DE MUDANÇA DE SITUAÇÃO
+    // =========================================
+
+    document.querySelectorAll(".calls-status-form").forEach(function (form) {
+
+        const select = form.querySelector("select");
+        const valorInicial = select.value;
+
+        select.addEventListener("change", function () {
+
+            const confirmado = confirm(
+                "Deseja realmente alterar a situação deste chamado?"
+            );
+
+            if (confirmado) {
+                form.submit();
+            } else {
+                select.value = valorInicial;
+            }
+
+        });
+
+    });
+
+
+    // =========================================
+    // FULLCALENDAR E AGENDA DIÁRIA
+    // =========================================
+
+    const calendarElement = document.getElementById("calls-calendar");
+
+    if (!calendarElement || typeof FullCalendar === "undefined") {
+        return;
+    }
+
+    const dailyContainer = document.getElementById("calls-daily-events");
+
+    const selectedTitle = document.getElementById(
+        "calls-selected-date-title"
+    );
+
+    const selectedSubtitle = document.getElementById(
+        "calls-selected-date-subtitle"
+    );
+
+    const todayLabel = document.getElementById(
+        "calls-today-label"
+    );
+
+    const previousButton = document.getElementById(
+        "calls-previous-day"
+    );
+
+    const nextButton = document.getElementById(
+        "calls-next-day"
+    );
+
+    const todayButton = document.getElementById(
+        "calls-today"
+    );
+
+    const nextBusinessDayButton = document.getElementById(
+        "calls-next-business-day"
+    );
+
+    const formatter = new Intl.DateTimeFormat("pt-BR", {
+        weekday: "long",
+        day: "2-digit",
+        month: "long",
+        year: "numeric"
+    });
+
+    const shortFormatter = new Intl.DateTimeFormat("pt-BR", {
+        day: "2-digit",
+        month: "short"
+    });
+
+    function formatarData(data) {
+        return formatter.format(data);
+    }
+
+    function formatarDataCurta(data) {
+        return shortFormatter.format(data);
+    }
+
+    function inicioDoDia(data) {
+        return new Date(
+            data.getFullYear(),
+            data.getMonth(),
+            data.getDate()
+        );
+    }
+
+    function adicionarDias(data, quantidade) {
+        const novaData = new Date(data);
+        novaData.setDate(novaData.getDate() + quantidade);
+        return novaData;
+    }
+
+    function dataISO(data) {
+        const ano = data.getFullYear();
+        const mes = String(data.getMonth() + 1).padStart(2, "0");
+        const dia = String(data.getDate()).padStart(2, "0");
+
+        return `${ano}-${mes}-${dia}`;
+    }
+
+    let dataSelecionada = inicioDoDia(new Date());
+
+    todayLabel.textContent = formatarData(
+        inicioDoDia(new Date())
+    );
+
+
+    // =========================================
+    // CARREGAMENTO DA AGENDA DO DIA
+    // =========================================
+
+    function atualizarAgendaDiaria() {
+
+        const dataAtual = dataSelecionada;
+
+        selectedTitle.textContent =
+            dataAtual.toDateString() === inicioDoDia(new Date()).toDateString()
+                ? "Obras de hoje"
+                : "Obras de " + formatarData(dataAtual);
+
+        selectedSubtitle.textContent = formatarData(dataAtual);
+
+        dailyContainer.innerHTML = `
+            <div class="calls-agenda-loading">
+                <span class="spinner-border spinner-border-sm"></span>
+                Carregando obras...
+            </div>
+        `;
+
+        nextBusinessDayButton.hidden = true;
+
+        const inicioDia = dataISO(dataAtual);
+        const proximoDia = dataISO(adicionarDias(dataAtual, 1));
+
+        const eventosDoDia = calendar.getEvents().filter(function (evento) {
+
+            const inicioEvento = evento.startStr.substring(0, 10);
+            const fimEvento = evento.endStr
+                ? evento.endStr.substring(0, 10)
+                : inicioEvento;
+
+            return inicioEvento <= inicioDia && fimEvento > inicioDia;
+
+        });
+
+        if (eventosDoDia.length === 0) {
+
+            dailyContainer.innerHTML = `
+                <div class="calls-daily-empty">
+                    <i class="bi bi-calendar2-check"></i>
+                    <strong>Nenhuma obra programada para este dia.</strong>
+                    <span>Você pode consultar outra data ou registrar um novo chamado.</span>
+                </div>
+            `;
+
+        } else {
+
+            dailyContainer.innerHTML = "";
+
+            eventosDoDia.sort(function (a, b) {
+                return a.title.localeCompare(b.title);
+            });
+
+            eventosDoDia.forEach(function (evento) {
+
+                const props = evento.extendedProps;
+
+                const article = document.createElement("article");
+                article.className = "calls-daily-card";
+
+                const title = document.createElement("h4");
+                title.textContent = evento.title;
+
+                const number = document.createElement("span");
+                number.className = "calls-daily-number";
+                number.textContent = props.numero || "";
+
+                const client = document.createElement("p");
+                client.innerHTML = '<i class="bi bi-person"></i> ';
+                client.append(
+                    document.createTextNode(props.cliente || "Cliente não informado")
+                );
+
+                const address = document.createElement("p");
+                address.innerHTML = '<i class="bi bi-geo-alt"></i> ';
+                address.append(
+                    document.createTextNode(props.endereco || "Endereço não informado")
+                );
+
+                const status = document.createElement("span");
+                status.className = "calls-daily-status";
+                status.textContent = props.status || "";
+
+                const priority = document.createElement("span");
+                priority.className = "calls-daily-priority";
+                priority.textContent = "Prioridade: " + (props.prioridade || "Normal");
+
+                const details = document.createElement("div");
+                details.className = "calls-daily-card-details";
+
+                details.append(status, priority);
+
+                const link = document.createElement("a");
+                link.className = "calls-daily-open";
+                link.href = evento.url || "#";
+                link.innerHTML = 'Abrir chamado <i class="bi bi-arrow-up-right"></i>';
+
+                article.append(
+                    number,
+                    title,
+                    client,
+                    address,
+                    details,
+                    link
+                );
+
+                dailyContainer.appendChild(article);
+
+            });
+
+        }
+
+
+        // Se for sábado, oferece o atalho para segunda-feira.
+        if (dataAtual.getDay() === 6) {
+            nextBusinessDayButton.hidden = false;
+        }
+
+    }
+
+
+    // =========================================
+    // INICIALIZAÇÃO DO CALENDÁRIO
+    // =========================================
+
+    const calendar = new FullCalendar.Calendar(calendarElement, {
+
+        locale: "pt-br",
+
+        initialView: "dayGridMonth",
+
+        initialDate: dataISO(dataSelecionada),
+
+        height: "auto",
+
+        firstDay: 1,
+
+        weekends: true,
+
+        navLinks: true,
+
+        dayMaxEvents: 3,
+
+        nowIndicator: true,
+
+        editable: false,
+
+        selectable: false,
+
+        events: {
+            url: "{{ url_for('chamados.eventos_calendario') }}",
+            method: "GET",
+
+            failure: function () {
+
+                calendarElement.insertAdjacentHTML(
+                    "beforeend",
+                    '<p class="calls-calendar-error">Não foi possível carregar os eventos. Atualize a página.</p>'
+                );
+
+            }
+        },
+
+        headerToolbar: {
+            left: "prev,next today",
+            center: "title",
+            right: "dayGridMonth,timeGridWeek,timeGridDay,listWeek"
+        },
+
+        buttonText: {
+            today: "Hoje",
+            month: "Mês",
+            week: "Semana",
+            day: "Dia",
+            list: "Lista"
+        },
+
+        eventClick: function (info) {
+
+            info.jsEvent.preventDefault();
+
+            if (info.event.url) {
+                window.location.href = info.event.url;
+            }
+
+        },
+
+    // =========================================
+    // SELEÇÃO DE DATA NO CALENDÁRIO
+    // =========================================
+    
+        dateClick: function (info) {
+
+            const partes = info.dateStr.split("-");
+
+            selecionarData(
+                new Date(
+                    Number(partes[0]),
+                    Number(partes[1]) - 1,
+                    Number(partes[2])
+                )
+            );
+
+        },
+
+        datesSet: function () {
+
+            setTimeout(atualizarAgendaDiaria, 150);
+
+        },
+
+        eventsSet: function () {
+            atualizarAgendaDiaria();
+        },
+
+        eventDidMount: function (info) {
+
+            const props = info.event.extendedProps;
+
+            info.el.title = [
+                info.event.title,
+                "Cliente: " + (props.cliente || "Não informado"),
+                "Situação: " + (props.status || "Não informada"),
+                "Prioridade: " + (props.prioridade || "Normal")
+            ].join("\n");
+
+        }
+
+
+    });
+
+    calendar.render();
+
+
+    // =========================================
+    // NAVEGAÇÃO DA AGENDA DIÁRIA
+    // =========================================
+
+    function selecionarData(data) {
+
+        dataSelecionada = inicioDoDia(data);
+
+        atualizarAgendaDiaria();
+
+        calendar.gotoDate(dataISO(dataSelecionada));
+
+    }
+
+    previousButton.addEventListener("click", function () {
+
+        selecionarData(
+            adicionarDias(dataSelecionada, -1)
+        );
+
+    });
+
+    nextButton.addEventListener("click", function () {
+
+        selecionarData(
+            adicionarDias(dataSelecionada, 1)
+        );
+
+    });
+
+    todayButton.addEventListener("click", function () {
+
+        selecionarData(new Date());
+
+    });
+
+    nextBusinessDayButton.addEventListener("click", function () {
+
+        const data = new Date(dataSelecionada);
+
+        const diasAteSegunda = 2;
+
+        selecionarData(
+            adicionarDias(data, diasAteSegunda)
+        );
+
+    });
+
+    /**calendar.on("dateClick", function (info) {
+
+        const partes = info.dateStr.split("-");
+
+        selecionarData(
+            new Date(
+                Number(partes[0]),
+                Number(partes[1]) - 1,
+                Number(partes[2])
+            )
+        );
+
+    });
+
+    // Agenda inicial do dia atual.
+    atualizarAgendaDiaria();**/
+
+});
+</script>
 
 {% endblock %}
