@@ -8,20 +8,1268 @@
 
     {% include 'components/sidebar.html' %}
 
-    <main class="dashboard-main">
+    <main class="dashboard-main tools-page">
 
+        <!-- CABEÇALHO SUPERIOR -->
         <header class="dashboard-header">
-            <button
-                class="sidebar-toggle"
-                id="sidebarToggle"
-                type="button"
-                aria-label="Abrir menu"
-            >
+
+            <button class="sidebar-toggle"
+                    id="sidebarToggle"
+                    type="button"
+                    aria-label="Abrir menu">
                 <i class="bi bi-list"></i>
             </button>
+
+            <div class="dashboard-breadcrumb">
+                <span>Painel</span>
+                <i class="bi bi-chevron-right"></i>
+                <strong>Ferramentas</strong>
+            </div>
+
+            <div class="header-actions">
+
+                <button class="header-icon"
+                        type="button"
+                        aria-label="Notificações">
+                    <i class="bi bi-bell"></i>
+                    <span class="notification-dot"></span>
+                </button>
+
+                <div class="header-divider"></div>
+
+                <div class="header-profile">
+                    <div class="profile-avatar">
+                        <img
+                            src="{{ url_for('static', filename='img/logo.png') }}"
+                            alt="TaskBerry"
+                            style="width:30px;height:30px;object-fit:contain;"
+                        >
+                    </div>
+
+                    <div class="header-profile-info">
+                        <strong>{{ session.get("usuario_nome", "Administrador") }}</strong>
+                        <small>Gestão de equipamentos</small>
+                    </div>
+
+                    <i class="bi bi-chevron-down"></i>
+                </div>
+
+            </div>
+
         </header>
 
-        <section class="dashboard-content">
+
+        <section class="dashboard-content tools-content">
+
+            <!-- INTRODUÇÃO -->
+            <div class="tools-page-intro">
+
+                <div class="tools-intro-copy">
+                    <span class="tools-eyebrow">
+                        <i class="bi bi-gear-wide-connected"></i>
+                        GESTÃO DE PATRIMÔNIO
+                    </span>
+
+                    <h1>Central de equipamentos</h1>
+
+                    <p>
+                        Acompanhe seus equipamentos, controle a disponibilidade
+                        e mantenha cada histórico técnico em um só lugar.
+                    </p>
+                </div>
+
+                <div class="tools-intro-decoration">
+                    <i class="bi bi-tools"></i>
+                    <span>FERRAMENTAS</span>
+                </div>
+
+            </div>
+
+
+            <!-- MENSAGENS -->
+            {% with mensagens = get_flashed_messages(with_categories=true) %}
+                {% if mensagens %}
+                    <div class="tools-flashes">
+                        {% for categoria, mensagem in mensagens %}
+                            <div class="alert alert-{{ categoria }} alert-dismissible fade show">
+                                {{ mensagem }}
+                                <button type="button"
+                                        class="btn-close"
+                                        data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+
+            <!-- 01. ACOMPANHAMENTO -->
+            <section class="tools-monitor-section">
+
+                <div class="tools-section-heading">
+                    <div>
+                        <span class="tools-section-number">01 / ACOMPANHAMENTO</span>
+                        <h2>Central de manutenção</h2>
+                        <p>
+                            Acompanhe os equipamentos enviados para reparo
+                            e consulte as últimas movimentações técnicas.
+                        </p>
+                    </div>
+
+                    <div class="tools-monitor-icon">
+                        <i class="bi bi-activity"></i>
+                    </div>
+                </div>
+
+
+                <div class="tools-monitor-grid">
+
+                    <!-- REPAROS EM ANDAMENTO -->
+                    <div class="tools-open-maintenance">
+
+                        <div class="tools-subheading">
+                            <div>
+                                <span class="tools-mini-label">ATENÇÃO</span>
+                                <h3>Reparos em andamento</h3>
+                            </div>
+
+                            <span class="tools-counter">
+                                {{ manutencoes_abertas|length }}
+                            </span>
+                        </div>
+
+                        {% if manutencoes_abertas %}
+
+                            <div class="tools-open-list">
+
+                                {% for item in manutencoes_abertas %}
+
+                                    <article class="tools-open-item">
+
+                                        <div class="tools-open-symbol">
+                                            <i class="bi bi-wrench-adjustable"></i>
+                                        </div>
+
+                                        <div class="tools-open-info">
+                                            <strong>{{ item.ferramenta_nome }}</strong>
+
+                                            <span>
+                                                {{ item.codigo }}
+                                                {% if item.profissional %}
+                                                    · {{ item.profissional }}
+                                                {% endif %}
+                                            </span>
+
+                                            <small>
+                                                Enviado em
+                                                {{ item.data_envio.strftime("%d/%m/%Y") if item.data_envio else "Data não informada" }}
+                                            </small>
+                                        </div>
+
+                                        <span class="tools-open-status">Em reparo</span>
+
+                                    </article>
+
+                                {% endfor %}
+
+                            </div>
+
+                        {% else %}
+
+                            <div class="tools-monitor-empty">
+                                <div class="tools-empty-check">
+                                    <i class="bi bi-check2"></i>
+                                </div>
+
+                                <strong>Nenhum reparo pendente</strong>
+
+                                <span>
+                                    Quando uma ferramenta for enviada para manutenção,
+                                    ela aparecerá aqui.
+                                </span>
+                            </div>
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <!-- LINHA DO TEMPO -->
+                    <div class="tools-timeline-panel">
+
+                        <div class="tools-subheading">
+                            <div>
+                                <span class="tools-mini-label">HISTÓRICO</span>
+                                <h3>Movimentações recentes</h3>
+                            </div>
+
+                            <i class="bi bi-clock-history"></i>
+                        </div>
+
+                        {% if historico_recente %}
+
+                            <div class="tools-timeline">
+
+                                {% for item in historico_recente %}
+
+                                    <div class="tools-timeline-item">
+
+                                        <span class="tools-timeline-point
+                                            {% if item.situacao == 'concluida' %}
+                                                timeline-done
+                                            {% else %}
+                                                timeline-pending
+                                            {% endif %}">
+                                        </span>
+
+                                        <div class="tools-timeline-content">
+
+                                            <div class="tools-timeline-top">
+                                                <strong>{{ item.ferramenta_nome }}</strong>
+
+                                                <time>
+                                                    {{ item.data_envio.strftime("%d/%m/%Y") if item.data_envio else "" }}
+                                                </time>
+                                            </div>
+
+                                            <p>
+                                                {% if item.situacao == "concluida" %}
+                                                    Reparo concluído
+                                                {% else %}
+                                                    Equipamento enviado para manutenção
+                                                {% endif %}
+                                            </p>
+
+                                            <small>{{ item.codigo }}</small>
+
+                                        </div>
+
+                                    </div>
+
+                                {% endfor %}
+
+                            </div>
+
+                        {% else %}
+
+                            <div class="tools-timeline-empty">
+                                <i class="bi bi-calendar2-check"></i>
+                                <span>O histórico técnico aparecerá aqui.</span>
+                            </div>
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- 02. INDICADORES -->
+            <section class="tools-indicators-section">
+
+                <div class="tools-section-heading compact-heading">
+                    <div>
+                        <span class="tools-section-number">02 / VISÃO GERAL</span>
+                        <h2>Situação do patrimônio</h2>
+                    </div>
+                </div>
+
+                <div class="tools-metrics">
+
+                    <article class="tools-metric metric-total">
+                        <div class="tools-metric-icon">
+                            <i class="bi bi-tools"></i>
+                        </div>
+
+                        <div>
+                            <span>Total de equipamentos</span>
+                            <strong>{{ total_ferramentas }}</strong>
+                            <small>Registros ativos</small>
+                        </div>
+                    </article>
+
+                    <article class="tools-metric metric-available">
+                        <div class="tools-metric-icon">
+                            <i class="bi bi-check2-circle"></i>
+                        </div>
+
+                        <div>
+                            <span>Disponíveis</span>
+                            <strong>{{ total_disponiveis }}</strong>
+                            <small>Prontos para utilização</small>
+                        </div>
+                    </article>
+
+                    <article class="tools-metric metric-use">
+                        <div class="tools-metric-icon">
+                            <i class="bi bi-cone-striped"></i>
+                        </div>
+
+                        <div>
+                            <span>Em uso</span>
+                            <strong>{{ total_em_uso }}</strong>
+                            <small>Vinculados a chamados</small>
+                        </div>
+                    </article>
+
+                    <article class="tools-metric metric-maintenance">
+                        <div class="tools-metric-icon">
+                            <i class="bi bi-wrench-adjustable"></i>
+                        </div>
+
+                        <div>
+                            <span>Em manutenção</span>
+                            <strong>{{ total_manutencao }}</strong>
+                            <small>Aguardando reparo</small>
+                        </div>
+                    </article>
+
+                </div>
+
+            </section>
+
+
+            <!-- 03. INVENTÁRIO -->
+            <section class="tools-asset-section">
+
+                <div class="tools-section-heading">
+                    <div>
+                        <span class="tools-section-number">03 / PATRIMÔNIO</span>
+                        <h2>Inventário de equipamentos</h2>
+                        <p>
+                            Consulte e gerencie individualmente cada ferramenta
+                            cadastrada no empreendimento.
+                        </p>
+                    </div>
+                </div>
+
+
+                <div class="tools-assets-panel">
+
+                    <div class="tools-assets-heading">
+                        <div>
+                            <span class="tools-mini-label">EQUIPAMENTOS REGISTRADOS</span>
+                            <h3>Seus equipamentos</h3>
+                            <p>
+                                Cada registro representa um equipamento físico,
+                                mesmo quando existem outros iguais.
+                            </p>
+                        </div>
+
+                        <span class="tools-assets-count">
+                            {{ ferramentas|length }} registros
+                        </span>
+                    </div>
+
+
+                    <!-- FILTROS -->
+                    <form method="GET"
+                          action="{{ url_for('ferramentas.listar_ferramentas') }}"
+                          class="tools-asset-filters">
+
+                        <div class="tools-asset-search">
+                            <i class="bi bi-search"></i>
+
+                            <input type="search"
+                                   name="busca"
+                                   value="{{ busca }}"
+                                   placeholder="Nome, código, marca ou modelo">
+                        </div>
+
+                        <select name="categoria" class="form-select">
+                            <option value="">Todas as categorias</option>
+
+                            {% for cat in categorias %}
+                                <option value="{{ cat }}"
+                                    {% if categoria_selecionada == cat %}selected{% endif %}>
+                                    {{ cat }}
+                                </option>
+                            {% endfor %}
+                        </select>
+
+                        <select name="situacao" class="form-select">
+                            <option value="">Todas as situações</option>
+
+                            <option value="disponivel"
+                                {% if situacao_selecionada == "disponivel" %}selected{% endif %}>
+                                Disponível
+                            </option>
+
+                            <option value="em_uso"
+                                {% if situacao_selecionada == "em_uso" %}selected{% endif %}>
+                                Em uso
+                            </option>
+
+                            <option value="manutencao"
+                                {% if situacao_selecionada == "manutencao" %}selected{% endif %}>
+                                Em manutenção
+                            </option>
+                        </select>
+
+                        <button type="submit" aria-label="Filtrar">
+                            <i class="bi bi-funnel"></i>
+                        </button>
+
+                        {% if busca or categoria_selecionada or situacao_selecionada %}
+                            <a href="{{ url_for('ferramentas.listar_ferramentas') }}"
+                               class="tools-clear-filter">
+                                Limpar filtros
+                            </a>
+                        {% endif %}
+
+                    </form>
+
+
+                    <!-- EQUIPAMENTOS -->
+                    {% if ferramentas %}
+
+                        <div class="tools-asset-list">
+
+                            {% for ferramenta in ferramentas %}
+
+                                <article class="tools-asset-card">
+
+                                    <div class="tools-asset-card-top">
+
+                                        <div class="tools-asset-avatar">
+                                            {% if ferramenta.categoria|lower in ["máquinas", "maquinas", "equipamentos"] %}
+                                                <i class="bi bi-gear-wide-connected"></i>
+                                            {% elif ferramenta.categoria|lower in ["elétricas", "eletricas"] %}
+                                                <i class="bi bi-lightning-charge"></i>
+                                            {% else %}
+                                                <i class="bi bi-tools"></i>
+                                            {% endif %}
+                                        </div>
+
+                                        <div class="tools-asset-title">
+                                            <span>{{ ferramenta.codigo }}</span>
+                                            <h4>{{ ferramenta.nome }}</h4>
+
+                                            <small>
+                                                {{ ferramenta.marca or "Marca não informada" }}
+                                                {% if ferramenta.modelo %}
+                                                    · {{ ferramenta.modelo }}
+                                                {% endif %}
+                                            </small>
+                                        </div>
+
+                                        <span class="tools-asset-status status-{{ ferramenta.situacao }}">
+                                            {% if ferramenta.situacao == "disponivel" %}
+                                                Disponível
+                                            {% elif ferramenta.situacao == "em_uso" %}
+                                                Em uso
+                                            {% elif ferramenta.situacao == "manutencao" %}
+                                                Em manutenção
+                                            {% else %}
+                                                Baixada
+                                            {% endif %}
+                                        </span>
+
+                                    </div>
+
+
+                                    <div class="tools-asset-card-data">
+
+                                        <div>
+                                            <span>CATEGORIA</span>
+                                            <strong>{{ ferramenta.categoria }}</strong>
+                                        </div>
+
+                                        <div>
+                                            <span>Nº DE SÉRIE</span>
+                                            <strong>{{ ferramenta.numero_serie or "Não informado" }}</strong>
+                                        </div>
+
+                                        <div>
+                                            <span>MANUTENÇÕES</span>
+                                            <strong>{{ ferramenta.total_manutencoes }}</strong>
+                                        </div>
+
+                                        <div>
+                                            <span>LOCALIZAÇÃO</span>
+                                            <strong>{{ ferramenta.localizacao or "Não informada" }}</strong>
+                                        </div>
+
+                                    </div>
+
+
+                                    <div class="tools-asset-card-footer">
+
+                                        <button type="button"
+                                                class="tools-view-button"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#detalhes{{ ferramenta._id }}">
+                                            <i class="bi bi-card-list"></i>
+                                            Ficha técnica
+                                        </button>
+
+                                        {% if ferramenta.situacao == "disponivel" %}
+
+                                            <button type="button"
+                                                    class="tools-maintenance-button"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#manutencao{{ ferramenta._id }}">
+                                                <i class="bi bi-wrench-adjustable"></i>
+                                                Enviar para manutenção
+                                            </button>
+
+                                            <button type="button"
+                                                    class="tools-more-button"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#editar{{ ferramenta._id }}"
+                                                    title="Editar">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+
+                                            <button type="button"
+                                                    class="tools-more-button"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#arquivar{{ ferramenta._id }}"
+                                                    title="Arquivar">
+                                                <i class="bi bi-archive"></i>
+                                            </button>
+
+                                        {% elif ferramenta.situacao == "manutencao" %}
+
+                                            <button type="button"
+                                                    class="tools-repair-button"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#reparo{{ ferramenta._id }}">
+                                                <i class="bi bi-check2-circle"></i>
+                                                Confirmar reparo
+                                            </button>
+
+                                        {% elif ferramenta.situacao == "em_uso" %}
+
+                                            <span class="tools-use-lock">
+                                                <i class="bi bi-lock"></i>
+                                                Vinculada a um chamado
+                                            </span>
+
+                                        {% endif %}
+
+                                    </div>
+
+                                </article>
+
+
+                                <!-- MODAL FICHA TÉCNICA -->
+                                <div class="modal fade"
+                                     id="detalhes{{ ferramenta._id }}"
+                                     tabindex="-1"
+                                     aria-hidden="true">
+
+                                    <div class="modal-dialog modal-lg modal-dialog-centered">
+                                        <div class="modal-content tools-modal">
+
+                                            <div class="modal-header">
+                                                <div>
+                                                    <span class="tools-modal-kicker">FICHA TÉCNICA</span>
+                                                    <h5>{{ ferramenta.nome }}</h5>
+                                                    <small>{{ ferramenta.codigo }}</small>
+                                                </div>
+
+                                                <button type="button"
+                                                        class="btn-close"
+                                                        data-bs-dismiss="modal"></button>
+                                            </div>
+
+                                            <div class="modal-body">
+
+                                                <div class="tools-detail-grid">
+                                                    <div><span>Categoria</span><strong>{{ ferramenta.categoria }}</strong></div>
+                                                    <div><span>Marca</span><strong>{{ ferramenta.marca or "Não informada" }}</strong></div>
+                                                    <div><span>Modelo</span><strong>{{ ferramenta.modelo or "Não informado" }}</strong></div>
+                                                    <div><span>Número de série</span><strong>{{ ferramenta.numero_serie or "Não informado" }}</strong></div>
+                                                    <div><span>Localização</span><strong>{{ ferramenta.localizacao or "Não informada" }}</strong></div>
+                                                    <div><span>Fornecedor</span><strong>{{ ferramenta.fornecedor or "Não informado" }}</strong></div>
+
+                                                    <div>
+                                                        <span>Data de aquisição</span>
+                                                        <strong>
+                                                            {{ ferramenta.data_aquisicao.strftime("%d/%m/%Y") if ferramenta.data_aquisicao else "Não informada" }}
+                                                        </strong>
+                                                    </div>
+
+                                                    <div>
+                                                        <span>Valor de aquisição</span>
+                                                        <strong>
+                                                            R$ {{ "%.2f"|format(ferramenta.valor_aquisicao or 0)|replace(".", ",") }}
+                                                        </strong>
+                                                    </div>
+                                                </div>
+
+                                                {% if ferramenta.descricao %}
+                                                    <div class="tools-detail-text">
+                                                        <span>Descrição</span>
+                                                        <p>{{ ferramenta.descricao }}</p>
+                                                    </div>
+                                                {% endif %}
+
+                                                {% if ferramenta.observacoes %}
+                                                    <div class="tools-detail-text">
+                                                        <span>Observações</span>
+                                                        <p>{{ ferramenta.observacoes }}</p>
+                                                    </div>
+                                                {% endif %}
+
+
+                                                <div class="tools-detail-history">
+
+                                                    <h6>
+                                                        <i class="bi bi-clock-history"></i>
+                                                        Histórico de manutenção
+                                                    </h6>
+
+                                                    {% if ferramenta.historico_manutencao %}
+
+                                                        {% for manutencao in ferramenta.historico_manutencao|reverse %}
+
+                                                            <div class="tools-detail-history-item">
+
+                                                                <div>
+                                                                    <strong>
+                                                                        {% if manutencao.situacao == "concluida" %}
+                                                                            Reparo concluído
+                                                                        {% else %}
+                                                                            Em manutenção
+                                                                        {% endif %}
+                                                                    </strong>
+
+                                                                    <span>
+                                                                        Enviado:
+                                                                        {{ manutencao.data_envio.strftime("%d/%m/%Y") if manutencao.data_envio else "Não informado" }}
+                                                                    </span>
+
+                                                                    {% if manutencao.data_conclusao %}
+                                                                        <span>
+                                                                            Concluído:
+                                                                            {{ manutencao.data_conclusao.strftime("%d/%m/%Y") }}
+                                                                        </span>
+                                                                    {% endif %}
+
+                                                                    <small>
+                                                                        {{ manutencao.descricao or "Sem descrição" }}
+
+                                                                        {% if manutencao.profissional %}
+                                                                            · {{ manutencao.profissional }}
+                                                                        {% endif %}
+                                                                    </small>
+                                                                </div>
+
+                                                                <strong>
+                                                                    {% if manutencao.valor_final is not none %}
+                                                                        R$ {{ "%.2f"|format(manutencao.valor_final)|replace(".", ",") }}
+                                                                    {% else %}
+                                                                        R$ {{ "%.2f"|format(manutencao.valor_estimado or 0)|replace(".", ",") }}
+                                                                    {% endif %}
+                                                                </strong>
+
+                                                            </div>
+
+                                                        {% endfor %}
+
+                                                    {% else %}
+
+                                                        <p class="tools-no-history">
+                                                            Nenhuma manutenção registrada para este equipamento.
+                                                        </p>
+
+                                                    {% endif %}
+
+                                                </div>
+
+                                            </div>
+
+                                            <div class="modal-footer">
+                                                <button type="button"
+                                                        class="tools-modal-close"
+                                                        data-bs-dismiss="modal">
+                                                    Fechar ficha
+                                                </button>
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                </div>
+
+
+                                <!-- MODAL ENVIAR PARA MANUTENÇÃO -->
+                                <div class="modal fade"
+                                     id="manutencao{{ ferramenta._id }}"
+                                     tabindex="-1"
+                                     aria-hidden="true">
+
+                                    <div class="modal-dialog modal-dialog-centered">
+                                        <div class="modal-content tools-modal">
+
+                                            <form method="POST"
+                                                  action="{{ url_for('ferramentas.enviar_para_manutencao', ferramenta_id=ferramenta._id) }}">
+
+                                                <div class="modal-header">
+                                                    <div>
+                                                        <span class="tools-modal-kicker">ASSISTÊNCIA TÉCNICA</span>
+                                                        <h5>Enviar para manutenção</h5>
+                                                    </div>
+
+                                                    <button type="button"
+                                                            class="btn-close"
+                                                            data-bs-dismiss="modal"></button>
+                                                </div>
+
+                                                <div class="modal-body">
+
+                                                    <div class="tools-modal-equipment">
+                                                        <i class="bi bi-tools"></i>
+                                                        <div>
+                                                            <strong>{{ ferramenta.nome }}</strong>
+                                                            <small>{{ ferramenta.codigo }}</small>
+                                                        </div>
+                                                    </div>
+
+                                                    <p class="tools-modal-help">
+                                                        Ao registrar o envio, o equipamento ficará
+                                                        indisponível até a confirmação do reparo.
+                                                    </p>
+
+                                                    <div class="tools-form-field">
+                                                        <label>Data de envio *</label>
+                                                        <input type="date"
+                                                               name="data_envio"
+                                                               class="form-control"
+                                                               required>
+                                                    </div>
+
+                                                    <div class="tools-form-field mt-3">
+                                                        <label>Valor estimado (R$)</label>
+                                                        <input type="text"
+                                                               name="valor_estimado"
+                                                               class="form-control"
+                                                               placeholder="Ex.: 250,00"
+                                                               inputmode="decimal">
+                                                    </div>
+
+                                                    <div class="tools-form-field mt-3">
+                                                        <label>Profissional responsável</label>
+                                                        <input type="text"
+                                                               name="profissional"
+                                                               class="form-control"
+                                                               placeholder="Opcional">
+                                                    </div>
+
+                                                    <div class="tools-form-field mt-3">
+                                                        <label>Descrição do reparo</label>
+                                                        <textarea name="descricao_manutencao"
+                                                                  class="form-control"
+                                                                  rows="3"
+                                                                  placeholder="Descreva o problema ou serviço necessário"></textarea>
+                                                    </div>
+
+                                                </div>
+
+                                                <div class="modal-footer">
+                                                    <button type="button"
+                                                            class="tools-modal-close"
+                                                            data-bs-dismiss="modal">
+                                                        Cancelar
+                                                    </button>
+
+                                                    <button type="submit"
+                                                            class="tools-modal-confirm">
+                                                        Registrar envio
+                                                    </button>
+                                                </div>
+
+                                            </form>
+
+                                        </div>
+                                    </div>
+                                </div>
+
+
+                                <!-- MODAL CONFIRMAR REPARO -->
+                                <div class="modal fade"
+                                     id="reparo{{ ferramenta._id }}"
+                                     tabindex="-1"
+                                     aria-hidden="true">
+
+                                    <div class="modal-dialog modal-dialog-centered">
+                                        <div class="modal-content tools-modal">
+
+                                            <form method="POST"
+                                                  action="{{ url_for('ferramentas.confirmar_reparo', ferramenta_id=ferramenta._id) }}">
+
+                                                <div class="modal-header">
+                                                    <div>
+                                                        <span class="tools-modal-kicker">FINALIZAÇÃO TÉCNICA</span>
+                                                        <h5>Confirmar reparo</h5>
+                                                    </div>
+
+                                                    <button type="button"
+                                                            class="btn-close"
+                                                            data-bs-dismiss="modal"></button>
+                                                </div>
+
+                                                <div class="modal-body">
+
+                                                    <div class="tools-repair-notice">
+                                                        <i class="bi bi-check-circle"></i>
+                                                        <span>
+                                                            Confirme a conclusão do serviço para
+                                                            disponibilizar o equipamento novamente.
+                                                        </span>
+                                                    </div>
+
+                                                    <div class="tools-form-field">
+                                                        <label>Data de conclusão *</label>
+                                                        <input type="date"
+                                                               name="data_conclusao"
+                                                               class="form-control"
+                                                               required>
+                                                    </div>
+
+                                                    <div class="tools-form-field mt-3">
+                                                        <label>Valor final (R$)</label>
+                                                        <input type="text"
+                                                               name="valor_final"
+                                                               class="form-control"
+                                                               placeholder="Vazio mantém o valor estimado"
+                                                               inputmode="decimal">
+                                                    </div>
+
+                                                </div>
+
+                                                <div class="modal-footer">
+                                                    <button type="button"
+                                                            class="tools-modal-close"
+                                                            data-bs-dismiss="modal">
+                                                        Voltar
+                                                    </button>
+
+                                                    <button type="submit"
+                                                            class="tools-modal-confirm repair-confirm">
+                                                        Confirmar e liberar
+                                                    </button>
+                                                </div>
+
+                                            </form>
+
+                                        </div>
+                                    </div>
+                                </div>
+
+
+                                <!-- MODAL EDITAR -->
+                                <div class="modal fade"
+                                     id="editar{{ ferramenta._id }}"
+                                     tabindex="-1"
+                                     aria-hidden="true">
+
+                                    <div class="modal-dialog modal-lg modal-dialog-centered">
+                                        <div class="modal-content tools-modal">
+
+                                            <form method="POST"
+                                                  action="{{ url_for('ferramentas.editar_ferramenta', ferramenta_id=ferramenta._id) }}">
+
+                                                <div class="modal-header">
+                                                    <div>
+                                                        <span class="tools-modal-kicker">PATRIMÔNIO</span>
+                                                        <h5>Editar equipamento</h5>
+                                                    </div>
+
+                                                    <button type="button"
+                                                            class="btn-close"
+                                                            data-bs-dismiss="modal"></button>
+                                                </div>
+
+                                                <div class="modal-body">
+
+                                                    <div class="tools-edit-grid">
+
+                                                        <div class="tools-form-field">
+                                                            <label>Nome *</label>
+                                                            <input name="nome"
+                                                                   class="form-control"
+                                                                   value="{{ ferramenta.nome }}"
+                                                                   required>
+                                                        </div>
+
+                                                        <div class="tools-form-field">
+                                                            <label>Categoria *</label>
+                                                            <select name="categoria"
+                                                                    class="form-select"
+                                                                    required>
+                                                                {% for cat in ["Máquinas", "Elétricas", "Manuais", "Acessórios", "Equipamentos", "Outros"] %}
+                                                                    <option value="{{ cat }}"
+                                                                        {% if ferramenta.categoria == cat %}selected{% endif %}>
+                                                                        {{ cat }}
+                                                                    </option>
+                                                                {% endfor %}
+                                                            </select>
+                                                        </div>
+
+                                                        <div class="tools-form-field">
+                                                            <label>Marca</label>
+                                                            <input name="marca"
+                                                                   class="form-control"
+                                                                   value="{{ ferramenta.marca }}">
+                                                        </div>
+
+                                                        <div class="tools-form-field">
+                                                            <label>Modelo</label>
+                                                            <input name="modelo"
+                                                                   class="form-control"
+                                                                   value="{{ ferramenta.modelo }}">
+                                                        </div>
+
+                                                        <div class="tools-form-field">
+                                                            <label>Número de série</label>
+                                                            <input name="numero_serie"
+                                                                   class="form-control"
+                                                                   value="{{ ferramenta.numero_serie }}">
+                                                        </div>
+
+                                                        <div class="tools-form-field">
+                                                            <label>Localização</label>
+                                                            <input name="localizacao"
+                                                                   class="form-control"
+                                                                   value="{{ ferramenta.localizacao }}">
+                                                        </div>
+
+                                                        <div class="tools-form-field">
+                                                            <label>Data de aquisição</label>
+                                                            <input type="date"
+                                                                   name="data_aquisicao"
+                                                                   class="form-control"
+                                                                   value="{{ ferramenta.data_aquisicao.strftime('%Y-%m-%d') if ferramenta.data_aquisicao else '' }}">
+                                                        </div>
+
+                                                        <div class="tools-form-field">
+                                                            <label>Valor de aquisição</label>
+                                                            <input name="valor_aquisicao"
+                                                                   class="form-control"
+                                                                   value="{{ '%.2f'|format(ferramenta.valor_aquisicao or 0)|replace('.', ',') }}">
+                                                        </div>
+
+                                                        <div class="tools-form-field tools-edit-wide">
+                                                            <label>Fornecedor</label>
+                                                            <input name="fornecedor"
+                                                                   class="form-control"
+                                                                   value="{{ ferramenta.fornecedor }}">
+                                                        </div>
+
+                                                        <div class="tools-form-field tools-edit-wide">
+                                                            <label>Descrição</label>
+                                                            <textarea name="descricao"
+                                                                      class="form-control"
+                                                                      rows="2">{{ ferramenta.descricao }}</textarea>
+                                                        </div>
+
+                                                        <div class="tools-form-field tools-edit-wide">
+                                                            <label>Observações</label>
+                                                            <textarea name="observacoes"
+                                                                      class="form-control"
+                                                                      rows="2">{{ ferramenta.observacoes }}</textarea>
+                                                        </div>
+
+                                                    </div>
+
+                                                </div>
+
+                                                <div class="modal-footer">
+                                                    <button type="button"
+                                                            class="tools-modal-close"
+                                                            data-bs-dismiss="modal">
+                                                        Cancelar
+                                                    </button>
+
+                                                    <button type="submit"
+                                                            class="tools-modal-confirm">
+                                                        Salvar alterações
+                                                    </button>
+                                                </div>
+
+                                            </form>
+
+                                        </div>
+                                    </div>
+                                </div>
+
+
+                                <!-- MODAL ARQUIVAR -->
+                                <div class="modal fade"
+                                     id="arquivar{{ ferramenta._id }}"
+                                     tabindex="-1"
+                                     aria-hidden="true">
+
+                                    <div class="modal-dialog modal-dialog-centered">
+                                        <div class="modal-content tools-modal">
+
+                                            <div class="modal-header">
+                                                <h5>Arquivar equipamento</h5>
+
+                                                <button type="button"
+                                                        class="btn-close"
+                                                        data-bs-dismiss="modal"></button>
+                                            </div>
+
+                                            <div class="modal-body">
+                                                <p class="tools-modal-help">
+                                                    Deseja arquivar <strong>{{ ferramenta.nome }}</strong>?
+                                                    O equipamento sairá da lista ativa, mas seu histórico
+                                                    será preservado.
+                                                </p>
+                                            </div>
+
+                                            <div class="modal-footer">
+                                                <button type="button"
+                                                        class="tools-modal-close"
+                                                        data-bs-dismiss="modal">
+                                                    Cancelar
+                                                </button>
+
+                                                <form method="POST"
+                                                      action="{{ url_for('ferramentas.arquivar_ferramenta', ferramenta_id=ferramenta._id) }}">
+                                                    <button type="submit"
+                                                            class="tools-modal-danger">
+                                                        Arquivar
+                                                    </button>
+                                                </form>
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                </div>
+
+                            {% endfor %}
+
+                        </div>
+
+                    {% else %}
+
+                        <div class="tools-assets-empty">
+                            <i class="bi bi-box"></i>
+                            <strong>Nenhum equipamento encontrado</strong>
+                            <span>
+                                Cadastre um equipamento ou ajuste os filtros
+                                para visualizar o patrimônio.
+                            </span>
+                        </div>
+
+                    {% endif %}
+
+                </div>
+
+            </section>
+
+
+            <!-- 04. CADASTRO DE EQUIPAMENTO -->
+            <section class="tools-register-section">
+
+                <div class="tools-section-heading">
+                    <div>
+                        <span class="tools-section-number">04 / NOVO REGISTRO</span>
+                        <h2>Adicionar equipamento ao patrimônio</h2>
+                        <p>
+                            Cadastre um novo equipamento com seus dados de identificação,
+                            aquisição e localização.
+                        </p>
+                    </div>
+
+                    <div class="tools-register-section-icon">
+                        <i class="bi bi-plus-circle"></i>
+                    </div>
+                </div>
+
+
+                <div class="tools-register-panel">
+
+                    <div class="tools-register-heading">
+                        <div class="tools-register-symbol">
+                            <i class="bi bi-plus-lg"></i>
+                        </div>
+
+                        <div>
+                            <span>CADASTRO INDIVIDUAL</span>
+                            <h3>Dados do equipamento</h3>
+                        </div>
+                    </div>
+
+                    <form method="POST"
+                          action="{{ url_for('ferramentas.cadastrar_ferramenta') }}"
+                          class="tools-register-form">
+
+                        <div class="tools-register-group">
+
+                            <div class="tools-register-group-title my-2">
+                                <i class="bi bi-upc-scan me-1"></i>
+                                Identificação
+                            </div>
+
+                            <div class="tools-register-fields">
+
+                                <div class="tools-form-field">
+                                    <label>Nome do equipamento *</label>
+                                    <input type="text"
+                                           name="nome"
+                                           class="form-control"
+                                           placeholder="Ex.: Compressor"
+                                           maxlength="120"
+                                           required>
+                                </div>
+
+                                <div class="tools-form-field">
+                                    <label>Categoria *</label>
+                                    <select name="categoria"
+                                            class="form-select"
+                                            required>
+                                        <option value="">Selecione</option>
+                                        <option value="Máquinas">Máquinas</option>
+                                        <option value="Elétricas">Elétricas</option>
+                                        <option value="Manuais">Manuais</option>
+                                        <option value="Acessórios">Acessórios</option>
+                                        <option value="Equipamentos">Equipamentos</option>
+                                        <option value="Outros">Outros</option>
+                                    </select>
+                                </div>
+
+                                <div class="tools-form-field">
+                                    <label>Marca</label>
+                                    <input type="text"
+                                           name="marca"
+                                           class="form-control"
+                                           placeholder="Ex.: Schulz">
+                                </div>
+
+                                <div class="tools-form-field">
+                                    <label>Modelo</label>
+                                    <input type="text"
+                                           name="modelo"
+                                           class="form-control"
+                                           placeholder="Modelo do equipamento">
+                                </div>
+
+                                <div class="tools-form-field">
+                                    <label>Número de série</label>
+                                    <input type="text"
+                                           name="numero_serie"
+                                           class="form-control"
+                                           placeholder="Identificação de fábrica">
+                                </div>
+
+                                <div class="tools-form-field">
+                                    <label>Localização</label>
+                                    <input type="text"
+                                           name="localizacao"
+                                           class="form-control"
+                                           placeholder="Ex.: Depósito principal">
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="tools-register-group">
+
+                            <div class="tools-register-group-title my-2">
+                                <i class="bi bi-receipt"></i>
+                                Aquisição
+                            </div>
+
+                            <div class="tools-register-fields">
+
+                                <div class="tools-form-field">
+                                    <label>Data da compra</label>
+                                    <input type="date"
+                                           name="data_aquisicao"
+                                           class="form-control">
+                                </div>
+
+                                <div class="tools-form-field">
+                                    <label>Valor de aquisição (R$)</label>
+                                    <input type="text"
+                                           name="valor_aquisicao"
+                                           class="form-control"
+                                           placeholder="Ex.: 2.500,00"
+                                           inputmode="decimal">
+                                </div>
+
+                                <div class="tools-form-field">
+                                    <label>Fornecedor</label>
+                                    <input type="text"
+                                           name="fornecedor"
+                                           class="form-control"
+                                           placeholder="Loja ou fornecedor">
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="tools-register-group">
+
+                            <div class="tools-register-group-title my-2">
+                                <i class="bi bi-card-text"></i>
+                                Informações complementares
+                            </div>
+
+                            <div class="tools-register-fields">
+
+                                <div class="tools-form-field tools-register-wide">
+                                    <label>Descrição</label>
+                                    <textarea name="descricao"
+                                              class="form-control"
+                                              rows="3"
+                                              placeholder="Características, potência, capacidade ou especificações..."></textarea>
+                                </div>
+
+                                <div class="tools-form-field tools-register-wide">
+                                    <label>Observações</label>
+                                    <textarea name="observacoes"
+                                              class="form-control"
+                                              rows="3"
+                                              placeholder="Informações adicionais sobre este equipamento..."></textarea>
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="tools-register-bottom">
+
+                            <div class="tools-register-notice my-2">
+                                <i class="bi bi-info-circle"></i>
+                                <span>
+                                    O equipamento será cadastrado como disponível.
+                                    Se precisar de manutenção, você poderá registrar o envio
+                                    diretamente no inventário.
+                                </span>
+                            </div>
+
+                            <button type="submit" class="tools-register-submit">
+                                <i class="bi bi-plus-circle"></i>
+                                Cadastrar equipamento
+                            </button>
+
+                        </div>
+
+                    </form>
+
+                </div>
+
+            </section>
+
+
+            <footer class="dashboard-footer">
+                <span>© 2026 TaskBerry. Gestão e otimização.</span>
+                <span>Organização que faz o negócio crescer.</span>
+            </footer>
+
         </section>
 
     </main>
