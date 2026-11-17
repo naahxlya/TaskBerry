@@ -51,8 +51,8 @@
             {% with mensagens = get_flashed_messages(with_categories=true) %}
                 {% if mensagens %}
                     {% for categoria, mensagem in mensagens %}
-                        <div class="alert alert-{{ categoria }} alert-dismissible fade show"
-                             role="alert">
+                        <div class="alert alert-{{ categoria }} alert-dismissible fade show taskberry-auto-dismiss"
+                             role="alert" data-auto-dismiss="5000">
                             {{ mensagem }}
                             <button type="button" class="btn-close"
                                     data-bs-dismiss="alert"></button>
@@ -580,21 +580,23 @@
                                                     <i class="bi bi-eye"></i>
                                                 </button>
 
-                                                <button type="button"
-                                                        class="materials-action-button"
-                                                        title="Editar"
-                                                        data-bs-toggle="modal"
-                                                        data-bs-target="#modalEditar{{ material._id }}">
-                                                    <i class="bi bi-pencil"></i>
-                                                </button>
+                                                {% if material.saldo_equivalente > 0 %}
+                                                    <button type="button"
+                                                            class="materials-action-button"
+                                                            title="Editar"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#modalEditar{{ material._id }}">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </button>
 
-                                                <button type="button"
-                                                        class="materials-action-button"
-                                                        title="Registrar consumo"
-                                                        data-bs-toggle="modal"
-                                                        data-bs-target="#modalConsumo{{ material._id }}">
-                                                    <i class="bi bi-droplet"></i>
-                                                </button>
+                                                    <button type="button"
+                                                            class="materials-action-button"
+                                                            title="Registrar consumo"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#modalConsumo{{ material._id }}">
+                                                        <i class="bi bi-droplet"></i>
+                                                    </button>
+                                                {% endif %}
 
                                                 <button type="button"
                                                         class="materials-action-button danger"
@@ -603,6 +605,18 @@
                                                         data-bs-target="#modalArquivar{{ material._id }}">
                                                     <i class="bi bi-archive"></i>
                                                 </button>
+
+                                                <form method="POST"
+                                                      action="{{ url_for('materiais.enviar_material_lixeira', material_id=material._id) }}"
+                                                      data-confirm="Deseja enviar {{ material.nome }} para a lixeira? O histórico de compras e movimentações será preservado."
+                                                      data-confirm-title="Enviar material para a lixeira"
+                                                      data-confirm-button="Enviar para a lixeira"
+                                                      data-confirm-icon="bi-trash3"
+                                                      data-confirm-variant="danger">
+                                                    <button type="submit" class="materials-action-button danger" title="Excluir material">
+                                                        <i class="bi bi-trash3"></i>
+                                                    </button>
+                                                </form>
 
                                             </div>
                                         </td>
@@ -673,7 +687,7 @@
 
                         {% for movimento in movimentacoes %}
 
-                            <div class="materials-history-item">
+                            <div class="materials-history-item" data-expand-item="movement">
 
                                 <div class="materials-history-icon
                                     {% if movimento.tipo in ['compra', 'cadastro'] %}positive
@@ -690,7 +704,7 @@
                                         <i class="bi bi-archive"></i>
                                     {% elif movimento.tipo == "estoque_zerado" %}
                                         <i class="bi bi-box2-fill"></i>
-                                    {% elif movimento.tipo == "exclusao" %}
+                                    {% elif movimento.tipo in ["exclusao", "exclusao_automatica"] %}
                                         <i class="bi bi-trash"></i>
                                     {% elif movimento.tipo == "restauracao" %}
                                         <i class="bi bi-arrow-counterclockwise"></i>
@@ -719,6 +733,8 @@
                                         Arquivamento
                                     {% elif movimento.tipo == "exclusao" %}
                                         Enviado à lixeira
+                                    {% elif movimento.tipo == "exclusao_automatica" %}
+                                        Lixeira automática
                                     {% elif movimento.tipo == "restauracao" %}
                                         Restauração
                                     {% else %}
@@ -731,6 +747,17 @@
                         {% endfor %}
 
                     </div>
+                    {% if movimentacoes_tem_mais %}
+                        <div class="materials-expand-wrap my-3">
+                            <button type="button" class="materials-expand-button"
+                                    id="btnMaisMovimentacoes"
+                                    data-url="{{ url_for('materiais.carregar_mais_movimentacoes') }}"
+                                    data-skip="{{ movimentacoes|length }}">
+                                Mostrar mais 10 movimentações
+                                <i class="bi bi-chevron-down"></i>
+                            </button>
+                        </div>
+                    {% endif %}
 
                 {% else %}
 
@@ -754,12 +781,12 @@
                 </div>
 
                 {% if materiais_arquivados %}
-                    <div class="table-responsive">
-                        <table class="table materials-table align-middle">
+                    <div class="materials-compact-table-wrap">
+                        <table class="table materials-table materials-compact-table align-middle">
                             <thead><tr><th>Material</th><th>Categoria</th><th>Estoque registrado</th><th class="text-end">Ações</th></tr></thead>
                             <tbody>
                                 {% for material in materiais_arquivados %}
-                                    <tr>
+                                    <tr data-expand-item="archived">
                                         <td><strong>{{ material.nome }}</strong><small class="d-block">{{ material.marca or 'Marca não informada' }}</small></td>
                                         <td>{{ material.categoria }}</td>
                                         <td>{{ material.quantidade_unidades }} unidade(s)</td>
@@ -782,6 +809,13 @@
                             </tbody>
                         </table>
                     </div>
+                    {% if materiais_arquivados|length > 5 %}
+                        <div class="materials-expand-wrap">
+                            <button type="button" class="materials-expand-button" data-expand-list="archived">
+                                Mostrar mais 10 materiais arquivados <i class="bi bi-chevron-down"></i>
+                            </button>
+                        </div>
+                    {% endif %}
                 {% else %}
                     <div class="materials-history-empty">Nenhum material arquivado.</div>
                 {% endif %}
@@ -798,12 +832,12 @@
                 </div>
 
                 {% if materiais_lixeira %}
-                    <div class="table-responsive">
-                        <table class="table materials-table align-middle">
+                    <div class="materials-compact-table-wrap">
+                        <table class="table materials-table materials-compact-table align-middle">
                             <thead><tr><th>Material</th><th>Categoria</th><th>Enviado para lixeira</th><th class="text-end">Ações</th></tr></thead>
                             <tbody>
                                 {% for material in materiais_lixeira %}
-                                    <tr>
+                                    <tr data-expand-item="trash">
                                         <td><strong>{{ material.nome }}</strong><small class="d-block">{{ material.marca or 'Marca não informada' }}</small></td>
                                         <td>{{ material.categoria }}</td>
                                         <td>{% if material.excluido_em %}{{ material.excluido_em.strftime('%d/%m/%Y %H:%M') }}{% else %}Data não registrada{% endif %}</td>
@@ -826,6 +860,13 @@
                             </tbody>
                         </table>
                     </div>
+                    {% if materiais_lixeira|length > 5 %}
+                        <div class="materials-expand-wrap">
+                            <button type="button" class="materials-expand-button" data-expand-list="trash">
+                                Mostrar mais 10 materiais na lixeira <i class="bi bi-chevron-down"></i>
+                            </button>
+                        </div>
+                    {% endif %}
                 {% else %}
                     <div class="materials-history-empty">A lixeira está vazia.</div>
                 {% endif %}
@@ -1212,9 +1253,9 @@
      tabindex="-1"
      aria-hidden="true">
 
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable materials-consumption-dialog">
 
-        <div class="modal-content materials-modal">
+        <div class="modal-content materials-modal materials-consumption-modal">
 
             <form method="POST"
                   action="{{ url_for('materiais.consumir_material', material_id=material._id) }}">
@@ -1242,49 +1283,41 @@
                         </strong>
                         <small>
                             {% if material.percentual_aberto > 0 %}
-                                Há 1 unidade aberta com {{ material.percentual_aberto }}% do conteúdo restante.
+                                1 unidade aberta com {{ material.percentual_aberto }}% restante.
                                 {% if material.quantidade_fechada > 0 %}
-                                    Outras {{ material.quantidade_fechada }} unidade(s) estão fechadas.
+                                    {{ material.quantidade_fechada }} unidade(s) fechada(s).
                                 {% endif %}
                             {% elif material.quantidade_fechada > 0 %}
                                 Todas as {{ material.quantidade_fechada }} unidade(s) estão fechadas.
                             {% else %}
-                                Não há unidades disponíveis no estoque.
+                                Não há unidades disponíveis no estoque. Você pode arquivar ou excluir este cadastro.
                             {% endif %}
                         </small>
                     </div>
 
-                    <div class="form-check mt-3">
+                    <label class="materials-consumption-option mt-3" for="unidadeFinalizada{{ material._id }}">
                         <input class="form-check-input"
                                type="checkbox"
                                name="unidade_finalizada"
                                value="1"
                                id="unidadeFinalizada{{ material._id }}">
-                        <label class="form-check-label fw-semibold"
-                               for="unidadeFinalizada{{ material._id }}">
-                            Esta unidade acabou completamente
-                        </label>
-                        <small class="form-text d-block">
-                            Marque esta opção quando a lata, embalagem ou unidade
-                            tiver sido totalmente utilizada.
-                        </small>
-                    </div>
+                        <span class="materials-consumption-option-copy">
+                            <strong>Esta unidade acabou completamente</strong>
+                            <small>Marque quando a lata, embalagem ou unidade tiver sido totalmente utilizada.</small>
+                        </span>
+                    </label>
 
-                    <div class="form-check mt-3 p-3 rounded-3" style="background:#fff4f4;border:1px solid #f1d5d5;">
+                    <label class="materials-consumption-option materials-consumption-option-danger mt-3" for="estoqueTotalFinalizado{{ material._id }}">
                         <input class="form-check-input"
                                type="checkbox"
                                name="estoque_total_finalizado"
                                value="1"
                                id="estoqueTotalFinalizado{{ material._id }}">
-                        <label class="form-check-label fw-semibold text-danger"
-                               for="estoqueTotalFinalizado{{ material._id }}">
-                            Todo o estoque deste material acabou
-                        </label>
-                        <small class="form-text d-block">
-                            Use quando todas as latas, embalagens ou unidades restantes tiverem sido utilizadas.
-                            O saldo será zerado de uma só vez.
-                        </small>
-                    </div>
+                        <span class="materials-consumption-option-copy">
+                            <strong>Todo o estoque deste material acabou</strong>
+                            <small>Use quando todas as unidades restantes tiverem sido utilizadas. O saldo será zerado de uma só vez.</small>
+                        </span>
+                    </label>
 
                     <div class="mt-3" id="campoPercentual{{ material._id }}">
                         <label class="form-label">
@@ -1400,21 +1433,98 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+    ["archived", "trash"].forEach(function (tipo) {
+        const itens = Array.from(document.querySelectorAll('[data-expand-item="' + tipo + '"]'));
+        let visiveis = 5;
+        itens.forEach((item, index) => { if (index >= visiveis) item.hidden = true; });
+        const botao = document.querySelector('[data-expand-list="' + tipo + '"]');
+        if (!botao) return;
+        botao.addEventListener("click", function () {
+            const limite = visiveis + 10;
+            itens.forEach((item, index) => { if (index < limite) item.hidden = false; });
+            visiveis = limite;
+            if (visiveis >= itens.length) botao.remove();
+        });
+    });
+
+    const botaoMovimentacoes = document.getElementById("btnMaisMovimentacoes");
+    if (botaoMovimentacoes) {
+        botaoMovimentacoes.addEventListener("click", async function () {
+            if (botaoMovimentacoes.dataset.loading === "true") return;
+            botaoMovimentacoes.dataset.loading = "true";
+            botaoMovimentacoes.disabled = true;
+            botaoMovimentacoes.textContent = "Carregando...";
+            try {
+                const url = new URL(botaoMovimentacoes.dataset.url, window.location.origin);
+                url.searchParams.set("skip", botaoMovimentacoes.dataset.skip || "5");
+                const resposta = await fetch(url);
+                if (!resposta.ok) throw new Error("Falha ao carregar movimentações.");
+                const dados = await resposta.json();
+                const lista = document.querySelector(".materials-history-list");
+                const icones = {
+                    compra: ["bi-cart-plus", "positive", "Compra"],
+                    cadastro: ["bi-box", "positive", "Cadastro"],
+                    consumo: ["bi-arrow-down-circle", "negative", "Consumo"],
+                    unidade_finalizada: ["bi-check-circle-fill", "negative", "Unidade finalizada"],
+                    estoque_zerado: ["bi-box2-fill", "negative", "Estoque zerado"],
+                    arquivamento: ["bi-archive", "neutral", "Arquivamento"],
+                    exclusao: ["bi-trash", "neutral", "Enviado à lixeira"],
+                    exclusao_automatica: ["bi-clock-history", "neutral", "Lixeira automática"],
+                    restauracao: ["bi-arrow-counterclockwise", "neutral", "Restauração"]
+                };
+                dados.items.forEach(function (item) {
+                    const config = icones[item.tipo] || ["bi-box", "neutral", item.tipo];
+                    const linha = document.createElement("div");
+                    linha.className = "materials-history-item";
+                    const icone = document.createElement("div");
+                    icone.className = "materials-history-icon " + config[1];
+                    const i = document.createElement("i");
+                    i.className = "bi " + config[0];
+                    icone.appendChild(i);
+                    const descricao = document.createElement("div");
+                    descricao.className = "materials-history-description";
+                    const nome = document.createElement("strong");
+                    nome.textContent = item.material_nome;
+                    const texto = document.createElement("span");
+                    texto.textContent = item.descricao;
+                    const meta = document.createElement("small");
+                    meta.textContent = item.responsavel + (item.data ? " · " + item.data : "");
+                    descricao.append(nome, texto, meta);
+                    const tipoEl = document.createElement("span");
+                    tipoEl.className = "materials-history-type";
+                    tipoEl.textContent = config[2];
+                    linha.append(icone, descricao, tipoEl);
+                    lista.appendChild(linha);
+                });
+                botaoMovimentacoes.dataset.skip = String(Number(botaoMovimentacoes.dataset.skip || 5) + dados.items.length);
+                if (!dados.has_more || dados.items.length === 0) {
+                    botaoMovimentacoes.remove();
+                } else {
+                    botaoMovimentacoes.innerHTML = 'Mostrar mais 10 movimentações <i class="bi bi-chevron-down"></i>';
+                    botaoMovimentacoes.disabled = false;
+                    botaoMovimentacoes.dataset.loading = "false";
+                }
+            } catch (erro) {
+                botaoMovimentacoes.textContent = "Não foi possível carregar. Tentar novamente";
+                botaoMovimentacoes.disabled = false;
+                botaoMovimentacoes.dataset.loading = "false";
+            }
+        });
+    }
+
     document.querySelectorAll('form[action*="/consumir"]').forEach(function (form) {
         const unitCheckbox = form.querySelector('input[name="unidade_finalizada"]');
         const allCheckbox = form.querySelector('input[name="estoque_total_finalizado"]');
         const select = form.querySelector('select[name="percentual_consumido"]');
-
+        if (!unitCheckbox || !allCheckbox || !select) return;
         function atualizarOpcoes() {
             const finalizacaoMarcada = unitCheckbox.checked || allCheckbox.checked;
             select.disabled = finalizacaoMarcada;
             select.required = !finalizacaoMarcada;
             if (finalizacaoMarcada) select.value = "";
-
             if (unitCheckbox.checked) allCheckbox.checked = false;
             if (allCheckbox.checked) unitCheckbox.checked = false;
         }
-
         unitCheckbox.addEventListener("change", atualizarOpcoes);
         allCheckbox.addEventListener("change", atualizarOpcoes);
         atualizarOpcoes();

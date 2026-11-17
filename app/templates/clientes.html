@@ -1,4 +1,3 @@
-
 {% extends "index.html" %}
 
 {% block title %}Clientes | TaskBerry{% endblock %}
@@ -29,7 +28,7 @@
                 <strong>Clientes</strong>
             </div>
 
-            <div class="header-actions">
+            <!--<div class="header-actions">
 
                 <div class="header-divider"></div>
 
@@ -43,7 +42,7 @@
                     </div>
                 </div>
 
-            </div>
+            </div>-->
 
         </header>
 
@@ -227,15 +226,13 @@
                                                     <i class="bi bi-pencil"></i>
                                                 </button>
 
-                                                <!-- EXCLUIR -->
-                                                <button
-                                                    type="button"
-                                                    class="client-action-button client-delete-button"
-                                                    title="Excluir cliente"
-                                                    data-bs-toggle="modal"
-                                                    data-bs-target="#modalExcluir{{ cliente._id }}"
-                                                >
-                                                    <i class="bi bi-trash3"></i>
+                                                <!-- ARQUIVAR -->
+                                                <button type="button"
+                                                        class="client-action-button client-delete-button"
+                                                        title="Arquivar cliente"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#modalArquivar{{ cliente._id }}">
+                                                    <i class="bi bi-archive"></i>
                                                 </button>
 
                                             </div>
@@ -304,6 +301,13 @@
 
                                                 <div class="modal-footer">
                                                     <button type="button"
+                                                            class="btn btn-outline-danger me-auto"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#modalExcluir{{ cliente._id }}">
+                                                        <i class="bi bi-trash3 me-1"></i>
+                                                        Excluir cliente
+                                                    </button>
+                                                    <button type="button"
                                                             class="btn btn-secondary"
                                                             data-bs-dismiss="modal">
                                                         Fechar
@@ -312,6 +316,46 @@
 
                                             </div>
 
+                                        </div>
+                                    </div>
+
+
+                                    <!-- MODAL DE CONFIRMAÇÃO DE EXCLUSÃO -->
+                                    <div class="modal fade"
+                                         id="modalExcluir{{ cliente._id }}"
+                                         tabindex="-1"
+                                         aria-hidden="true">
+                                        <div class="modal-dialog modal-dialog-centered modal-sm">
+                                            <div class="modal-content">
+                                                <form method="POST"
+                                                      action="{{ url_for('clientes.excluir_cliente', cliente_id=cliente._id) }}">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">Enviar cliente para a lixeira?</h5>
+                                                        <button type="button"
+                                                                class="btn-close"
+                                                                data-bs-dismiss="modal"
+                                                                aria-label="Fechar"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <p class="mb-0">
+                                                            Tem certeza de que deseja excluir
+                                                            <strong>{{ cliente.nome }}</strong>?
+                                                            O cliente será movido para a lixeira.
+                                                        </p>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button"
+                                                                class="btn btn-secondary"
+                                                                data-bs-dismiss="modal">
+                                                            Cancelar
+                                                        </button>
+                                                        <button type="submit" class="btn btn-danger">
+                                                            <i class="bi bi-trash3 me-1"></i>
+                                                            Sim, excluir
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </div>
                                         </div>
                                     </div>
 
@@ -403,56 +447,22 @@
 
                                         </div>
                                     </div>
-
-
-                                    <!-- MODAL DE EXCLUSÃO -->
-                                    <div class="modal fade"
-                                         id="modalExcluir{{ cliente._id }}"
-                                         tabindex="-1"
-                                         aria-hidden="true">
-
+                                    <!-- MODAL DE ARQUIVAMENTO -->
+                                    <div class="modal fade" id="modalArquivar{{ cliente._id }}" tabindex="-1" aria-hidden="true">
                                         <div class="modal-dialog modal-dialog-centered modal-sm">
-
                                             <div class="modal-content">
-
                                                 <div class="modal-body text-center p-4">
-
-                                                    <div class="client-delete-icon">
-                                                        <i class="bi bi-trash3"></i>
-                                                    </div>
-
-                                                    <h5>Excluir cliente?</h5>
-
-                                                    <p>
-                                                        Tem certeza de que deseja excluir
-                                                        <strong>{{ cliente.nome }}</strong>?
-                                                        Essa ação não poderá ser desfeita.
-                                                    </p>
-
-                                                    <form method="POST"
-                                                          action="{{ url_for('clientes.excluir_cliente', cliente_id=cliente._id) }}">
-
+                                                    <div class="client-delete-icon"><i class="bi bi-archive"></i></div>
+                                                    <h5>Arquivar cliente?</h5>
+                                                    <p><strong>{{ cliente.nome }}</strong> sairá do painel principal. Você poderá restaurá-lo durante 10 dias.</p>
+                                                    <form method="POST" action="{{ url_for('clientes.arquivar_cliente', cliente_id=cliente._id) }}">
                                                         <div class="d-flex gap-2 justify-content-center">
-
-                                                            <button type="button"
-                                                                    class="btn btn-secondary"
-                                                                    data-bs-dismiss="modal">
-                                                                Cancelar
-                                                            </button>
-
-                                                            <button type="submit"
-                                                                    class="btn btn-danger">
-                                                                Excluir
-                                                            </button>
-
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                            <button type="submit" class="btn btn-primary">Arquivar</button>
                                                         </div>
-
                                                     </form>
-
                                                 </div>
-
                                             </div>
-
                                         </div>
                                     </div>
 
@@ -462,6 +472,36 @@
 
                         </table>
 
+                    </div>
+
+                    <div class="clients-pagination">
+                        <small>Mostrando {{ primeira_linha }} a {{ ultima_linha }} de {{ total_filtrado }} clientes</small>
+                        {% if total_paginas > 1 %}
+                        <nav aria-label="Paginação de clientes">
+                            <ul class="pagination mb-0">
+                                <li class="page-item {{ 'disabled' if pagina <= 1 else '' }}">
+                                    <a class="page-link" href="{{ url_for('clientes.listar_clientes', pagina=pagina-1, busca=busca) if pagina > 1 else '#' }}" aria-label="Página anterior"><i class="bi bi-chevron-left"></i></a>
+                                </li>
+                                {% for numero in range(1, total_paginas + 1) %}
+                                <li class="page-item {{ 'active' if numero == pagina else '' }}">
+                                    <a class="page-link" href="{{ url_for('clientes.listar_clientes', pagina=numero, busca=busca) }}">{{ numero }}</a>
+                                </li>
+                                {% endfor %}
+                                <li class="page-item {{ 'disabled' if pagina >= total_paginas else '' }}">
+                                    <a class="page-link" href="{{ url_for('clientes.listar_clientes', pagina=pagina+1, busca=busca) if pagina < total_paginas else '#' }}" aria-label="Próxima página"><i class="bi bi-chevron-right"></i></a>
+                                </li>
+                            </ul>
+                        </nav>
+                        {% endif %}
+                    </div>
+
+                     <div class="clients-management-actions my-3">
+                        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalClientesArquivados">
+                            <i class="bi bi-archive"></i> Arquivados <span>{{ arquivados|length }}</span>
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalClientesLixeira">
+                            <i class="bi bi-trash3"></i> Lixeira <span>{{ lixeira|length }}</span>
+                        </button>
                     </div>
 
                 {% else %}
@@ -514,7 +554,52 @@
             </section>
 
 
-            <footer class="dashboard-footer">
+            <!-- MODAL: CLIENTES ARQUIVADOS -->
+            <div class="modal fade" id="modalClientesArquivados" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <div><h5 class="modal-title"><i class="bi bi-archive me-2"></i>Clientes arquivados</h5><small class="text-muted">Após 10 dias, os registros seguem automaticamente para a lixeira.</small></div>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                        </div>
+                        <div class="modal-body">
+                            {% if arquivados %}
+                            <div class="table-responsive"><table class="table clients-table align-middle"><thead><tr><th>CLIENTE</th><th>ARQUIVADO EM</th><th class="text-end">AÇÃO</th></tr></thead><tbody>
+                            {% for cliente in arquivados %}
+                            <tr><td><strong>{{ cliente.nome }}</strong><div class="text-muted small">{{ cliente.telefone }}</div></td><td>{{ cliente.arquivado_em.strftime('%d/%m/%Y') if cliente.arquivado_em else '-' }}</td><td><div class="client-actions"><form method="POST" action="{{ url_for('clientes.restaurar_cliente', cliente_id=cliente._id) }}"><button class="btn btn-sm btn-outline-primary" type="submit"><i class="bi bi-arrow-counterclockwise"></i> Restaurar</button></form></div></td></tr>
+                            {% endfor %}
+                            </tbody></table></div>
+                            {% else %}<div class="clients-modal-empty"><i class="bi bi-archive"></i><p>Nenhum cliente arquivado.</p></div>{% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODAL: LIXEIRA -->
+            <div class="modal fade" id="modalClientesLixeira" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <div><h5 class="modal-title"><i class="bi bi-trash3 me-2"></i>Lixeira de clientes</h5><small class="text-muted">Você pode restaurar para Arquivados. Após 10 dias, a exclusão é permanente.</small></div>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                        </div>
+                        <div class="modal-body">
+                            {% if lixeira %}
+                            <div class="table-responsive"><table class="table clients-table align-middle"><thead><tr><th>CLIENTE</th><th>NA LIXEIRA DESDE</th><th class="text-end">AÇÕES</th></tr></thead><tbody>
+                            {% for cliente in lixeira %}
+                            <tr><td><strong>{{ cliente.nome }}</strong><div class="text-muted small">{{ cliente.telefone }}</div></td><td>{{ cliente.excluido_em.strftime('%d/%m/%Y') if cliente.excluido_em else '-' }}</td><td><div class="client-actions">
+                                <form method="POST" action="{{ url_for('clientes.restaurar_cliente', cliente_id=cliente._id) }}"><button class="btn btn-sm btn-outline-primary" type="submit"><i class="bi bi-arrow-counterclockwise"></i> Restaurar</button></form>
+                                <form method="POST" action="{{ url_for('clientes.excluir_permanentemente', cliente_id=cliente._id) }}" onsubmit="return confirm('Excluir permanentemente este cliente? Esta ação não poderá ser desfeita.');"><button class="btn btn-sm btn-outline-danger" type="submit"><i class="bi bi-trash3"></i></button></form>
+                            </div></td></tr>
+                            {% endfor %}
+                            </tbody></table></div>
+                            {% else %}<div class="clients-modal-empty"><i class="bi bi-trash3"></i><p>A lixeira está vazia.</p></div>{% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <footer class="dashboard-footer my-3">
                 <span>© 2026 TaskBerry. Gestão e otimização.</span>
                 <span>Organização que faz o negócio crescer.</span>
             </footer>
