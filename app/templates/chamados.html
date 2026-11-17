@@ -561,6 +561,7 @@
                         </p>
 
                         <div class="calls-hero-actions">
+
                             <a
                                 href="#novo-chamado"
                                 class="calls-button calls-button-primary"
@@ -576,6 +577,23 @@
                                 <i class="bi bi-list-ul"></i>
                                 Ver chamados
                             </a>
+
+                            <a
+                                href="{{ url_for('chamados.listar_arquivados') }}"
+                                class="calls-button calls-button-light"
+                            >
+                                <i class="bi bi-archive"></i>
+                                Arquivados
+                            </a>
+
+                            <a
+                                href="{{ url_for('chamados.listar_lixeira') }}"
+                                class="calls-button calls-button-light"
+                            >
+                                <i class="bi bi-trash3"></i>
+                                Lixeira
+                            </a>
+
                         </div>
 
                     </div>
@@ -824,7 +842,7 @@
                         </div>
 
                         <span class="calls-results-count">
-                            {{ chamados|length }} registro(s)
+                            {{ total_registros }} registro(s)
                         </span>
 
                     </div>
@@ -1039,6 +1057,42 @@
                             {% endfor %}
 
                         </div>
+
+                        {% if total_paginas > 1 %}
+                            <nav class="mt-4" aria-label="Paginação dos chamados">
+                                <ul class="pagination justify-content-center flex-wrap">
+
+                                    <li class="page-item {% if pagina <= 1 %}disabled{% endif %}">
+                                        <a class="page-link"
+                                           href="{{ url_for('chamados.listar_chamados', pagina=pagina-1, **argumentos_paginacao) if pagina > 1 else '#' }}"
+                                           aria-label="Página anterior">
+                                            &lt;
+                                        </a>
+                                    </li>
+
+                                    {% for numero_pagina in range(1, total_paginas + 1) %}
+                                        <li class="page-item {% if numero_pagina == pagina %}active{% endif %}">
+                                            <a class="page-link"
+                                               href="{{ url_for('chamados.listar_chamados', pagina=numero_pagina, **argumentos_paginacao) }}">
+                                                {{ numero_pagina }}
+                                            </a>
+                                        </li>
+                                    {% endfor %}
+
+                                    <li class="page-item {% if pagina >= total_paginas %}disabled{% endif %}">
+                                        <a class="page-link"
+                                           href="{{ url_for('chamados.listar_chamados', pagina=pagina+1, **argumentos_paginacao) if pagina < total_paginas else '#' }}"
+                                           aria-label="Próxima página">
+                                            &gt;
+                                        </a>
+                                    </li>
+
+                                </ul>
+                                <p class="text-center text-muted small">
+                                    Página {{ pagina }} de {{ total_paginas }}
+                                </p>
+                            </nav>
+                        {% endif %}
 
                     {% else %}
 

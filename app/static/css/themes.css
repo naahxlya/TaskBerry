@@ -1,0 +1,474 @@
+/*
+ * TASKBERRY | TEMAS
+ * O modo claro preserva integralmente a identidade visual definida em style.css.
+ * As substituições abaixo só entram em vigor quando data-theme="dark".
+ */
+
+/* Paleta exclusiva do modo escuro */
+html[data-theme="dark"] {
+    color-scheme: dark;
+
+    --tb-page-bg: #21182E;
+    --tb-surface: #30243F;
+    --tb-surface-raised: #392D48;
+    --tb-sidebar-bg: #281D36;
+    --tb-input-bg: #392D48;
+    --tb-text: #F5EFFB;
+    --tb-muted: #B9ADC8;
+    --tb-border: #493A59;
+    --tb-purple: #A989D6;
+    --tb-purple-hover: #C0A5E8;
+    --tb-purple-soft: #49345F;
+    --tb-shadow: 0 2px 14px rgba(0, 0, 0, .20);
+
+    --background: var(--tb-page-bg);
+    --white: var(--tb-surface);
+    --text-primary: var(--tb-text);
+    --text-secondary: var(--tb-muted);
+    --border-color: var(--tb-border);
+    --berry-primary: var(--tb-purple);
+    --berry-dark: var(--tb-purple-hover);
+    --berry-light: var(--tb-purple-soft);
+    --berry-soft: var(--tb-surface-raised);
+    --berry-lilac: var(--tb-purple-soft);
+}
+
+/* Fundo geral e áreas de navegação */
+html[data-theme="dark"],
+html[data-theme="dark"] body,
+html[data-theme="dark"] .dashboard-layout,
+html[data-theme="dark"] .dashboard-main,
+html[data-theme="dark"] .dashboard-content,
+html[data-theme="dark"] .settings-content,
+html[data-theme="dark"] .profile-content,
+html[data-theme="dark"] .clients-content,
+html[data-theme="dark"] .employees-content,
+html[data-theme="dark"] .materials-content,
+html[data-theme="dark"] .tools-content,
+html[data-theme="dark"] .calls-content {
+    background-color: var(--tb-page-bg);
+    color: var(--tb-text);
+}
+
+/* Sidebar: escura somente no tema escuro */
+html[data-theme="dark"] .sidebar {
+    background-color: var(--tb-sidebar-bg);
+    color: var(--tb-text);
+    border-color: var(--tb-border);
+}
+html[data-theme="dark"] .sidebar a,
+html[data-theme="dark"] .sidebar .sidebar-link,
+html[data-theme="dark"] .sidebar .sidebar-sublink,
+html[data-theme="dark"] .sidebar .sidebar-label,
+html[data-theme="dark"] .sidebar .sidebar-user-info small {
+    color: var(--tb-muted);
+}
+html[data-theme="dark"] .sidebar a:hover,
+html[data-theme="dark"] .sidebar .sidebar-link:hover,
+html[data-theme="dark"] .sidebar .sidebar-link.active,
+html[data-theme="dark"] .sidebar .sidebar-sublink.active {
+    color: #FFFFFF;
+}
+html[data-theme="dark"] .sidebar .sidebar-link.active {
+    background: #49345F;
+}
+html[data-theme="dark"] .sidebar-footer {
+    border-color: var(--tb-border);
+}
+html[data-theme="dark"] .sidebar-user-avatar {
+    background: #49345F;
+    color: #E9DDF8;
+}
+
+/* Cabeçalhos, rodapés e navegação interna */
+html[data-theme="dark"] .dashboard-header,
+html[data-theme="dark"] .dashboard-footer,
+html[data-theme="dark"] .dashboard-breadcrumb,
+html[data-theme="dark"] .tools-breadcrumb,
+html[data-theme="dark"] .calls-header {
+    background-color: var(--tb-surface);
+    color: var(--tb-muted);
+    border-color: var(--tb-border);
+}
+
+/* Superfícies dos módulos: cartões, formulários, painéis e estados vazios */
+html[data-theme="dark"] .profile-card,
+html[data-theme="dark"] .dashboard-panel,
+html[data-theme="dark"] .settings-card,
+html[data-theme="dark"] .clients-panel,
+html[data-theme="dark"] .employee-panel,
+html[data-theme="dark"] .employee-stat-card,
+html[data-theme="dark"] .employee-financial-card,
+html[data-theme="dark"] .calls-metric-card,
+html[data-theme="dark"] .calls-work-card,
+html[data-theme="dark"] .calls-form-panel,
+html[data-theme="dark"] .calls-daily-panel,
+html[data-theme="dark"] .calls-calendar-panel,
+html[data-theme="dark"] .calls-empty-state,
+html[data-theme="dark"] .calls-no-clients,
+html[data-theme="dark"] .materials-panel,
+html[data-theme="dark"] .materials-registration-panel,
+html[data-theme="dark"] .materials-overview-card,
+html[data-theme="dark"] .materials-stat-card,
+html[data-theme="dark"] .materials-history-panel,
+html[data-theme="dark"] .materials-empty-state,
+html[data-theme="dark"] .tools-panel,
+html[data-theme="dark"] .tools-assets-panel,
+html[data-theme="dark"] .tools-register-panel,
+html[data-theme="dark"] .tools-recent-panel,
+html[data-theme="dark"] .tools-metric-card,
+html[data-theme="dark"] .tools-asset-card,
+html[data-theme="dark"] .tool-item-card,
+html[data-theme="dark"] .financial-summary,
+html[data-theme="dark"] .activity-panel,
+html[data-theme="dark"] .stat-card,
+html[data-theme="dark"] .modal-content,
+html[data-theme="dark"] .dropdown-menu,
+html[data-theme="dark"] .list-group-item {
+    background-color: var(--tb-surface);
+    color: var(--tb-text);
+    border-color: var(--tb-border);
+    box-shadow: var(--tb-shadow);
+}
+
+/* Cartões e itens internos dos módulos */
+html[data-theme="dark"] .materials-item,
+html[data-theme="dark"] .materials-history-item,
+html[data-theme="dark"] .materials-consumption-summary,
+html[data-theme="dark"] .materials-consumption-option,
+html[data-theme="dark"] .materials-info-notice,
+html[data-theme="dark"] .materials-progress-info,
+html[data-theme="dark"] .materials-expand-button,
+html[data-theme="dark"] .tool-history-entry,
+html[data-theme="dark"] .tool-history-content,
+html[data-theme="dark"] .tool-history-empty,
+html[data-theme="dark"] .tools-detail-history-item,
+html[data-theme="dark"] .tools-recent-item,
+html[data-theme="dark"] .tools-open-item,
+html[data-theme="dark"] .tools-register-notice,
+html[data-theme="dark"] .tools-registration-notice,
+html[data-theme="dark"] .tools-repair-notice,
+html[data-theme="dark"] .tools-open-info,
+html[data-theme="dark"] .tools-modal-content,
+html[data-theme="dark"] .calls-daily-card,
+html[data-theme="dark"] .calls-filters,
+html[data-theme="dark"] .calls-agenda-date,
+html[data-theme="dark"] .calls-next-business-day,
+html[data-theme="dark"] .calls-financial-note,
+html[data-theme="dark"] .client-detail-item,
+html[data-theme="dark"] .employee-detail-section,
+html[data-theme="dark"] .employee-form-section,
+html[data-theme="dark"] .employee-info-notice,
+html[data-theme="dark"] .profile-field,
+html[data-theme="dark"] .profile-password-info,
+html[data-theme="dark"] .settings-period-card,
+html[data-theme="dark"] .settings-readonly,
+html[data-theme="dark"] .settings-info,
+html[data-theme="dark"] .settings-module-list .list-group-item {
+    background-color: var(--tb-surface-raised);
+    color: var(--tb-text);
+    border-color: var(--tb-border);
+}
+
+/* Tipografia dos módulos */
+html[data-theme="dark"] .dashboard-content h1,
+html[data-theme="dark"] .dashboard-content h2,
+html[data-theme="dark"] .dashboard-content h3,
+html[data-theme="dark"] .dashboard-content h4,
+html[data-theme="dark"] .dashboard-content h5,
+html[data-theme="dark"] .dashboard-content h6,
+html[data-theme="dark"] .settings-card h5,
+html[data-theme="dark"] .profile-card h5,
+html[data-theme="dark"] .clients-panel h2,
+html[data-theme="dark"] .clients-panel h3,
+html[data-theme="dark"] .employees-content h1,
+html[data-theme="dark"] .employees-content h2,
+html[data-theme="dark"] .employees-content h3,
+html[data-theme="dark"] .calls-content h1,
+html[data-theme="dark"] .calls-content h2,
+html[data-theme="dark"] .calls-content h3,
+html[data-theme="dark"] .calls-content h4,
+html[data-theme="dark"] .materials-content h1,
+html[data-theme="dark"] .materials-content h2,
+html[data-theme="dark"] .materials-content h3,
+html[data-theme="dark"] .tools-content h1,
+html[data-theme="dark"] .tools-content h2,
+html[data-theme="dark"] .tools-content h3 {
+    color: var(--tb-text);
+}
+html[data-theme="dark"] .dashboard-content p,
+html[data-theme="dark"] .settings-card p,
+html[data-theme="dark"] .profile-card p,
+html[data-theme="dark"] .dashboard-content .text-muted,
+html[data-theme="dark"] .settings-card .text-muted,
+html[data-theme="dark"] .profile-card .text-muted,
+html[data-theme="dark"] .form-text,
+html[data-theme="dark"] .calls-metric-card span,
+html[data-theme="dark"] .calls-metric-card small,
+html[data-theme="dark"] .calls-work-client,
+html[data-theme="dark"] .calls-work-address,
+html[data-theme="dark"] .calls-work-details span,
+html[data-theme="dark"] .calls-list-heading p,
+html[data-theme="dark"] .calls-register-heading p,
+html[data-theme="dark"] .calls-section-heading p,
+html[data-theme="dark"] .calls-daily-heading p,
+html[data-theme="dark"] .calls-daily-card p,
+html[data-theme="dark"] .calls-empty-state p,
+html[data-theme="dark"] .materials-consumption-option-copy small,
+html[data-theme="dark"] .materials-consumption-summary small,
+html[data-theme="dark"] .materials-consumption-summary span {
+    color: var(--tb-muted);
+}
+
+/* Formulários e campos de seleção */
+html[data-theme="dark"] .form-control,
+html[data-theme="dark"] .form-select,
+html[data-theme="dark"] textarea,
+html[data-theme="dark"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+html[data-theme="dark"] select,
+html[data-theme="dark"] .calls-form .ts-control,
+html[data-theme="dark"] .calls-form .ts-dropdown,
+html[data-theme="dark"] .input-group-text,
+html[data-theme="dark"] .tools-form-field input,
+html[data-theme="dark"] .tools-form-field select,
+html[data-theme="dark"] .tools-form-field textarea {
+    background-color: var(--tb-input-bg);
+    color: var(--tb-text);
+    border-color: var(--tb-border);
+}
+html[data-theme="dark"] .form-control::placeholder,
+html[data-theme="dark"] textarea::placeholder,
+html[data-theme="dark"] input::placeholder {
+    color: var(--tb-muted);
+    opacity: .85;
+}
+html[data-theme="dark"] .form-control:focus,
+html[data-theme="dark"] .form-select:focus,
+html[data-theme="dark"] textarea:focus,
+html[data-theme="dark"] input:focus,
+html[data-theme="dark"] select:focus {
+    background-color: var(--tb-input-bg);
+    color: var(--tb-text);
+    border-color: var(--tb-purple);
+    box-shadow: 0 0 0 .2rem rgba(169, 137, 214, .18);
+}
+html[data-theme="dark"] .form-label,
+html[data-theme="dark"] .form-check-label,
+html[data-theme="dark"] .calls-field label,
+html[data-theme="dark"] .tools-form-field label {
+    color: var(--tb-text);
+}
+html[data-theme="dark"] .form-check-input {
+    background-color: var(--tb-input-bg);
+    border-color: var(--tb-border);
+}
+html[data-theme="dark"] .form-check-input:checked {
+    background-color: var(--tb-purple);
+    border-color: var(--tb-purple);
+}
+
+/* Tabelas */
+html[data-theme="dark"] .table,
+html[data-theme="dark"] .materials-table,
+html[data-theme="dark"] .materials-compact-table,
+html[data-theme="dark"] .employee-table,
+html[data-theme="dark"] .clients-table {
+    --bs-table-bg: var(--tb-surface);
+    --bs-table-color: var(--tb-text);
+    --bs-table-border-color: var(--tb-border);
+    --bs-table-striped-bg: #392D48;
+    --bs-table-striped-color: var(--tb-text);
+    --bs-table-hover-bg: #49345F;
+    --bs-table-hover-color: var(--tb-text);
+    color: var(--tb-text);
+    border-color: var(--tb-border);
+}
+html[data-theme="dark"] .table thead th,
+html[data-theme="dark"] .table thead td {
+    background-color: #49345F;
+    color: var(--tb-text);
+    border-color: var(--tb-border);
+}
+html[data-theme="dark"] .table tbody td {
+    color: var(--tb-text);
+    border-color: var(--tb-border);
+}
+
+/* Botões neutros, menus, paginação e modais */
+html[data-theme="dark"] .btn-light,
+html[data-theme="dark"] .btn-secondary,
+html[data-theme="dark"] .btn-outline-secondary,
+html[data-theme="dark"] .page-link {
+    background-color: var(--tb-surface-raised);
+    color: var(--tb-text);
+    border-color: var(--tb-border);
+}
+html[data-theme="dark"] .modal-header,
+html[data-theme="dark"] .modal-footer {
+    border-color: var(--tb-border);
+}
+html[data-theme="dark"] .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+html[data-theme="dark"] .pagination .page-link {
+    color: var(--tb-purple);
+}
+html[data-theme="dark"] .pagination .page-item.active .page-link {
+    background-color: var(--tb-purple);
+    border-color: var(--tb-purple);
+    color: #21182E;
+}
+
+/* Dropdowns, calendário e plugins */
+html[data-theme="dark"] .dropdown-item {
+    color: var(--tb-text);
+}
+html[data-theme="dark"] .dropdown-item:hover,
+html[data-theme="dark"] .dropdown-item:focus {
+    background-color: var(--tb-purple-soft);
+    color: #FFFFFF;
+}
+html[data-theme="dark"] .fc,
+html[data-theme="dark"] .fc-theme-standard td,
+html[data-theme="dark"] .fc-theme-standard th,
+html[data-theme="dark"] .fc .fc-scrollgrid,
+html[data-theme="dark"] .fc .fc-list,
+html[data-theme="dark"] .fc .fc-daygrid-day,
+html[data-theme="dark"] .fc .fc-timegrid-slot {
+    color: var(--tb-text);
+    border-color: var(--tb-border);
+}
+html[data-theme="dark"] .fc .fc-scrollgrid,
+html[data-theme="dark"] .fc .fc-list,
+html[data-theme="dark"] .fc .fc-daygrid-day,
+html[data-theme="dark"] .fc .fc-timegrid-col,
+html[data-theme="dark"] .fc .fc-timegrid-slot,
+html[data-theme="dark"] .fc .fc-list-day-cushion {
+    background-color: var(--tb-surface);
+}
+html[data-theme="dark"] .fc .fc-col-header-cell,
+html[data-theme="dark"] .fc .fc-list-day-cushion {
+    background-color: var(--tb-surface-raised);
+}
+html[data-theme="dark"] .ts-dropdown,
+html[data-theme="dark"] .ts-dropdown .option,
+html[data-theme="dark"] .ts-control {
+    background-color: var(--tb-input-bg);
+    color: var(--tb-text);
+    border-color: var(--tb-border);
+}
+
+/* Links: mantém botões e cores de status dos módulos */
+html[data-theme="dark"] a:not(.btn):not(.sidebar-link):not(.sidebar-sublink) {
+    color: var(--tb-purple);
+}
+html[data-theme="dark"] a:not(.btn):hover {
+    color: var(--tb-purple-hover);
+}
+
+/* Cartão de aparência e botão de alternância */
+.settings-appearance-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    border-radius: 15px;
+}
+html[data-theme="dark"] .settings-appearance-card {
+    background-color: var(--tb-surface);
+    border: 1px solid var(--tb-border);
+    box-shadow: var(--tb-shadow);
+}
+html[data-theme="dark"] .settings-appearance-card h5 {
+    color: var(--tb-text);
+}
+html[data-theme="dark"] .settings-appearance-card p {
+    color: var(--tb-muted);
+}
+.settings-theme-button {
+    min-height: 43px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    padding: 10px 17px;
+    border-radius: 9px;
+    font: inherit;
+    font-size: .82rem;
+    font-weight: 800;
+    white-space: nowrap;
+    cursor: pointer;
+}
+@media (max-width: 767px) {
+    .settings-appearance-card {
+        align-items: stretch;
+        flex-direction: column;
+    }
+    .settings-theme-button {
+        width: 100%;
+    }
+}
+
+html[data-theme="dark"] ::selection {
+    background: var(--tb-purple-soft);
+    color: var(--tb-text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html[data-theme="dark"] *,
+    html[data-theme="dark"] *::before,
+    html[data-theme="dark"] *::after {
+        transition-duration: .01ms !important;
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+    }
+}
+
+/* Superfícies adicionais identificadas nos templates atuais */
+html[data-theme="dark"] .materials-form-section,
+html[data-theme="dark"] .materials-registration-form,
+html[data-theme="dark"] .materials-workspace,
+html[data-theme="dark"] .materials-history-list,
+html[data-theme="dark"] .materials-compact-table-wrap,
+html[data-theme="dark"] .materials-consumption-modal,
+html[data-theme="dark"] .materials-modal,
+html[data-theme="dark"] .tools-monitor-section,
+html[data-theme="dark"] .tools-monitor-empty,
+html[data-theme="dark"] .tools-asset-section,
+html[data-theme="dark"] .tools-asset-list,
+html[data-theme="dark"] .tools-register-form,
+html[data-theme="dark"] .tools-register-section,
+html[data-theme="dark"] .tools-register-fields,
+html[data-theme="dark"] .tools-timeline-panel,
+html[data-theme="dark"] .tools-timeline-item,
+html[data-theme="dark"] .tools-detail-history,
+html[data-theme="dark"] .tools-maintenance-history,
+html[data-theme="dark"] .employee-detail-header,
+html[data-theme="dark"] .employee-modal,
+html[data-theme="dark"] .profile-modal,
+html[data-theme="dark"] .clients-modal-empty,
+html[data-theme="dark"] .calls-agenda-section,
+html[data-theme="dark"] .calls-list-section,
+html[data-theme="dark"] .calls-register-section,
+html[data-theme="dark"] .calls-month-summary,
+html[data-theme="dark"] .calls-card-list {
+    background-color: var(--tb-surface);
+    color: var(--tb-text);
+    border-color: var(--tb-border);
+}
+
+/* Utilitários Bootstrap que costumam introduzir superfícies brancas */
+html[data-theme="dark"] .bg-white,
+html[data-theme="dark"] .bg-light {
+    background-color: var(--tb-surface) !important;
+}
+html[data-theme="dark"] .text-dark {
+    color: var(--tb-text) !important;
+}
+html[data-theme="dark"] .border,
+html[data-theme="dark"] .border-top,
+html[data-theme="dark"] .border-bottom,
+html[data-theme="dark"] .border-start,
+html[data-theme="dark"] .border-end {
+    border-color: var(--tb-border) !important;
+}

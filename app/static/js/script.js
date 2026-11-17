@@ -137,16 +137,196 @@ document.addEventListener("DOMContentLoaded", function () {
 
             const valor = Number(campo.value);
 
-            if (!Number.isInteger(valor) || valor < 0 ||
-                valor > 100 || valor % 10 !== 0) {
+            const percentualValido = Number.isInteger(valor) &&
+                valor >= 0 && valor <= 100 && valor % 10 === 0;
 
+            let feedback = campo.parentElement.querySelector(
+                ".invalid-feedback[data-percentual-feedback]"
+            );
+
+            if (!percentualValido) {
                 campo.value = "";
-                alert("Selecione um percentual de 10 em 10%.");
+                campo.classList.add("is-invalid");
 
+                if (!feedback) {
+                    feedback = document.createElement("div");
+                    feedback.className = "invalid-feedback";
+                    feedback.dataset.percentualFeedback = "true";
+                    feedback.textContent = "Selecione um percentual de 10 em 10%.";
+                    campo.insertAdjacentElement("afterend", feedback);
+                }
+            } else {
+                campo.classList.remove("is-invalid");
+                if (feedback) feedback.remove();
             }
 
         });
 
     });
 
+});
+
+
+/* =====================================================
+   TASKBERRY | MODAL DE CONFIRMAÇÃO REUTILIZÁVEL
+   Usa Bootstrap Modal e os estilos já existentes.
+===================================================== */
+
+document.addEventListener("DOMContentLoaded", function () {
+    const modalElement = document.getElementById("taskberryConfirmModal");
+
+    // O componente é incluído globalmente pelo index.html.
+    if (!modalElement || !window.bootstrap) return;
+
+    const modal = bootstrap.Modal.getOrCreateInstance(modalElement, {
+        backdrop: "static",
+        keyboard: true
+    });
+
+    const kicker = modalElement.querySelector("[data-confirm-kicker]");
+    const title = modalElement.querySelector("[data-confirm-title-text]");
+    const message = modalElement.querySelector("[data-confirm-message]");
+    const confirmButton = modalElement.querySelector("[data-confirm-submit]");
+    const icon = modalElement.querySelector("[data-confirm-icon]");
+    const dangerIcon = modalElement.querySelector("[data-confirm-danger-icon]");
+    const neutralIcon = modalElement.querySelector("[data-confirm-neutral-icon]");
+
+    let pendingForm = null;
+    let pendingResolver = null;
+    let approvedForm = null;
+
+    function safeIconClass(value) {
+        const iconName = String(value || "bi-exclamation-circle");
+        return /^bi-[a-z0-9-]+$/.test(iconName)
+            ? iconName
+            : "bi-exclamation-circle";
+    }
+
+    function openConfirmation(options = {}) {
+        if (pendingResolver) {
+            pendingResolver(false);
+            pendingResolver = null;
+        }
+
+        const variant = options.variant === "primary" ? "primary" : "danger";
+
+        if (kicker) kicker.textContent = options.kicker || "CONFIRMAÇÃO DE OPERAÇÃO";
+        if (title) title.textContent = options.title || "Confirmar operação";
+        if (message) message.textContent = options.message || "Deseja realmente continuar?";
+        if (confirmButton) {
+            confirmButton.textContent = options.confirmText || "Confirmar";
+            confirmButton.classList.toggle("employee-danger-button", variant === "danger");
+            confirmButton.classList.toggle("employee-primary-button", variant === "primary");
+        }
+
+        if (icon) icon.className = "bi " + safeIconClass(options.icon);
+        if (dangerIcon) dangerIcon.classList.toggle("d-none", variant !== "danger");
+        if (neutralIcon) neutralIcon.classList.toggle("d-none", variant !== "primary");
+
+        modal.show();
+
+        return new Promise(function (resolve) {
+            pendingResolver = resolve;
+        });
+    }
+
+    // API para confirmações disparadas por outros scripts, como selects de situação.
+    window.TaskBerryConfirm = {
+        ask: function (options) {
+            pendingForm = null;
+            return openConfirmation(options || {});
+        }
+    };
+
+    // Intercepta somente formulários explicitamente marcados com data-confirm.
+    document.addEventListener("submit", function (event) {
+        const form = event.target;
+        if (!(form instanceof HTMLFormElement) || !form.hasAttribute("data-confirm")) {
+            return;
+        }
+
+        if (approvedForm === form || form.dataset.confirmApproved === "true") {
+            form.dataset.confirmApproved = "false";
+            approvedForm = null;
+            return;
+        }
+
+        event.preventDefault();
+        pendingForm = form;
+
+        openConfirmation({
+            kicker: form.dataset.confirmKicker,
+            title: form.dataset.confirmTitle,
+            message: form.dataset.confirm,
+            confirmText: form.dataset.confirmButton || "Confirmar",
+            icon: form.dataset.confirmIcon || "bi-exclamation-circle",
+            variant: form.dataset.confirmVariant || "danger"
+        });
+    }, true);
+
+    confirmButton.addEventListener("click", function () {
+        const form = pendingForm;
+        const resolver = pendingResolver;
+
+        pendingForm = null;
+        pendingResolver = null;
+
+        if (resolver) resolver(true);
+
+        if (form && form.isConnected) {
+            approvedForm = form;
+            form.dataset.confirmApproved = "true";
+
+            if (typeof form.requestSubmit === "function") {
+                form.requestSubmit();
+            } else {
+                form.submit();
+            }
+        }
+
+        modal.hide();
+    });
+
+    modalElement.addEventListener("hidden.bs.modal", function () {
+        if (pendingResolver) {
+            pendingResolver(false);
+            pendingResolver = null;
+        }
+
+        pendingForm = null;
+    });
+});
+
+/* =====================================================
+   TASKBERRY | MENSAGENS TEMPORÁRIAS E VOLTAR AO TOPO
+===================================================== */
+document.addEventListener("DOMContentLoaded", function () {
+    // Mensagens flash desaparecem após 5 segundos.
+    document.querySelectorAll(".alert.alert-dismissible").forEach(function (alerta) {
+        const tempo = Number(alerta.dataset.autoDismiss) || 5000;
+        window.setTimeout(function () {
+            if (!alerta.isConnected) return;
+            if (window.bootstrap && bootstrap.Alert) {
+                bootstrap.Alert.getOrCreateInstance(alerta).close();
+            } else {
+                alerta.classList.add("fade");
+                window.setTimeout(() => alerta.remove(), 250);
+            }
+        }, tempo);
+    });
+
+    // Botão global de retorno ao topo. O botão fica no index.html.
+    const botaoTopo = document.getElementById("taskberryBackToTop");
+    if (botaoTopo) {
+        const atualizarVisibilidade = function () {
+            botaoTopo.classList.toggle("is-visible", window.scrollY > 350);
+        };
+
+        atualizarVisibilidade();
+        window.addEventListener("scroll", atualizarVisibilidade, { passive: true });
+
+        botaoTopo.addEventListener("click", function () {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+    }
 });

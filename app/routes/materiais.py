@@ -1,6 +1,7 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from decimal import Decimal, InvalidOperation
 import re
+import time
 
 from bson import ObjectId
 from flask import (
@@ -11,7 +12,8 @@ from flask import (
     url_for,
     flash,
     session,
-    current_app
+    current_app,
+    jsonify
 )
 
 from app.database.connection import get_database
@@ -28,6 +30,98 @@ def obter_usuario_id():
 
 def agora_utc():
     return datetime.now(timezone.utc)
+
+
+_ULTIMA_LIMPEZA_MATERIAIS = {}
+
+
+def processar_prazos_materiais(db=None, usuario_id=None):
+    """
+    Aplica a política de retenção sempre que a tela de materiais é acessada:
+    - Arquivados há 10 dias: movidos automaticamente para a lixeira.
+    - Na lixeira há 10 dias: cadastro removido permanentemente.
+    As movimentações são preservadas para o futuro ERP.
+    """
+    db = db or get_database()
+    agora = agora_utc()
+    limite = agora - timedelta(days=10)
+    materiais = db["materiais"]
+
+    filtro_usuario = {"usuario_id": usuario_id} if usuario_id else {}
+
+    vencidos_arquivados = list(materiais.find({
+        **filtro_usuario,
+        "arquivado": True,
+        "excluido": {"$ne": True},
+        "arquivado_em": {"$lte": limite}
+    }))
+
+    for material in vencidos_arquivados:
+        resultado = materiais.update_one(
+            {
+                "_id": material["_id"],
+                "usuario_id": material.get("usuario_id"),
+                "arquivado": True,
+                "excluido": {"$ne": True},
+                "arquivado_em": {"$lte": limite}
+            },
+            {"$set": {
+                "excluido": True,
+                "arquivado_antes_lixeira": True,
+                "excluido_em": agora,
+                "atualizado_em": agora
+            }}
+        )
+
+        if resultado.modified_count:
+            registro = {
+                "usuario_id": material.get("usuario_id"),
+                "material_id": material["_id"],
+                "material_nome": material.get("nome", "Material"),
+                "tipo": "exclusao_automatica",
+                "quantidade": 0,
+                "descricao": "Material movido automaticamente para a lixeira após 10 dias arquivado.",
+                "data": agora,
+                "responsavel": "Sistema TaskBerry"
+            }
+            db["movimentacoes_estoque"].insert_one(registro)
+
+    vencidos_lixeira = list(materiais.find({
+        **filtro_usuario,
+        "excluido": True,
+        "excluido_em": {"$lte": limite}
+    }, {"_id": 1, "usuario_id": 1}))
+
+    for material in vencidos_lixeira:
+        materiais.delete_one({
+            "_id": material["_id"],
+            "usuario_id": material.get("usuario_id"),
+            "excluido": True,
+            "excluido_em": {"$lte": limite}
+        })
+        # Não excluir movimentacoes_estoque: compras e despesas históricas
+        # continuarão disponíveis para os relatórios do ERP.
+
+
+@materiais_bp.before_app_request
+def executar_limpeza_automatica_materiais():
+    usuario_id = session.get("usuario_id")
+    if not usuario_id:
+        return
+
+    agora_monotonico = time.monotonic()
+    ultima_execucao = _ULTIMA_LIMPEZA_MATERIAIS.get(str(usuario_id), 0)
+
+    # Evita consultar o banco em todas as requisições e carregamentos de arquivos.
+    if agora_monotonico - ultima_execucao < 300:
+        return
+
+    _ULTIMA_LIMPEZA_MATERIAIS[str(usuario_id)] = agora_monotonico
+
+    try:
+        processar_prazos_materiais(get_database(), usuario_id)
+    except Exception:
+        current_app.logger.exception("Erro na rotina automática de retenção de materiais.")
 
 
 def converter_numero(valor, permitir_zero=True):
@@ -77,6 +171,7 @@ def buscar_material(material_id, incluir_arquivados=False):
 
     if not incluir_arquivados:
         filtro["arquivado"] = {"$ne": True}
+        filtro["excluido"] = {"$ne": True}
 
     return get_database()["materiais"].find_one(filtro)
 
@@ -233,12 +328,12 @@ def listar_materiais():
 
     filtro = {
         "usuario_id": usuario_id,
-        "arquivado": {"$ne": True}
+        "arquivado": {"$ne": True},
+        "excluido": {"$ne": True}
     }
 
     if busca:
         termo = re.escape(busca)
-
         filtro["$or"] = [
             {"nome": {"$regex": termo, "$options": "i"}},
             {"marca": {"$regex": termo, "$options": "i"}},
@@ -256,30 +351,15 @@ def listar_materiais():
 
     todos = list(colecao.find({
         "usuario_id": usuario_id,
-        "arquivado": {"$ne": True}
+        "arquivado": {"$ne": True},
+        "excluido": {"$ne": True}
     }))
-
-    todos_formatados = [
-        formatar_material(item)
-        for item in todos
-    ]
+    todos_formatados = [formatar_material(item) for item in todos]
 
     total_materiais = len(todos_formatados)
-
-    total_disponiveis = sum(
-        1 for item in todos_formatados
-        if item["saldo_equivalente"] > 0
-    )
-
-    total_estoque_baixo = sum(
-        1 for item in todos_formatados
-        if item["estoque_baixo"]
-    )
-
-    valor_total_estoque = round(
-        sum(item["valor_estoque"] for item in todos_formatados),
-        2
-    )
+    total_disponiveis = sum(1 for item in todos_formatados if item["saldo_equivalente"] > 0)
+    total_estoque_baixo = sum(1 for item in todos_formatados if item["estoque_baixo"])
+    valor_total_estoque = round(sum(item["valor_estoque"] for item in todos_formatados), 2)
 
     categorias = sorted({
         item.get("categoria", "")
@@ -288,33 +368,43 @@ def listar_materiais():
     })
 
     if filtro_estoque == "baixo":
-        materiais = [
-            item for item in materiais
-            if item["estoque_baixo"]
-        ]
-
+        materiais = [item for item in materiais if item["estoque_baixo"]]
     elif filtro_estoque == "disponivel":
-        materiais = [
-            item for item in materiais
-            if item["saldo_equivalente"] > 0
-        ]
-
+        materiais = [item for item in materiais if item["saldo_equivalente"] > 0]
     elif filtro_estoque == "zerado":
-        materiais = [
-            item for item in materiais
-            if item["saldo_equivalente"] <= 0
-        ]
+        materiais = [item for item in materiais if item["saldo_equivalente"] <= 0]
 
-    movimentacoes = list(
-        db["movimentacoes_estoque"]
-        .find({"usuario_id": usuario_id})
-        .sort("data", -1)
-        .limit(10)
-    )
+    materiais_arquivados = [
+        formatar_material(item)
+        for item in colecao.find({
+            "usuario_id": usuario_id,
+            "arquivado": True,
+            "excluido": {"$ne": True}
+        }).sort("arquivado_em", -1)
+    ]
+
+    materiais_lixeira = [
+        formatar_material(item)
+        for item in colecao.find({
+            "usuario_id": usuario_id,
+            "excluido": True
+        }).sort("excluido_em", -1)
+    ]
+
+    consulta_movimentacoes = db["movimentacoes_estoque"].find(
+        {"usuario_id": usuario_id}
+    ).sort("data", -1)
+
+    movimentacoes = list(consulta_movimentacoes.limit(5))
+    movimentacoes_tem_mais = db["movimentacoes_estoque"].count_documents(
+        {"usuario_id": usuario_id}
+    ) > 5
 
     return render_template(
         "materiais.html",
         materiais=materiais,
+        materiais_arquivados=materiais_arquivados,
+        materiais_lixeira=materiais_lixeira,
         busca=busca,
         categoria_selecionada=categoria,
         filtro_estoque=filtro_estoque,
@@ -323,8 +413,53 @@ def listar_materiais():
         total_disponiveis=total_disponiveis,
         total_estoque_baixo=total_estoque_baixo,
         valor_total_estoque=valor_total_estoque,
-        movimentacoes=movimentacoes
+        movimentacoes=movimentacoes,
+        movimentacoes_tem_mais=movimentacoes_tem_mais
     )
+
+
+
+# =====================================================
+# CARREGAR MAIS MOVIMENTAÇÕES (10 POR VEZ)
+# =====================================================
+
+@materiais_bp.route("/materiais/movimentacoes/mais")
+def carregar_mais_movimentacoes():
+    usuario_id = obter_usuario_id()
+    if not usuario_id:
+        return jsonify({"items": [], "has_more": False}), 401
+
+    try:
+        skip = max(0, int(request.args.get("skip", 0)))
+    except (TypeError, ValueError):
+        skip = 0
+
+    db = get_database()
+    cursor = (
+        db["movimentacoes_estoque"]
+        .find({"usuario_id": usuario_id})
+        .sort("data", -1)
+        .skip(skip)
+        .limit(11)
+    )
+    registros = list(cursor)
+    has_more = len(registros) > 10
+    registros = registros[:10]
+
+    items = []
+    for item in registros:
+        data = item.get("data")
+        if data and data.tzinfo is None:
+            data = data.replace(tzinfo=timezone.utc)
+        items.append({
+            "material_nome": item.get("material_nome", "Material"),
+            "descricao": item.get("descricao", ""),
+            "responsavel": item.get("responsavel", "Usuário"),
+            "data": data.strftime("%d/%m/%Y %H:%M") if data else "",
+            "tipo": item.get("tipo", "movimentacao")
+        })
+
+    return jsonify({"items": items, "has_more": has_more})
 
 
 # =====================================================
@@ -411,6 +546,7 @@ def cadastrar_material():
         "localizacao": localizacao,
         "observacoes": observacoes,
         "arquivado": False,
+        "excluido": False,
         "criado_em": agora_utc(),
         "atualizado_em": agora_utc()
     }
@@ -603,100 +739,133 @@ def consumir_material(material_id):
         flash("Material não encontrado.", "danger")
         return voltar_para_lista()
 
-    try:
-        percentual_consumido = validar_percentual(
-            request.form.get("percentual_consumido")
-        )
+    quantidade_fechada = int(material.get("quantidade_fechada", 0))
+    percentual_atual = int(material.get("percentual_aberto", 0))
+    unidade_finalizada = request.form.get("unidade_finalizada") == "1"
+    estoque_total_finalizado = request.form.get("estoque_total_finalizado") == "1"
 
-    except (InvalidOperation, ValueError):
-        flash(
-            "Selecione um percentual válido, de 10 em 10%.",
-            "danger"
-        )
+    if unidade_finalizada and estoque_total_finalizado:
+        flash("Escolha apenas uma opção de finalização.", "warning")
         return voltar_para_lista()
 
-    if percentual_consumido <= 0:
-        flash("O consumo precisa ser maior que zero.", "warning")
-        return voltar_para_lista()
-
-    percentual_atual = material.get("percentual_aberto", 0)
-    quantidade_fechada = material.get("quantidade_fechada", 0)
-
-    # Se não existe unidade aberta, abre uma unidade fechada.
-    if percentual_atual == 0:
-
-        if quantidade_fechada <= 0:
-            flash(
-                "Não há unidades disponíveis para consumo.",
-                "warning"
-            )
+    if estoque_total_finalizado:
+        saldo_anterior = calcular_saldo(quantidade_fechada, percentual_atual)
+        if saldo_anterior <= 0:
+            flash("Este material já está com o estoque zerado.", "warning")
             return voltar_para_lista()
 
-        quantidade_fechada -= 1
-        percentual_atual = 100
-
-    novo_percentual = percentual_atual - percentual_consumido
-
-    if novo_percentual < 0:
-        flash(
-            "O consumo informado é maior que o conteúdo disponível "
-            "na unidade aberta.",
-            "warning"
+        quantidade_fechada_nova = 0
+        percentual_novo = 0
+        tipo_movimentacao = "estoque_zerado"
+        quantidade_movimentada = saldo_anterior
+        percentual_anterior = percentual_atual
+        descricao = (
+            f"Todo o estoque foi finalizado. {quantidade_fechada} unidade(s) fechada(s) "
+            f"e o conteúdo restante da unidade aberta foram retirados do saldo."
         )
-        return voltar_para_lista()
 
-    # Quando a unidade é totalmente consumida, ela deixa de existir
-    # como unidade aberta. A próxima será aberta no próximo consumo.
-    if novo_percentual == 0:
-        novo_percentual = 0
+    elif unidade_finalizada:
+        if percentual_atual > 0:
+            quantidade_fechada_nova = quantidade_fechada
+            percentual_novo = 0
+            quantidade_movimentada = percentual_atual / 100
+            percentual_anterior = percentual_atual
+            descricao = "Unidade aberta finalizada. Todo o conteúdo restante foi utilizado."
+        elif quantidade_fechada > 0:
+            quantidade_fechada_nova = quantidade_fechada - 1
+            percentual_novo = 0
+            quantidade_movimentada = 1
+            percentual_anterior = 100
+            descricao = "Uma unidade fechada foi totalmente utilizada e retirada do estoque."
+        else:
+            flash("Não há unidades disponíveis para finalizar.", "warning")
+            return voltar_para_lista()
+
+        tipo_movimentacao = "unidade_finalizada"
+
+    else:
+        try:
+            percentual_consumido = validar_percentual(
+                request.form.get("percentual_consumido")
+            )
+        except (InvalidOperation, ValueError):
+            flash("Selecione um percentual válido ou uma opção de finalização.", "danger")
+            return voltar_para_lista()
+
+        if percentual_consumido <= 0:
+            flash("O consumo precisa ser maior que zero.", "warning")
+            return voltar_para_lista()
+
+        if percentual_atual == 0:
+            if quantidade_fechada <= 0:
+                flash("Não há unidades disponíveis para consumo.", "warning")
+                return voltar_para_lista()
+            quantidade_fechada -= 1
+            percentual_atual = 100
+
+        novo_percentual = percentual_atual - percentual_consumido
+        if novo_percentual < 0:
+            flash("O consumo informado é maior que o conteúdo disponível na unidade aberta.", "warning")
+            return voltar_para_lista()
+
+        quantidade_fechada_nova = quantidade_fechada
+        percentual_novo = novo_percentual
+        tipo_movimentacao = "consumo"
+        quantidade_movimentada = percentual_consumido
+        percentual_anterior = percentual_atual
+        descricao = f"Consumo de {percentual_consumido}% de uma unidade."
 
     db = get_database()
 
     try:
-        db["materiais"].update_one(
+        resultado = db["materiais"].update_one(
             {
                 "_id": material["_id"],
-                "usuario_id": obter_usuario_id()
+                "usuario_id": obter_usuario_id(),
+                "arquivado": {"$ne": True},
+                "excluido": {"$ne": True}
             },
-            {
-                "$set": {
-                    "quantidade_fechada": quantidade_fechada,
-                    "percentual_aberto": novo_percentual,
-                    "atualizado_em": agora_utc()
-                }
-            }
+            {"$set": {
+                "quantidade_fechada": quantidade_fechada_nova,
+                "percentual_aberto": percentual_novo,
+                "atualizado_em": agora_utc()
+            }}
         )
 
-        material_atualizado = dict(material)
+        if resultado.matched_count == 0:
+            flash("Não foi possível atualizar este material.", "danger")
+            return voltar_para_lista()
 
+        material_atualizado = dict(material)
         material_atualizado.update({
-            "quantidade_fechada": quantidade_fechada,
-            "percentual_aberto": novo_percentual
+            "quantidade_fechada": quantidade_fechada_nova,
+            "percentual_aberto": percentual_novo
         })
 
         registrar_movimentacao(
             db,
             material_atualizado,
-            "consumo",
-            percentual_consumido,
-            f"Consumo de {percentual_consumido}% de uma unidade.",
+            tipo_movimentacao,
+            quantidade_movimentada,
+            descricao,
             {
-                "percentual_anterior": percentual_atual,
-                "percentual_atual": novo_percentual
+                "percentual_anterior": percentual_anterior,
+                "percentual_atual": percentual_novo,
+                "unidade_totalmente_utilizada": unidade_finalizada,
+                "estoque_total_finalizado": estoque_total_finalizado
             }
         )
 
-        flash(
-            "Consumo registrado e estoque atualizado!",
-            "success"
-        )
+        if estoque_total_finalizado:
+            flash("Todo o estoque foi zerado e registrado no histórico!", "success")
+        elif unidade_finalizada:
+            flash("Unidade finalizada e registrada no histórico!", "success")
+        else:
+            flash("Consumo registrado e estoque atualizado!", "success")
 
     except Exception:
-        current_app.logger.exception("Erro ao registrar consumo.")
-        flash(
-            "Não foi possível registrar o consumo.",
-            "danger"
-        )
+        current_app.logger.exception("Erro ao registrar consumo do material.")
+        flash("Não foi possível registrar a movimentação do material.", "danger")
 
     return voltar_para_lista()
 
@@ -705,52 +874,118 @@ def consumir_material(material_id):
 # ARQUIVAR MATERIAL
 # =====================================================
 
-@materiais_bp.route(
-    "/materiais/<material_id>/excluir",
-    methods=["POST"]
-)
-def excluir_material(material_id):
+@materiais_bp.route("/materiais/<material_id>/arquivar", methods=["POST"])
+def arquivar_material(material_id):
     material = buscar_material(material_id)
-
     if not material:
         flash("Material não encontrado.", "danger")
         return voltar_para_lista()
 
+    agora = agora_utc()
     db = get_database()
+    db["materiais"].update_one(
+        {"_id": material["_id"], "usuario_id": obter_usuario_id(), "excluido": {"$ne": True}},
+        {"$set": {"arquivado": True, "arquivado_em": agora, "atualizado_em": agora}}
+    )
+    registrar_movimentacao(db, material, "arquivamento", 0, "Material arquivado. Cadastro e histórico preservados.")
+    flash("Material arquivado. Você pode restaurá-lo na seção Arquivados.", "success")
+    return voltar_para_lista()
 
-    try:
-        db["materiais"].update_one(
-            {
-                "_id": material["_id"],
-                "usuario_id": obter_usuario_id()
-            },
-            {
-                "$set": {
-                    "arquivado": True,
-                    "arquivado_em": agora_utc(),
-                    "atualizado_em": agora_utc()
-                }
-            }
-        )
 
-        registrar_movimentacao(
-            db,
-            material,
-            "arquivamento",
-            0,
-            "Material arquivado. O histórico foi preservado."
-        )
+# Compatibilidade com formulários antigos que ainda apontem para /excluir.
+@materiais_bp.route("/materiais/<material_id>/excluir", methods=["POST"])
+def excluir_material(material_id):
+    return arquivar_material(material_id)
 
-        flash(
-            "Material arquivado. Seu histórico foi preservado.",
-            "success"
-        )
 
-    except Exception:
-        current_app.logger.exception("Erro ao arquivar material.")
-        flash(
-            "Não foi possível arquivar o material.",
-            "danger"
-        )
+# =====================================================
+# ENVIAR MATERIAL PARA A LIXEIRA
+# =====================================================
 
+@materiais_bp.route("/materiais/<material_id>/lixeira", methods=["POST"])
+def enviar_material_lixeira(material_id):
+    material = buscar_material(material_id, incluir_arquivados=True)
+    if not material or material.get("excluido") is True:
+        flash("Material não encontrado.", "danger")
+        return voltar_para_lista()
+
+    agora = agora_utc()
+    db = get_database()
+    db["materiais"].update_one(
+        {"_id": material["_id"], "usuario_id": obter_usuario_id()},
+        {"$set": {
+            "excluido": True,
+            "arquivado_antes_lixeira": material.get("arquivado", False),
+            "excluido_em": agora,
+            "atualizado_em": agora
+        }}
+    )
+    registrar_movimentacao(db, material, "exclusao", 0, "Material enviado para a lixeira. O cadastro e o histórico foram preservados.")
+    flash("Material enviado para a lixeira.", "success")
+    return voltar_para_lista()
+
+
+# =====================================================
+# RESTAURAR MATERIAL
+# =====================================================
+
+@materiais_bp.route("/materiais/<material_id>/restaurar", methods=["POST"])
+def restaurar_material(material_id):
+    if not ObjectId.is_valid(material_id):
+        flash("Material não encontrado.", "danger")
+        return voltar_para_lista()
+
+    db = get_database()
+    material = db["materiais"].find_one({
+        "_id": ObjectId(material_id),
+        "usuario_id": obter_usuario_id(),
+        "$or": [{"arquivado": True}, {"excluido": True}]
+    })
+    if not material:
+        flash("Material não encontrado para restauração.", "danger")
+        return voltar_para_lista()
+
+    estava_na_lixeira = material.get("excluido") is True
+    arquivado_antes = material.get("arquivado_antes_lixeira", False) if estava_na_lixeira else False
+    agora = agora_utc()
+    db["materiais"].update_one(
+        {"_id": material["_id"], "usuario_id": obter_usuario_id()},
+        {"$set": {
+            "excluido": False,
+            "arquivado": bool(arquivado_antes),
+            "arquivado_em": agora if arquivado_antes else None,
+            "atualizado_em": agora
+        }, "$unset": {"excluido_em": "", "arquivado_antes_lixeira": ""}}
+    )
+    registrar_movimentacao(db, material, "restauracao", 0, "Material restaurado.")
+    if arquivado_antes:
+        flash("Material restaurado para a área de arquivados.", "success")
+    else:
+        flash("Material restaurado para o estoque ativo.", "success")
+    return voltar_para_lista()
+
+
+# =====================================================
+# EXCLUSÃO PERMANENTE
+# =====================================================
+
+@materiais_bp.route("/materiais/<material_id>/excluir-permanentemente", methods=["POST"])
+def excluir_material_permanentemente(material_id):
+    if not ObjectId.is_valid(material_id):
+        flash("Material não encontrado.", "danger")
+        return voltar_para_lista()
+
+    db = get_database()
+    material = db["materiais"].find_one({
+        "_id": ObjectId(material_id),
+        "usuario_id": obter_usuario_id(),
+        "excluido": True
+    })
+    if not material:
+        flash("Somente materiais que estão na lixeira podem ser excluídos permanentemente.", "warning")
+        return voltar_para_lista()
+
+    db["materiais"].delete_one({"_id": material["_id"], "usuario_id": obter_usuario_id(), "excluido": True})
+    # As movimentações são preservadas para não apagar o histórico de estoque.
+    flash("Cadastro excluído permanentemente. O histórico de movimentações foi preservado.", "success")
     return voltar_para_lista()

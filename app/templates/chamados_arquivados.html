@@ -1,24 +1,296 @@
 {% extends "index.html" %}
+
 {% block title %}{{ titulo_lista }} | TaskBerry{% endblock %}
+
 {% block content %}
+
 <div class="dashboard-layout calls-layout">
- {% include 'components/sidebar.html' %}
- <main class="dashboard-main calls-main">
-  <header class="dashboard-header calls-header"><button class="sidebar-toggle" id="sidebarToggle" type="button" aria-label="Abrir menu"><i class="bi bi-list"></i></button><div class="calls-header-context"><span>GESTÃO OPERACIONAL</span><strong>{{ titulo_lista }}</strong></div></header>
-  <section class="dashboard-content calls-content">
-   <a class="calls-back-link" href="{{ url_for('chamados.listar_chamados') }}"><i class="bi bi-arrow-left"></i> Voltar para chamados</a>
-   <h1 class="mt-3">{{ titulo_lista }}</h1>
-   {% with mensagens = get_flashed_messages(with_categories=true) %}{% if mensagens %}{% for categoria, mensagem in mensagens %}<div class="alert alert-{{ categoria }}">{{ mensagem }}</div>{% endfor %}{% endif %}{% endwith %}
-   {% if chamados %}<div class="row g-3 mt-2">{% for chamado in chamados %}<div class="col-12"><article class="calls-form-panel d-flex justify-content-between align-items-center flex-wrap gap-3"><div><span class="text-muted">{{ chamado.numero }}</span><h3>{{ chamado.titulo }}</h3><p class="mb-0">{{ chamado.cliente_nome }} · {{ chamado.status_label }}</p></div><div class="d-flex gap-2 flex-wrap"><a class="btn btn-outline-primary btn-sm" href="{{ url_for('chamados.visualizar_chamado', chamado_id=chamado._id) }}"><i class="bi bi-eye"></i> Visualizar</a>{% if lixeira %}<form method="POST" action="{{ url_for('chamados.restaurar_chamado', chamado_id=chamado._id) }}"><button class="btn btn-outline-success btn-sm"><i class="bi bi-arrow-counterclockwise"></i> Restaurar</button></form><form method="POST" action="{{ url_for('chamados.excluir_permanentemente', chamado_id=chamado._id) }}" data-confirm="Esta ação é definitiva. O chamado será removido permanentemente."
- data-confirm-title="Excluir chamado permanentemente"
- data-confirm-button="Excluir definitivamente"
- data-confirm-icon="bi-trash3"
- data-confirm-variant="danger"><button class="btn btn-outline-danger btn-sm"><i class="bi bi-trash3"></i> Excluir definitivamente</button></form>{% else %}<form method="POST" action="{{ url_for('chamados.restaurar_chamado', chamado_id=chamado._id) }}"><button class="btn btn-outline-success btn-sm"><i class="bi bi-arrow-counterclockwise"></i> Restaurar</button></form><form method="POST" action="{{ url_for('chamados.enviar_para_lixeira', chamado_id=chamado._id) }}" data-confirm="Deseja enviar este chamado para a lixeira? Você poderá restaurá-lo depois."
- data-confirm-title="Enviar chamado para a lixeira"
- data-confirm-button="Enviar para a lixeira"
- data-confirm-icon="bi-trash"
- data-confirm-variant="danger"><button class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i> Lixeira</button></form>{% endif %}</div></article></div>{% endfor %}</div>{% else %}<div class="calls-empty-state"><h3>Nenhum registro encontrado</h3><p>Esta área está vazia no momento.</p></div>{% endif %}
-  </section>
- </main>
+
+    {% include 'components/sidebar.html' %}
+
+    <main class="dashboard-main calls-main">
+
+        <header class="dashboard-header calls-header">
+
+            <button
+                class="sidebar-toggle"
+                id="sidebarToggle"
+                type="button"
+                aria-label="Abrir menu"
+            >
+                <i class="bi bi-list"></i>
+            </button>
+
+            <div class="calls-header-context">
+                <span>GESTÃO OPERACIONAL</span>
+                <strong>{{ titulo_lista }}</strong>
+            </div>
+
+        </header>
+
+        <section class="dashboard-content calls-content">
+
+            <a
+                class="calls-back-link"
+                href="{{ url_for('chamados.listar_chamados') }}"
+            >
+                <i class="bi bi-arrow-left"></i>
+                Voltar para chamados
+            </a>
+
+            <section class="calls-page-heading mt-3">
+
+                <div>
+                    <span class="calls-eyebrow">
+                        GERENCIAMENTO DE REGISTROS
+                    </span>
+
+                    <h1>{{ titulo_lista }}</h1>
+
+                    <p>
+                        {% if lixeira %}
+                            Consulte, restaure ou exclua definitivamente
+                            os chamados enviados para a lixeira.
+                        {% else %}
+                            Consulte e recupere os chamados que foram
+                            arquivados.
+                        {% endif %}
+                    </p>
+                </div>
+
+            </section>
+
+            <div class="d-flex flex-wrap gap-2 my-4">
+
+                <a
+                    href="{{ url_for('chamados.listar_arquivados') }}"
+                    class="btn {% if not lixeira %}btn-primary{% else %}btn-outline-primary{% endif %}"
+                >
+                    <i class="bi bi-archive"></i>
+                    Arquivados
+                </a>
+
+                <a
+                    href="{{ url_for('chamados.listar_lixeira') }}"
+                    class="btn {% if lixeira %}btn-primary{% else %}btn-outline-primary{% endif %}"
+                >
+                    <i class="bi bi-trash3"></i>
+                    Lixeira
+                </a>
+
+            </div>
+
+            {% with mensagens = get_flashed_messages(with_categories=true) %}
+                {% if mensagens %}
+                    {% for categoria, mensagem in mensagens %}
+                        <div class="alert alert-{{ categoria }} alert-dismissible fade show">
+                            {{ mensagem }}
+
+                            <button
+                                type="button"
+                                class="btn-close"
+                                data-bs-dismiss="alert"
+                                aria-label="Fechar"
+                            ></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            {% if chamados %}
+
+                <div class="d-flex justify-content-between align-items-center mt-3 mb-2">
+                    <span class="text-muted">{{ total_registros }} registro(s)</span>
+                    <span class="text-muted small">25 por página</span>
+                </div>
+
+                <div class="row g-3 mt-2">
+
+                    {% for chamado in chamados %}
+
+                        <div class="col-12">
+
+                            <article class="calls-form-panel d-flex justify-content-between align-items-center flex-wrap gap-3">
+
+                                <div>
+                                    <span class="text-muted">
+                                        {{ chamado.numero }}
+                                    </span>
+
+                                    <h3>{{ chamado.titulo }}</h3>
+
+                                    <p class="mb-0">
+                                        {{ chamado.cliente_nome }}
+                                        ·
+                                        {{ chamado.status_label }}
+                                    </p>
+
+                                    {% if lixeira and chamado.excluido_em %}
+                                        <small class="text-muted">
+                                            Enviado à lixeira em:
+                                            {{ chamado.excluido_em.strftime("%d/%m/%Y") }}
+                                        </small>
+                                    {% elif chamado.arquivado_em %}
+                                        <small class="text-muted">
+                                            Arquivado em:
+                                            {{ chamado.arquivado_em.strftime("%d/%m/%Y") }}
+                                        </small>
+                                    {% endif %}
+                                </div>
+
+                                <div class="d-flex gap-2 flex-wrap">
+
+                                    <a
+                                        class="btn btn-outline-primary btn-sm"
+                                        href="{{ url_for('chamados.visualizar_chamado', chamado_id=chamado._id) }}"
+                                    >
+                                        <i class="bi bi-eye"></i>
+                                        Visualizar
+                                    </a>
+
+                                    {% if lixeira %}
+
+                                        <form
+                                            method="POST"
+                                            action="{{ url_for('chamados.restaurar_chamado', chamado_id=chamado._id) }}"
+                                        >
+                                            <button
+                                                type="submit"
+                                                class="btn btn-outline-success btn-sm"
+                                            >
+                                                <i class="bi bi-arrow-counterclockwise"></i>
+                                                Restaurar
+                                            </button>
+                                        </form>
+
+                                        <form
+                                            method="POST"
+                                            action="{{ url_for('chamados.excluir_permanentemente', chamado_id=chamado._id) }}"
+                                            data-confirm="Esta ação é definitiva. O chamado será removido permanentemente."
+                                            data-confirm-title="Excluir chamado permanentemente"
+                                            data-confirm-button="Excluir definitivamente"
+                                            data-confirm-icon="bi-trash3"
+                                            data-confirm-variant="danger"
+                                        >
+                                            <button
+                                                type="submit"
+                                                class="btn btn-outline-danger btn-sm"
+                                            >
+                                                <i class="bi bi-trash3"></i>
+                                                Excluir definitivamente
+                                            </button>
+                                        </form>
+
+                                    {% else %}
+
+                                        <form
+                                            method="POST"
+                                            action="{{ url_for('chamados.restaurar_chamado', chamado_id=chamado._id) }}"
+                                        >
+                                            <button
+                                                type="submit"
+                                                class="btn btn-outline-success btn-sm"
+                                            >
+                                                <i class="bi bi-arrow-counterclockwise"></i>
+                                                Restaurar
+                                            </button>
+                                        </form>
+
+                                        <form
+                                            method="POST"
+                                            action="{{ url_for('chamados.enviar_para_lixeira', chamado_id=chamado._id) }}"
+                                            data-confirm="Deseja enviar este chamado para a lixeira?"
+                                            data-confirm-title="Enviar chamado para a lixeira"
+                                            data-confirm-button="Enviar para a lixeira"
+                                            data-confirm-icon="bi-trash"
+                                            data-confirm-variant="danger"
+                                        >
+                                            <button
+                                                type="submit"
+                                                class="btn btn-outline-danger btn-sm"
+                                            >
+                                                <i class="bi bi-trash"></i>
+                                                Lixeira
+                                            </button>
+                                        </form>
+
+                                    {% endif %}
+
+                                </div>
+
+                            </article>
+
+                        </div>
+
+                    {% endfor %}
+
+                </div>
+
+                {% if total_paginas > 1 %}
+                    <nav class="mt-4" aria-label="Paginação dos registros">
+                        <ul class="pagination justify-content-center flex-wrap">
+
+                            <li class="page-item {% if pagina <= 1 %}disabled{% endif %}">
+                                {% if lixeira %}
+                                    <a class="page-link" href="{{ url_for('chamados.listar_lixeira', pagina=pagina-1) if pagina > 1 else '#' }}" aria-label="Página anterior">&lt;</a>
+                                {% else %}
+                                    <a class="page-link" href="{{ url_for('chamados.listar_arquivados', pagina=pagina-1) if pagina > 1 else '#' }}" aria-label="Página anterior">&lt;</a>
+                                {% endif %}
+                            </li>
+
+                            {% for numero_pagina in range(1, total_paginas + 1) %}
+                                <li class="page-item {% if numero_pagina == pagina %}active{% endif %}">
+                                    {% if lixeira %}
+                                        <a class="page-link" href="{{ url_for('chamados.listar_lixeira', pagina=numero_pagina) }}">{{ numero_pagina }}</a>
+                                    {% else %}
+                                        <a class="page-link" href="{{ url_for('chamados.listar_arquivados', pagina=numero_pagina) }}">{{ numero_pagina }}</a>
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+
+                            <li class="page-item {% if pagina >= total_paginas %}disabled{% endif %}">
+                                {% if lixeira %}
+                                    <a class="page-link" href="{{ url_for('chamados.listar_lixeira', pagina=pagina+1) if pagina < total_paginas else '#' }}" aria-label="Próxima página">&gt;</a>
+                                {% else %}
+                                    <a class="page-link" href="{{ url_for('chamados.listar_arquivados', pagina=pagina+1) if pagina < total_paginas else '#' }}" aria-label="Próxima página">&gt;</a>
+                                {% endif %}
+                            </li>
+
+                        </ul>
+                        <p class="text-center text-muted small">
+                            Página {{ pagina }} de {{ total_paginas }}
+                        </p>
+                    </nav>
+                {% endif %}
+
+            {% else %}
+
+                <div class="calls-empty-state">
+
+                    <h3>
+                        {% if lixeira %}
+                            A lixeira está vazia
+                        {% else %}
+                            Nenhum chamado arquivado
+                        {% endif %}
+                    </h3>
+
+                    <p>
+                        {% if lixeira %}
+                            Os chamados enviados para a lixeira aparecerão aqui.
+                        {% else %}
+                            Os chamados arquivados aparecerão nesta área.
+                        {% endif %}
+                    </p>
+
+                </div>
+
+            {% endif %}
+
+        </section>
+
+    </main>
+
 </div>
+
 {% endblock %}

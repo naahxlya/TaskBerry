@@ -477,19 +477,33 @@ def listar_chamados():
             {"endereco.bairro": {"$regex": termo, "$options": "i"}}
         ]
 
+    # Paginação da lista principal: 5 chamados por página.
+    por_pagina = 5
+    pagina = request.args.get("pagina", 1, type=int)
+    pagina = max(pagina, 1)
+
+    total_registros = colecao.count_documents(filtro)
+    total_paginas = max(1, (total_registros + por_pagina - 1) // por_pagina)
+    pagina = min(pagina, total_paginas)
+
     chamados = list(
-        colecao.find(filtro).sort(
-            [
-                ("data_inicio", 1),
-                ("criado_em", -1)
-            ]
-        )
+        colecao.find(filtro)
+        .sort([
+            ("data_inicio", 1),
+            ("criado_em", -1)
+        ])
+        .skip((pagina - 1) * por_pagina)
+        .limit(por_pagina)
     )
 
     chamados = [
         preparar_chamado_para_template(chamado)
         for chamado in chamados
     ]
+
+    # Preserva os filtros ao navegar entre as páginas.
+    argumentos_paginacao = request.args.to_dict()
+    argumentos_paginacao.pop("pagina", None)
 
     filtro_base = {
         "usuario_id": usuario_id,
@@ -568,6 +582,10 @@ def listar_chamados():
         valor_contratado_mes=valor_contratado_mes,
         status_opcoes=STATUS_CHAMADO,
         prioridades=PRIORIDADES,
+        pagina=pagina,
+        total_paginas=total_paginas,
+        total_registros=total_registros,
+        argumentos_paginacao=argumentos_paginacao,
         chamado_edicao=None
     )
 
@@ -689,6 +707,10 @@ def editar_chamado(chamado_id):
         valor_contratado_mes=0,
         status_opcoes=STATUS_CHAMADO,
         prioridades=PRIORIDADES,
+        pagina=1,
+        total_paginas=1,
+        total_registros=0,
+        argumentos_paginacao={},
         chamado_edicao=chamado
     )
 
@@ -995,48 +1017,205 @@ def registrar_acao_chamado(chamado_id, campo, valor, acao, descricao):
 @chamados_bp.route("/chamados/<chamado_id>/arquivar", methods=["POST"])
 def arquivar_chamado(chamado_id):
     chamado = buscar_chamado(chamado_id)
+
     if not chamado or chamado.get("excluido"):
         flash("Chamado não encontrado.", "danger")
         return voltar_para_lista()
-    return registrar_acao_chamado(chamado_id, "arquivado", True, "arquivado", "Chamado arquivado. O histórico foi preservado.")
+
+    if chamado.get("arquivado"):
+        flash("Este chamado já está arquivado.", "warning")
+        return voltar_para_lista()
+
+    data = agora()
+
+    db = get_database()
+
+    db["chamados"].update_one(
+        {
+            "_id": chamado["_id"],
+            "usuario_id": obter_usuario_id()
+        },
+        {
+            "$set": {
+                "arquivado": True,
+                "arquivado_em": data,
+                "atualizado_em": data
+            },
+            "$push": {
+                "historico": {
+                    "acao": "arquivado",
+                    "descricao": "Chamado arquivado. O histórico foi preservado.",
+                    "data": data,
+                    "usuario_nome": session.get("usuario_nome", "Usuário")
+                }
+            }
+        }
+    )
+
+    flash("Chamado arquivado com sucesso.", "success")
+    return voltar_para_lista()
 
 
 @chamados_bp.route("/chamados/<chamado_id>/excluir", methods=["POST"])
 def enviar_para_lixeira(chamado_id):
     chamado = buscar_chamado(chamado_id)
-    if not chamado:
+
+    if not chamado or chamado.get("excluido"):
         flash("Chamado não encontrado.", "danger")
         return voltar_para_lista()
-    return registrar_acao_chamado(chamado_id, "excluido", True, "enviado_lixeira", "Chamado enviado para a lixeira.")
+
+    data = agora()
+
+    db = get_database()
+
+    db["chamados"].update_one(
+        {
+            "_id": chamado["_id"],
+            "usuario_id": obter_usuario_id()
+        },
+        {
+            "$set": {
+                "excluido": True,
+                "excluido_em": data,
+                "atualizado_em": data
+            },
+            "$push": {
+                "historico": {
+                    "acao": "enviado_lixeira",
+                    "descricao": "Chamado enviado para a lixeira.",
+                    "data": data,
+                    "usuario_nome": session.get("usuario_nome", "Usuário")
+                }
+            }
+        }
+    )
+
+    flash("Chamado enviado para a lixeira.", "success")
+    return voltar_para_lista()
 
 
 @chamados_bp.route("/chamados/arquivados")
 def listar_arquivados():
-    itens = list(get_database()["chamados"].find({"usuario_id": obter_usuario_id(), "arquivado": True, "excluido": {"$ne": True}}).sort("atualizado_em", -1))
-    return render_template("chamados_arquivados.html", chamados=[preparar_chamado_para_template(x) for x in itens], titulo_lista="Chamados arquivados", lixeira=False)
+
+    usuario_id = obter_usuario_id()
+    if not usuario_id:
+        return redirect(url_for("inicio"))
+
+    colecao = get_database()["chamados"]
+    filtro = {
+        "usuario_id": usuario_id,
+        "arquivado": True,
+        "excluido": {"$ne": True}
+    }
+
+    # Arquivados: 25 registros por página.
+    por_pagina = 25
+    pagina = max(request.args.get("pagina", 1, type=int), 1)
+    total_registros = colecao.count_documents(filtro)
+    total_paginas = max(1, (total_registros + por_pagina - 1) // por_pagina)
+    pagina = min(pagina, total_paginas)
+
+    itens = list(
+        colecao.find(filtro)
+        .sort("arquivado_em", -1)
+        .skip((pagina - 1) * por_pagina)
+        .limit(por_pagina)
+    )
+
+    return render_template(
+        "chamados_arquivados.html",
+        chamados=[
+            preparar_chamado_para_template(item)
+            for item in itens
+        ],
+        titulo_lista="Chamados arquivados",
+        lixeira=False,
+        pagina=pagina,
+        total_paginas=total_paginas,
+        total_registros=total_registros
+    )
 
 
 @chamados_bp.route("/chamados/lixeira")
 def listar_lixeira():
-    itens = list(get_database()["chamados"].find({"usuario_id": obter_usuario_id(), "excluido": True}).sort("atualizado_em", -1))
-    return render_template("chamados_arquivados.html", chamados=[preparar_chamado_para_template(x) for x in itens], titulo_lista="Lixeira", lixeira=True)
 
+    usuario_id = obter_usuario_id()
+    if not usuario_id:
+        return redirect(url_for("inicio"))
+
+    colecao = get_database()["chamados"]
+    filtro = {
+        "usuario_id": usuario_id,
+        "excluido": True
+    }
+
+    # Lixeira: 25 registros por página.
+    por_pagina = 25
+    pagina = max(request.args.get("pagina", 1, type=int), 1)
+    total_registros = colecao.count_documents(filtro)
+    total_paginas = max(1, (total_registros + por_pagina - 1) // por_pagina)
+    pagina = min(pagina, total_paginas)
+
+    itens = list(
+        colecao.find(filtro)
+        .sort("excluido_em", -1)
+        .skip((pagina - 1) * por_pagina)
+        .limit(por_pagina)
+    )
+
+    return render_template(
+        "chamados_arquivados.html",
+        chamados=[
+            preparar_chamado_para_template(item)
+            for item in itens
+        ],
+        titulo_lista="Lixeira de chamados",
+        lixeira=True,
+        pagina=pagina,
+        total_paginas=total_paginas,
+        total_registros=total_registros
+    )
 
 @chamados_bp.route("/chamados/<chamado_id>/restaurar", methods=["POST"])
 def restaurar_chamado(chamado_id):
+
     chamado = buscar_chamado(chamado_id)
-    if not chamado or (not chamado.get("excluido") and not chamado.get("arquivado")):
+
+    if not chamado or (
+        not chamado.get("excluido")
+        and not chamado.get("arquivado")
+    ):
         flash("Chamado não encontrado na área de recuperação.", "danger")
         return voltar_para_lista()
-    estava_na_lixeira = chamado.get("excluido", False)
+
     data = agora()
-    get_database()["chamados"].update_one({"_id": chamado["_id"], "usuario_id": obter_usuario_id()}, {
-        "$set": {"excluido": False, "arquivado": False, "atualizado_em": data},
-        "$push": {"historico": {"acao": "restaurado", "descricao": "Chamado restaurado para a lista ativa.", "data": data, "usuario_nome": session.get("usuario_nome", "Usuário")}}
-    })
+
+    get_database()["chamados"].update_one(
+        {
+            "_id": chamado["_id"],
+            "usuario_id": obter_usuario_id()
+        },
+        {
+            "$set": {
+                "excluido": False,
+                "arquivado": False,
+                "arquivado_em": None,
+                "excluido_em": None,
+                "atualizado_em": data
+            },
+            "$push": {
+                "historico": {
+                    "acao": "restaurado",
+                    "descricao": "Chamado restaurado para a lista ativa.",
+                    "data": data,
+                    "usuario_nome": session.get("usuario_nome", "Usuário")
+                }
+            }
+        }
+    )
+
     flash("Chamado restaurado com sucesso.", "success")
     return voltar_para_lista()
-
 
 @chamados_bp.route("/chamados/<chamado_id>/excluir-permanentemente", methods=["POST"])
 def excluir_permanentemente(chamado_id):
