@@ -979,8 +979,16 @@
 
                                     <div class="calls-work-card-actions">
                                         <a href="{{ url_for('chamados.visualizar_chamado', chamado_id=chamado._id) }}" class="calls-icon-button" title="Visualizar chamado" aria-label="Visualizar chamado"><i class="bi bi-eye"></i></a>
-                                        <form method="POST" action="{{ url_for('chamados.arquivar_chamado', chamado_id=chamado._id) }}" onsubmit="return confirm('Arquivar este chamado?');"><button type="submit" class="calls-icon-button" title="Arquivar chamado" aria-label="Arquivar chamado"><i class="bi bi-archive"></i></button></form>
-                                        <form method="POST" action="{{ url_for('chamados.enviar_para_lixeira', chamado_id=chamado._id) }}" onsubmit="return confirm('Enviar este chamado para a lixeira?');"><button type="submit" class="calls-icon-button" title="Enviar para lixeira" aria-label="Enviar para lixeira"><i class="bi bi-trash"></i></button></form>
+                                        <form method="POST" action="{{ url_for('chamados.arquivar_chamado', chamado_id=chamado._id) }}" data-confirm="Deseja arquivar este chamado? Ele ficará disponível na área de chamados arquivados."
+                                            data-confirm-title="Arquivar chamado"
+                                            data-confirm-button="Arquivar chamado"
+                                            data-confirm-icon="bi-archive"
+                                            data-confirm-variant="primary"><button type="submit" class="calls-icon-button" title="Arquivar chamado" aria-label="Arquivar chamado"><i class="bi bi-archive"></i></button></form>
+                                        <form method="POST" action="{{ url_for('chamados.enviar_para_lixeira', chamado_id=chamado._id) }}" data-confirm="Deseja enviar este chamado para a lixeira? Você poderá restaurá-lo depois."
+                                            data-confirm-title="Enviar chamado para a lixeira"
+                                            data-confirm-button="Enviar para a lixeira"
+                                            data-confirm-icon="bi-trash"
+                                            data-confirm-variant="danger"><button type="submit" class="calls-icon-button" title="Enviar para lixeira" aria-label="Enviar para lixeira"><i class="bi bi-trash"></i></button></form>
 
                                         <a
                                             href="{{ url_for(
@@ -1631,19 +1639,40 @@ document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll(".calls-status-form").forEach(function (form) {
 
         const select = form.querySelector("select");
-        const valorInicial = select.value;
+        if (!select) return;
 
-        select.addEventListener("change", function () {
+        let valorInicial = select.value;
+        let confirmacaoEmAndamento = false;
 
-            const confirmado = confirm(
-                "Deseja realmente alterar a situação deste chamado?"
-            );
+        select.addEventListener("change", async function () {
+
+            if (confirmacaoEmAndamento) return;
+
+            const novoValor = select.value;
+            if (novoValor === valorInicial) return;
+
+            confirmacaoEmAndamento = true;
+
+            const confirmado = await window.TaskBerryConfirm.ask({
+                kicker: "ATUALIZAÇÃO DO CHAMADO",
+                title: "Alterar situação",
+                message: "Deseja realmente alterar a situação deste chamado?",
+                confirmText: "Confirmar alteração",
+                icon: "bi-arrow-repeat",
+                variant: "primary"
+            });
 
             if (confirmado) {
-                form.submit();
+                if (typeof form.requestSubmit === "function") {
+                    form.requestSubmit();
+                } else {
+                    form.submit();
+                }
             } else {
                 select.value = valorInicial;
             }
+
+            confirmacaoEmAndamento = false;
 
         });
 

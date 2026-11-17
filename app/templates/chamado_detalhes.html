@@ -12,7 +12,11 @@
       {% with mensagens = get_flashed_messages(with_categories=true) %}{% if mensagens %}{% for categoria, mensagem in mensagens %}<div class="alert alert-{{ categoria }}">{{ mensagem }}</div>{% endfor %}{% endif %}{% endwith %}
       <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
         <div><a class="calls-back-link" href="{{ url_for('chamados.listar_chamados') }}"><i class="bi bi-arrow-left"></i> Voltar para chamados</a><div class="calls-eyebrow mt-3">{{ chamado.numero }}</div><h1>{{ chamado.titulo }}</h1><p class="text-muted mb-0">{{ chamado.cliente_nome }} · {{ chamado.status_label }}</p></div>
-        <div class="d-flex gap-2 flex-wrap"><a class="btn btn-outline-primary" href="{{ url_for('chamados.editar_chamado', chamado_id=chamado._id) }}"><i class="bi bi-pencil"></i> Editar</a><form method="POST" action="{{ url_for('chamados.arquivar_chamado', chamado_id=chamado._id) }}" onsubmit="return confirm('Arquivar este chamado?');"><button class="btn btn-outline-secondary"><i class="bi bi-archive"></i> Arquivar</button></form></div>
+        <div class="d-flex gap-2 flex-wrap"><a class="btn btn-outline-primary" href="{{ url_for('chamados.editar_chamado', chamado_id=chamado._id) }}"><i class="bi bi-pencil"></i> Editar</a><form method="POST" action="{{ url_for('chamados.arquivar_chamado', chamado_id=chamado._id) }}" data-confirm="Deseja arquivar este chamado? Ele ficará disponível na área de chamados arquivados."
+            data-confirm-title="Arquivar chamado"
+            data-confirm-button="Arquivar chamado"
+            data-confirm-icon="bi-archive"
+            data-confirm-variant="primary"><button class="btn btn-outline-secondary"><i class="bi bi-archive"></i> Arquivar</button></form></div>
       </div>
       <div class="row g-3">
         <div class="col-lg-8">

@@ -42,6 +42,11 @@
                 </div>
             </div>
 
+            <div class="d-flex flex-wrap gap-2 mb-3">
+                <a href="#materiais-arquivados" class="materials-secondary-button text-decoration-none"><i class="bi bi-archive me-1"></i> Arquivados ({{ materiais_arquivados|length }})</a>
+                <a href="#lixeira-materiais" class="materials-secondary-button text-decoration-none"><i class="bi bi-trash me-1"></i> Lixeira ({{ materiais_lixeira|length }})</a>
+            </div>
+
             <!-- MENSAGENS -->
             {% with mensagens = get_flashed_messages(with_categories=true) %}
                 {% if mensagens %}
@@ -511,11 +516,10 @@
                                                 {{ material.categoria }}
                                             </span>
                                         </td>
-
+                                
                                         <td>
                                             <strong class="materials-stock-number">
-                                                {{ "%.2f"|format(material.saldo_equivalente)|replace(".", ",") }}
-                                                {{ material.unidade_medida }}
+                                                {{ material.quantidade_unidades }} unidades
                                             </strong>
 
                                             {% if material.capacidade_por_unidade %}
@@ -672,16 +676,24 @@
                             <div class="materials-history-item">
 
                                 <div class="materials-history-icon
-                                    {% if movimento.tipo == 'compra' or movimento.tipo == 'cadastro' %}positive
-                                    {% elif movimento.tipo == 'consumo' %}negative
+                                    {% if movimento.tipo in ['compra', 'cadastro'] %}positive
+                                    {% elif movimento.tipo in ['consumo', 'unidade_finalizada'] %}negative
                                     {% else %}neutral{% endif %}">
 
                                     {% if movimento.tipo == "compra" %}
                                         <i class="bi bi-cart-plus"></i>
                                     {% elif movimento.tipo == "consumo" %}
                                         <i class="bi bi-arrow-down-circle"></i>
+                                    {% elif movimento.tipo == "unidade_finalizada" %}
+                                        <i class="bi bi-check-circle-fill"></i>
                                     {% elif movimento.tipo == "arquivamento" %}
                                         <i class="bi bi-archive"></i>
+                                    {% elif movimento.tipo == "estoque_zerado" %}
+                                        <i class="bi bi-box2-fill"></i>
+                                    {% elif movimento.tipo == "exclusao" %}
+                                        <i class="bi bi-trash"></i>
+                                    {% elif movimento.tipo == "restauracao" %}
+                                        <i class="bi bi-arrow-counterclockwise"></i>
                                     {% else %}
                                         <i class="bi bi-box"></i>
                                     {% endif %}
@@ -699,7 +711,19 @@
                                 </div>
 
                                 <span class="materials-history-type">
-                                    {{ movimento.tipo|capitalize }}
+                                    {% if movimento.tipo == "unidade_finalizada" %}
+                                        Unidade finalizada
+                                    {% elif movimento.tipo == "estoque_zerado" %}
+                                        Estoque zerado
+                                    {% elif movimento.tipo == "arquivamento" %}
+                                        Arquivamento
+                                    {% elif movimento.tipo == "exclusao" %}
+                                        Enviado à lixeira
+                                    {% elif movimento.tipo == "restauracao" %}
+                                        Restauração
+                                    {% else %}
+                                        {{ movimento.tipo|capitalize }}
+                                    {% endif %}
                                 </span>
 
                             </div>
@@ -718,6 +742,94 @@
 
             </div>
 
+
+            <!-- MATERIAIS ARQUIVADOS -->
+            <section class="materials-history-panel mt-4" id="materiais-arquivados">
+                <div class="materials-panel-heading">
+                    <div>
+                        <h5><i class="bi bi-archive me-2"></i>Materiais arquivados</h5>
+                        <p>Materiais descontinuados temporariamente ou que você deseja manter fora do estoque ativo.</p>
+                    </div>
+                    <span class="materials-count">{{ materiais_arquivados|length }} itens</span>
+                </div>
+
+                {% if materiais_arquivados %}
+                    <div class="table-responsive">
+                        <table class="table materials-table align-middle">
+                            <thead><tr><th>Material</th><th>Categoria</th><th>Estoque registrado</th><th class="text-end">Ações</th></tr></thead>
+                            <tbody>
+                                {% for material in materiais_arquivados %}
+                                    <tr>
+                                        <td><strong>{{ material.nome }}</strong><small class="d-block">{{ material.marca or 'Marca não informada' }}</small></td>
+                                        <td>{{ material.categoria }}</td>
+                                        <td>{{ material.quantidade_unidades }} unidade(s)</td>
+                                        <td class="text-end">
+                                            <div class="d-inline-flex gap-2">
+                                                <form method="POST" action="{{ url_for('materiais.restaurar_material', material_id=material._id) }}">
+                                                    <button class="materials-action-button" title="Restaurar para o estoque" type="submit"><i class="bi bi-arrow-counterclockwise"></i></button>
+                                                </form>
+                                                <form method="POST" action="{{ url_for('materiais.enviar_material_lixeira', material_id=material._id) }}" data-confirm="Enviar este material arquivado para a lixeira? Ele poderá ser restaurado depois."
+                                                    data-confirm-title="Enviar material para a lixeira"
+                                                    data-confirm-button="Enviar para a lixeira"
+                                                    data-confirm-icon="bi-trash"
+                                                    data-confirm-variant="danger">
+                                                    <button class="materials-action-button danger" title="Enviar para a lixeira" type="submit"><i class="bi bi-trash"></i></button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="materials-history-empty">Nenhum material arquivado.</div>
+                {% endif %}
+            </section>
+
+            <!-- LIXEIRA DE MATERIAIS -->
+            <section class="materials-history-panel mt-4" id="lixeira-materiais">
+                <div class="materials-panel-heading">
+                    <div>
+                        <h5><i class="bi bi-trash me-2"></i>Lixeira de materiais</h5>
+                        <p>Restaure materiais enviados para a lixeira ou exclua definitivamente seus cadastros.</p>
+                    </div>
+                    <span class="materials-count">{{ materiais_lixeira|length }} itens</span>
+                </div>
+
+                {% if materiais_lixeira %}
+                    <div class="table-responsive">
+                        <table class="table materials-table align-middle">
+                            <thead><tr><th>Material</th><th>Categoria</th><th>Enviado para lixeira</th><th class="text-end">Ações</th></tr></thead>
+                            <tbody>
+                                {% for material in materiais_lixeira %}
+                                    <tr>
+                                        <td><strong>{{ material.nome }}</strong><small class="d-block">{{ material.marca or 'Marca não informada' }}</small></td>
+                                        <td>{{ material.categoria }}</td>
+                                        <td>{% if material.excluido_em %}{{ material.excluido_em.strftime('%d/%m/%Y %H:%M') }}{% else %}Data não registrada{% endif %}</td>
+                                        <td class="text-end">
+                                            <div class="d-inline-flex gap-2">
+                                                <form method="POST" action="{{ url_for('materiais.restaurar_material', material_id=material._id) }}">
+                                                    <button class="materials-action-button" title="Restaurar material" type="submit"><i class="bi bi-arrow-counterclockwise"></i></button>
+                                                </form>
+                                                <form method="POST" action="{{ url_for('materiais.excluir_material_permanentemente', material_id=material._id) }}" data-confirm="Esta ação é definitiva. O cadastro será removido permanentemente, mas o histórico de movimentações será preservado."
+                                                    data-confirm-title="Excluir material permanentemente"
+                                                    data-confirm-button="Excluir definitivamente"
+                                                    data-confirm-icon="bi-trash3"
+                                                    data-confirm-variant="danger">
+                                                    <button class="materials-action-button danger" title="Excluir permanentemente" type="submit"><i class="bi bi-trash3"></i></button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="materials-history-empty">A lixeira está vazia.</div>
+                {% endif %}
+            </section>
 
             <footer class="dashboard-footer mt-4">
                 <span>TaskBerry · Gestão inteligente para pequenos negócios</span>
@@ -860,10 +972,30 @@
 
             </div>
 
-            <div class="modal-footer">
-                <button type="button"
-                        class="materials-secondary-button"
-                        data-bs-dismiss="modal">
+            <div class="modal-footer justify-content-between flex-wrap gap-2">
+                <div class="d-flex flex-wrap gap-2">
+                    <form method="POST" action="{{ url_for('materiais.arquivar_material', material_id=material._id) }}"
+                          data-confirm="Deseja arquivar este material? Ele sairá do estoque ativo, mas ficará disponível na seção Arquivados."
+                          data-confirm-title="Arquivar material"
+                          data-confirm-button="Arquivar material"
+                          data-confirm-icon="bi-archive"
+                          data-confirm-variant="primary">
+                        <button type="submit" class="materials-secondary-button">
+                            <i class="bi bi-archive me-1"></i> Arquivar
+                        </button>
+                    </form>
+                    <form method="POST" action="{{ url_for('materiais.enviar_material_lixeira', material_id=material._id) }}"
+                          data-confirm="Enviar este material para a lixeira? Você poderá restaurá-lo depois."
+                          data-confirm-title="Enviar material para a lixeira"
+                          data-confirm-button="Enviar para a lixeira"
+                          data-confirm-icon="bi-trash"
+                          data-confirm-variant="danger">
+                        <button type="submit" class="materials-danger-button">
+                            <i class="bi bi-trash me-1"></i> Excluir produto
+                        </button>
+                    </form>
+                </div>
+                <button type="button" class="materials-secondary-button" data-bs-dismiss="modal">
                     Fechar
                 </button>
             </div>
@@ -1103,49 +1235,82 @@
                 <div class="modal-body">
 
                     <div class="materials-consumption-summary">
-                        <span>Saldo atual equivalente</span>
-
+                        <span>Unidades disponíveis no estoque</span>
                         <strong>
-                            {{ "%.2f"|format(material.saldo_equivalente)|replace(".", ",") }}
-                            {{ material.unidade_medida }}
+                            {{ material.quantidade_unidades }}
+                            {% if material.quantidade_unidades == 1 %}unidade{% else %}unidades{% endif %}
                         </strong>
-
                         <small>
                             {% if material.percentual_aberto > 0 %}
-                                Última unidade aberta com
-                                {{ material.percentual_aberto }}% restante.
+                                Há 1 unidade aberta com {{ material.percentual_aberto }}% do conteúdo restante.
+                                {% if material.quantidade_fechada > 0 %}
+                                    Outras {{ material.quantidade_fechada }} unidade(s) estão fechadas.
+                                {% endif %}
                             {% elif material.quantidade_fechada > 0 %}
-                                Todas as unidades estão inteiras.
-                                Uma será aberta para registrar o consumo.
+                                Todas as {{ material.quantidade_fechada }} unidade(s) estão fechadas.
                             {% else %}
-                                Não há unidades disponíveis.
+                                Não há unidades disponíveis no estoque.
                             {% endif %}
                         </small>
                     </div>
 
-                    <label class="form-label mt-3">
-                        Percentual consumido da unidade *
-                    </label>
+                    <div class="form-check mt-3">
+                        <input class="form-check-input"
+                               type="checkbox"
+                               name="unidade_finalizada"
+                               value="1"
+                               id="unidadeFinalizada{{ material._id }}">
+                        <label class="form-check-label fw-semibold"
+                               for="unidadeFinalizada{{ material._id }}">
+                            Esta unidade acabou completamente
+                        </label>
+                        <small class="form-text d-block">
+                            Marque esta opção quando a lata, embalagem ou unidade
+                            tiver sido totalmente utilizada.
+                        </small>
+                    </div>
 
-                    <select name="percentual_consumido"
-                            class="form-select"
-                            required>
+                    <div class="form-check mt-3 p-3 rounded-3" style="background:#fff4f4;border:1px solid #f1d5d5;">
+                        <input class="form-check-input"
+                               type="checkbox"
+                               name="estoque_total_finalizado"
+                               value="1"
+                               id="estoqueTotalFinalizado{{ material._id }}">
+                        <label class="form-check-label fw-semibold text-danger"
+                               for="estoqueTotalFinalizado{{ material._id }}">
+                            Todo o estoque deste material acabou
+                        </label>
+                        <small class="form-text d-block">
+                            Use quando todas as latas, embalagens ou unidades restantes tiverem sido utilizadas.
+                            O saldo será zerado de uma só vez.
+                        </small>
+                    </div>
 
-                        <option value="">Selecione</option>
+                    <div class="mt-3" id="campoPercentual{{ material._id }}">
+                        <label class="form-label">
+                            Percentual consumido da unidade
+                        </label>
 
-                        {% for percentual in range(10, 101, 10) %}
-                            <option value="{{ percentual }}">
-                                {{ percentual }}%
-                            </option>
-                        {% endfor %}
+                        <select name="percentual_consumido"
+                                class="form-select"
+                                id="percentualConsumido{{ material._id }}">
 
-                    </select>
+                            <option value="">Selecione</option>
+
+                            {% for percentual in range(10, 101, 10) %}
+                                <option value="{{ percentual }}">
+                                    {{ percentual }}%
+                                </option>
+                            {% endfor %}
+
+                        </select>
+                    </div>
 
                     <div class="materials-info-notice mt-3">
                         <i class="bi bi-info-circle"></i>
-                        O percentual será descontado da unidade em uso.
-                        Se o consumo for maior que o conteúdo restante,
-                        o sistema não permitirá a operação.
+                        Para consumo parcial, informe o percentual utilizado.
+                        Para retirar toda a unidade, marque a opção acima.
+                        A finalização será registrada no histórico de movimentações.
                     </div>
 
                 </div>
@@ -1208,6 +1373,8 @@
 
                 </div>
 
+                
+
                 <div class="modal-footer">
                     <button type="button"
                             class="materials-secondary-button"
@@ -1230,5 +1397,29 @@
 </div>
 
 {% endfor %}
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll('form[action*="/consumir"]').forEach(function (form) {
+        const unitCheckbox = form.querySelector('input[name="unidade_finalizada"]');
+        const allCheckbox = form.querySelector('input[name="estoque_total_finalizado"]');
+        const select = form.querySelector('select[name="percentual_consumido"]');
+
+        function atualizarOpcoes() {
+            const finalizacaoMarcada = unitCheckbox.checked || allCheckbox.checked;
+            select.disabled = finalizacaoMarcada;
+            select.required = !finalizacaoMarcada;
+            if (finalizacaoMarcada) select.value = "";
+
+            if (unitCheckbox.checked) allCheckbox.checked = false;
+            if (allCheckbox.checked) unitCheckbox.checked = false;
+        }
+
+        unitCheckbox.addEventListener("change", atualizarOpcoes);
+        allCheckbox.addEventListener("change", atualizarOpcoes);
+        atualizarOpcoes();
+    });
+});
+</script>
 
 {% endblock %}

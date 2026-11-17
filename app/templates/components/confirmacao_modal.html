@@ -1,0 +1,30 @@
+{# Modal global de confirmação do TaskBerry #}
+<div class="modal fade" id="taskberryConfirmModal" tabindex="-1" aria-labelledby="taskberryConfirmTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content employee-modal">
+            <div class="modal-header">
+                <div>
+                    <span class="tools-modal-kicker" data-confirm-kicker>CONFIRMAÇÃO DE OPERAÇÃO</span>
+                    <h5 class="modal-title" id="taskberryConfirmTitle" data-confirm-title-text>Confirmar operação</h5>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+
+            <div class="modal-body">
+                <div class="employee-delete-icon" data-confirm-danger-icon>
+                    <i class="bi bi-exclamation-circle" data-confirm-icon></i>
+                </div>
+                <div class="tools-modal-equipment d-none" data-confirm-neutral-icon>
+                    <i class="bi bi-info-circle" data-confirm-neutral-symbol></i>
+                    <div><strong>Atenção</strong><small>Revise as informações antes de continuar.</small></div>
+                </div>
+                <p class="text-center mb-0" data-confirm-message>Deseja realmente continuar?</p>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="employee-secondary-button" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="materials-danger-button" data-confirm-submit>Confirmar</button>
+            </div>
+        </div>
+    </div>
+</div>

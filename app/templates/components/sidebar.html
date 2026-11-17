@@ -25,6 +25,18 @@
             <span>Chamados e obras</span>
         </a>
 
+        <a href="{{ url_for('chamados.listar_arquivados') }}"
+           class="sidebar-link sidebar-sublink {% if request.endpoint == 'chamados.listar_arquivados' %}active{% endif %}">
+            <i class="bi bi-archive"></i>
+            <span>Chamados arquivados</span>
+        </a>
+
+        <a href="{{ url_for('chamados.listar_lixeira') }}"
+           class="sidebar-link sidebar-sublink {% if request.endpoint == 'chamados.listar_lixeira' %}active{% endif %}">
+            <i class="bi bi-trash3"></i>
+            <span>Lixeira de chamados</span>
+        </a>
+
         <a href="{{ url_for('clientes.listar_clientes') }}"
            class="sidebar-link {% if request.endpoint == 'clientes.listar_clientes' %}active{% endif %}">
             <i class="bi bi-people"></i>
