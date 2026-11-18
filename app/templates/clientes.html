@@ -589,7 +589,14 @@
                             {% for cliente in lixeira %}
                             <tr><td><strong>{{ cliente.nome }}</strong><div class="text-muted small">{{ cliente.telefone }}</div></td><td>{{ cliente.excluido_em.strftime('%d/%m/%Y') if cliente.excluido_em else '-' }}</td><td><div class="client-actions">
                                 <form method="POST" action="{{ url_for('clientes.restaurar_cliente', cliente_id=cliente._id) }}"><button class="btn btn-sm btn-outline-primary" type="submit"><i class="bi bi-arrow-counterclockwise"></i> Restaurar</button></form>
-                                <form method="POST" action="{{ url_for('clientes.excluir_permanentemente', cliente_id=cliente._id) }}" onsubmit="return confirm('Excluir permanentemente este cliente? Esta ação não poderá ser desfeita.');"><button class="btn btn-sm btn-outline-danger" type="submit"><i class="bi bi-trash3"></i></button></form>
+                                <form method="POST"
+      action="{{ url_for('clientes.excluir_permanentemente', cliente_id=cliente._id) }}"
+      data-confirm="Esta ação não poderá ser desfeita. Deseja realmente excluir este cliente?"
+      data-confirm-title="Excluir cliente permanentemente"
+      data-confirm-button="Excluir definitivamente"
+      data-confirm-icon="bi-trash3"
+      data-confirm-variant="danger">
+    <button class="btn btn-sm btn-outline-danger" type="submit"><i class="bi bi-trash3"></i></button></form>
                             </div></td></tr>
                             {% endfor %}
                             </tbody></table></div>

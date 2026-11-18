@@ -1,16 +1,18 @@
-
 (() => {
     "use strict";
 
     const STORAGE_KEY = "taskberry-theme";
     const root = document.documentElement;
 
-    function getSavedTheme() {
+    function normalizeTheme(value) {
+        return value === "dark" ? "dark" : "light";
+    }
+
+    function readSavedTheme() {
         try {
-            return localStorage.getItem(STORAGE_KEY) === "dark"
-                ? "dark"
-                : "light";
+            return normalizeTheme(localStorage.getItem(STORAGE_KEY));
         } catch (error) {
+            console.warn("Não foi possível recuperar o tema salvo.", error);
             return "light";
         }
     }
@@ -19,58 +21,72 @@
         const button = document.getElementById("theme-toggle");
         if (!button) return;
 
-        const isDark = theme === "dark";
-
-        button.innerHTML = isDark
+        const dark = theme === "dark";
+        button.innerHTML = dark
             ? '<i class="bi bi-sun" aria-hidden="true"></i><span>Modo claro</span>'
             : '<i class="bi bi-moon" aria-hidden="true"></i><span>Modo escuro</span>';
 
-        button.setAttribute("aria-pressed", String(isDark));
-
-        button.setAttribute(
-            "aria-label",
-            isDark ? "Ativar modo claro" : "Ativar modo escuro"
-        );
+        button.setAttribute("aria-pressed", String(dark));
+        button.setAttribute("aria-label", dark ? "Ativar modo claro" : "Ativar modo escuro");
+        button.title = dark ? "Ativar modo claro" : "Ativar modo escuro";
     }
 
-    function applyTheme(theme, save = true) {
-        const selectedTheme = theme === "dark" ? "dark" : "light";
+    function applyTheme(theme, persist = true) {
+        const selected = normalizeTheme(theme);
 
-        root.setAttribute("data-theme", selectedTheme);
-        root.setAttribute("data-bs-theme", selectedTheme);
+        root.setAttribute("data-theme", selected);
+        root.setAttribute("data-bs-theme", selected);
+        root.classList.toggle("theme-dark", selected === "dark");
+        root.classList.toggle("theme-light", selected === "light");
 
-        if (save) {
+        if (document.body) {
+            document.body.setAttribute("data-theme", selected);
+            document.body.classList.toggle("theme-dark", selected === "dark");
+            document.body.classList.toggle("theme-light", selected === "light");
+        }
+
+        if (persist) {
             try {
-                localStorage.setItem(STORAGE_KEY, selectedTheme);
+                localStorage.setItem(STORAGE_KEY, selected);
             } catch (error) {
-                console.warn(
-                    "Não foi possível salvar o tema escolhido.",
-                    error
-                );
+                console.warn("Não foi possível salvar a preferência de tema.", error);
             }
         }
 
-        updateThemeButton(selectedTheme);
+        updateThemeButton(selected);
+        return selected;
     }
 
-    // Mantém o tema aplicado entre páginas e visitas.
-    applyTheme(getSavedTheme(), false);
+    // Disponibiliza uma API única para o restante da aplicação.
+    window.TaskBerryTheme = {
+        apply: applyTheme,
+        toggle: function () {
+            const current = root.getAttribute("data-theme") || readSavedTheme();
+            return applyTheme(current === "dark" ? "light" : "dark");
+        },
+        current: function () {
+            return root.getAttribute("data-theme") || "light";
+        }
+    };
 
-    document.addEventListener("DOMContentLoaded", () => {
-        updateThemeButton(
-            root.getAttribute("data-theme") || "light"
-        );
+    applyTheme(readSavedTheme(), false);
 
-        const button = document.getElementById("theme-toggle");
+    function initializeThemeControls() {
+        updateThemeButton(root.getAttribute("data-theme") || "light");
+    }
 
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initializeThemeControls, { once: true });
+    } else {
+        initializeThemeControls();
+    }
+
+    // Delegação evita perder o clique se o conteúdo do botão for atualizado.
+    document.addEventListener("click", function (event) {
+        const button = event.target.closest("#theme-toggle");
         if (!button) return;
 
-        button.addEventListener("click", () => {
-            const currentTheme = root.getAttribute("data-theme");
-
-            applyTheme(
-                currentTheme === "dark" ? "light" : "dark"
-            );
-        });
+        event.preventDefault();
+        window.TaskBerryTheme.toggle();
     });
 })();

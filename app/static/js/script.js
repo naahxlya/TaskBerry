@@ -169,13 +169,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
 /* =====================================================
    TASKBERRY | MODAL DE CONFIRMAÇÃO REUTILIZÁVEL
-   Usa Bootstrap Modal e os estilos já existentes.
+   Todas as confirmações usam o modal visual padrão.
 ===================================================== */
 
 document.addEventListener("DOMContentLoaded", function () {
     const modalElement = document.getElementById("taskberryConfirmModal");
-
-    // O componente é incluído globalmente pelo index.html.
     if (!modalElement || !window.bootstrap) return;
 
     const modal = bootstrap.Modal.getOrCreateInstance(modalElement, {
@@ -199,9 +197,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function safeIconClass(value) {
         const iconName = String(value || "bi-exclamation-circle");
-        return /^bi-[a-z0-9-]+$/.test(iconName)
-            ? iconName
-            : "bi-exclamation-circle";
+        return /^bi-[a-z0-9-]+$/.test(iconName) ? iconName : "bi-exclamation-circle";
     }
 
     function openConfirmation(options = {}) {
@@ -215,6 +211,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (kicker) kicker.textContent = options.kicker || "CONFIRMAÇÃO DE OPERAÇÃO";
         if (title) title.textContent = options.title || "Confirmar operação";
         if (message) message.textContent = options.message || "Deseja realmente continuar?";
+
         if (confirmButton) {
             confirmButton.textContent = options.confirmText || "Confirmar";
             confirmButton.classList.toggle("employee-danger-button", variant === "danger");
@@ -225,16 +222,19 @@ document.addEventListener("DOMContentLoaded", function () {
         if (dangerIcon) dangerIcon.classList.toggle("d-none", variant !== "danger");
         if (neutralIcon) neutralIcon.classList.toggle("d-none", variant !== "primary");
         if (passwordWrap) passwordWrap.classList.toggle("d-none", options.requirePassword !== true);
-        if (passwordInput) passwordInput.value = "";
+
+        if (passwordInput) {
+            passwordInput.value = "";
+            passwordInput.classList.remove("is-invalid");
+        }
 
         modal.show();
 
-        return new Promise(function (resolve) {
+        return new Promise(resolve => {
             pendingResolver = resolve;
         });
     }
 
-    // API para confirmações disparadas por outros scripts, como selects de situação.
     window.TaskBerryConfirm = {
         ask: function (options) {
             pendingForm = null;
@@ -242,13 +242,14 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     };
 
-    // Intercepta somente formulários explicitamente marcados com data-confirm.
     document.addEventListener("submit", function (event) {
         const form = event.target;
         if (!(form instanceof HTMLFormElement)) return;
+
         const actionPath = new URL(form.action, window.location.href).pathname;
-        const isDeleteAction = /\/(excluir(?:-permanentemente)?|lixeira)(?:\/|$)/i.test(actionPath);
-        if (!form.hasAttribute("data-confirm") && !isDeleteAction) return;
+        const isPermanentDelete = /\/excluir-permanentemente(?:\/|$)/i.test(actionPath);
+
+        if (!form.hasAttribute("data-confirm") && !isPermanentDelete) return;
 
         if (approvedForm === form || form.dataset.confirmApproved === "true") {
             form.dataset.confirmApproved = "false";
@@ -259,13 +260,18 @@ document.addEventListener("DOMContentLoaded", function () {
         event.preventDefault();
         pendingForm = form;
 
-        const requirePassword = document.body.dataset.requireDeletePassword === "true" && isDeleteAction;
+        const requirePassword =
+            document.body.dataset.requireDeletePassword === "true" &&
+            isPermanentDelete;
+
         openConfirmation({
-            kicker: form.dataset.confirmKicker,
-            title: form.dataset.confirmTitle,
-            message: form.dataset.confirm,
-            confirmText: form.dataset.confirmButton || "Confirmar",
-            icon: form.dataset.confirmIcon || "bi-exclamation-circle",
+            kicker: form.dataset.confirmKicker || (isPermanentDelete ? "EXCLUSÃO DEFINITIVA" : undefined),
+            title: form.dataset.confirmTitle || (isPermanentDelete ? "Excluir permanentemente" : undefined),
+            message: form.dataset.confirm || (isPermanentDelete
+                ? "Esta ação não poderá ser desfeita. Deseja realmente excluir este registro?"
+                : "Deseja realmente continuar?"),
+            confirmText: form.dataset.confirmButton || (isPermanentDelete ? "Excluir definitivamente" : "Confirmar"),
+            icon: form.dataset.confirmIcon || (isPermanentDelete ? "bi-trash3" : "bi-exclamation-circle"),
             variant: form.dataset.confirmVariant || "danger",
             requirePassword: requirePassword
         });
@@ -276,16 +282,14 @@ document.addEventListener("DOMContentLoaded", function () {
         const resolver = pendingResolver;
 
         if (form && form.isConnected && passwordWrap && !passwordWrap.classList.contains("d-none")) {
-            const senha = passwordInput ? passwordInput.value : "";
+            const senha = passwordInput ? passwordInput.value.trim() : "";
+
             if (!senha) {
-                if (passwordInput) {
-                    passwordInput.classList.add("is-invalid");
-                    passwordInput.focus();
-                }
-                pendingForm = form;
-                pendingResolver = resolver;
+                passwordInput?.classList.add("is-invalid");
+                passwordInput?.focus();
                 return;
             }
+
             let hiddenPassword = form.querySelector('input[name="senha_confirmacao"]');
             if (!hiddenPassword) {
                 hiddenPassword = document.createElement("input");
@@ -315,15 +319,26 @@ document.addEventListener("DOMContentLoaded", function () {
         modal.hide();
     });
 
+    passwordInput?.addEventListener("input", function () {
+        passwordInput.classList.remove("is-invalid");
+    });
+
+    modalElement.addEventListener("shown.bs.modal", function () {
+        if (passwordWrap && !passwordWrap.classList.contains("d-none")) {
+            passwordInput?.focus();
+        }
+    });
+
     modalElement.addEventListener("hidden.bs.modal", function () {
         if (pendingResolver) {
             pendingResolver(false);
             pendingResolver = null;
         }
-
         pendingForm = null;
+        if (passwordInput) passwordInput.value = "";
     });
 });
+
 
 /* =====================================================
    TASKBERRY | SWITCHES DE PREFERÊNCIAS COM CONFIRMAÇÃO
@@ -345,7 +360,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     icon: "bi-sliders",
                     variant: "primary"
                 })
-                : window.confirm(input.dataset.confirmMessage || "Confirmar alteração?");
+                : false;
             if (!confirmar) {
                 input.checked = !novoEstado;
                 input.disabled = false;

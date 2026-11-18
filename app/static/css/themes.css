@@ -472,3 +472,970 @@ html[data-theme="dark"] .border-start,
 html[data-theme="dark"] .border-end {
     border-color: var(--tb-border) !important;
 }
+
+
+/* Recompra de materiais e controles de aparência */
+html[data-theme="dark"] .materials-repurchase-identity {
+    background: var(--tb-surface-raised);
+    border-color: var(--tb-border);
+}
+html[data-theme="dark"] .materials-repurchase-identity strong {
+    color: var(--tb-text);
+}
+html[data-theme="dark"] .materials-repurchase-identity small {
+    color: var(--tb-muted);
+}
+.settings-theme-button {
+    background: var(--berry-primary);
+    border: 1px solid var(--berry-primary);
+    color: #fff;
+}
+.settings-theme-button:hover,
+.settings-theme-button:focus-visible {
+    background: var(--berry-dark);
+    border-color: var(--berry-dark);
+    color: #fff;
+}
+html[data-theme="dark"] .settings-theme-button {
+    background: var(--tb-purple);
+    border-color: var(--tb-purple);
+    color: #21182E;
+}
+
+
+/* =========================================================
+   TASKBERRY | REFORÇO DE COBERTURA DO MODO ESCURO
+   Ajustes para superfícies internas, tabelas, hover e botões.
+   Todas as regras abaixo só funcionam em data-theme="dark".
+========================================================= */
+
+html[data-theme="dark"] {
+    --tb-page-bg: #21182E;
+    --tb-surface: #30243F;
+    --tb-surface-raised: #392D48;
+    --tb-surface-soft: #342842;
+    --tb-sidebar-bg: #281D36;
+    --tb-input-bg: #392D48;
+    --tb-text: #F5EFFB;
+    --tb-muted: #C2B6D0;
+    --tb-muted-strong: #D7CBE3;
+    --tb-border: #51415F;
+    --tb-purple: #B99AE8;
+    --tb-purple-hover: #D0B9F2;
+    --tb-purple-soft: #49345F;
+    --tb-shadow: 0 3px 18px rgba(0, 0, 0, .22);
+    --bs-body-bg: var(--tb-page-bg);
+    --bs-body-color: var(--tb-text);
+    --bs-secondary-color: var(--tb-muted);
+    --bs-tertiary-color: var(--tb-muted);
+    --bs-border-color: var(--tb-border);
+    --bs-emphasis-color: var(--tb-text);
+}
+
+/* Superfícies claras fixas no CSS original */
+html[data-theme="dark"] .mini-card,
+html[data-theme="dark"] .mini-chart,
+html[data-theme="dark"] .auth-form-area,
+html[data-theme="dark"] .auth-page,
+html[data-theme="dark"] .auth-input,
+html[data-theme="dark"] .dashboard-select,
+html[data-theme="dark"] .clients-summary,
+html[data-theme="dark"] .clients-search,
+html[data-theme="dark"] .employee-search input,
+html[data-theme="dark"] .materials-search input,
+html[data-theme="dark"] .materials-registration-panel,
+html[data-theme="dark"] .materials-overview,
+html[data-theme="dark"] .materials-overview-card,
+html[data-theme="dark"] .materials-overview-tip,
+html[data-theme="dark"] .tools-metric-card,
+html[data-theme="dark"] .tools-inventory,
+html[data-theme="dark"] .tools-filters,
+html[data-theme="dark"] .tools-search-field input,
+html[data-theme="dark"] .tool-item-card,
+html[data-theme="dark"] .tools-recent-panel,
+html[data-theme="dark"] .tools-recent-empty,
+html[data-theme="dark"] .tools-erp-note,
+html[data-theme="dark"] .tools-detail-banner,
+html[data-theme="dark"] .tools-open-maintenance,
+html[data-theme="dark"] .tools-timeline-panel,
+html[data-theme="dark"] .tools-open-item,
+html[data-theme="dark"] .tools-metric,
+html[data-theme="dark"] .tools-register-panel,
+html[data-theme="dark"] .tools-assets-panel,
+html[data-theme="dark"] .tools-asset-filters,
+html[data-theme="dark"] .tools-asset-card,
+html[data-theme="dark"] .tools-no-history,
+html[data-theme="dark"] .tools-monitor-section,
+html[data-theme="dark"] .tools-asset-section,
+html[data-theme="dark"] .tools-register-section,
+html[data-theme="dark"] .tools-register-fields,
+html[data-theme="dark"] .tools-detail-history,
+html[data-theme="dark"] .tools-maintenance-history,
+html[data-theme="dark"] .calls-hero,
+html[data-theme="dark"] .calls-metric-card,
+html[data-theme="dark"] .calls-filters,
+html[data-theme="dark"] .calls-work-card,
+html[data-theme="dark"] .calls-empty-state,
+html[data-theme="dark"] .calls-form-panel,
+html[data-theme="dark"] .calls-no-clients,
+html[data-theme="dark"] .calls-agenda-date,
+html[data-theme="dark"] .calls-daily-panel,
+html[data-theme="dark"] .calls-daily-card,
+html[data-theme="dark"] .calls-daily-empty,
+html[data-theme="dark"] .calls-calendar-panel,
+html[data-theme="dark"] .calls-calendar-nav,
+html[data-theme="dark"] .calls-calendar-today,
+html[data-theme="dark"] .calls-next-business-day,
+html[data-theme="dark"] .profile-danger-content,
+html[data-theme="dark"] .profile-password-info,
+html[data-theme="dark"] .profile-field,
+html[data-theme="dark"] .employee-detail-header,
+html[data-theme="dark"] .employee-financial-card,
+html[data-theme="dark"] .employee-observations,
+html[data-theme="dark"] .employee-info-notice,
+html[data-theme="dark"] .materials-detail-header,
+html[data-theme="dark"] .materials-detail-description,
+html[data-theme="dark"] .materials-consumption-summary,
+html[data-theme="dark"] .materials-info-notice,
+html[data-theme="dark"] .materials-form-section,
+html[data-theme="dark"] .materials-registration-form,
+html[data-theme="dark"] .materials-workspace,
+html[data-theme="dark"] .materials-history-list,
+html[data-theme="dark"] .materials-compact-table-wrap,
+html[data-theme="dark"] .materials-consumption-modal,
+html[data-theme="dark"] .materials-modal,
+html[data-theme="dark"] .settings-period-card,
+html[data-theme="dark"] .settings-info,
+html[data-theme="dark"] .settings-readonly {
+    background: var(--tb-surface) !important;
+    color: var(--tb-text) !important;
+    border-color: var(--tb-border) !important;
+    box-shadow: var(--tb-shadow);
+}
+
+/* Superfícies secundárias e cartões internos */
+html[data-theme="dark"] .tools-registration-notice,
+html[data-theme="dark"] .tools-maintenance-callout,
+html[data-theme="dark"] .tools-repair-callout,
+html[data-theme="dark"] .tools-archive-message,
+html[data-theme="dark"] .tools-register-notice,
+html[data-theme="dark"] .tools-repair-notice,
+html[data-theme="dark"] .tools-open-info,
+html[data-theme="dark"] .tools-modal-equipment,
+html[data-theme="dark"] .tool-history-empty,
+html[data-theme="dark"] .tools-monitor-empty,
+html[data-theme="dark"] .tools-timeline-item,
+html[data-theme="dark"] .tools-recent-item,
+html[data-theme="dark"] .tools-open-item,
+html[data-theme="dark"] .tools-detail-history-item,
+html[data-theme="dark"] .tools-history-entry,
+html[data-theme="dark"] .tools-history-content,
+html[data-theme="dark"] .materials-category,
+html[data-theme="dark"] .materials-consumption-option,
+html[data-theme="dark"] .materials-progress-info,
+html[data-theme="dark"] .materials-expand-button,
+html[data-theme="dark"] .materials-history-item,
+html[data-theme="dark"] .materials-item,
+html[data-theme="dark"] .client-detail-item,
+html[data-theme="dark"] .employee-detail-section,
+html[data-theme="dark"] .employee-form-section,
+html[data-theme="dark"] .employee-info-notice,
+html[data-theme="dark"] .employee-observations,
+html[data-theme="dark"] .calls-financial-note,
+html[data-theme="dark"] .calls-next-business-day,
+html[data-theme="dark"] .calls-daily-card,
+html[data-theme="dark"] .calls-daily-empty,
+html[data-theme="dark"] .calls-agenda-date,
+html[data-theme="dark"] .calls-month-summary,
+html[data-theme="dark"] .calls-results-count {
+    background-color: var(--tb-surface-raised) !important;
+    color: var(--tb-text) !important;
+    border-color: var(--tb-border) !important;
+}
+
+/* Cabeçalhos claros dos módulos, incluindo o banner de Ferramentas */
+html[data-theme="dark"] .tools-hero,
+html[data-theme="dark"] .tools-page-hero,
+html[data-theme="dark"] .materials-hero,
+html[data-theme="dark"] .clients-hero,
+html[data-theme="dark"] .employees-hero,
+html[data-theme="dark"] .calls-hero {
+    background: var(--tb-surface) !important;
+    color: var(--tb-text) !important;
+    border-color: var(--tb-border) !important;
+}
+html[data-theme="dark"] .tools-hero h1,
+html[data-theme="dark"] .tools-page-hero h1,
+html[data-theme="dark"] .tools-hero h2,
+html[data-theme="dark"] .tools-page-hero h2,
+html[data-theme="dark"] .tools-hero p,
+html[data-theme="dark"] .tools-page-hero p,
+html[data-theme="dark"] .calls-hero h1,
+html[data-theme="dark"] .calls-hero h2,
+html[data-theme="dark"] .calls-hero p {
+    color: var(--tb-text) !important;
+}
+
+/* Corrige textos apagados por cores fixas do tema claro */
+html[data-theme="dark"] .tools-content,
+html[data-theme="dark"] .materials-content,
+html[data-theme="dark"] .employees-content,
+html[data-theme="dark"] .clients-content,
+html[data-theme="dark"] .calls-content,
+html[data-theme="dark"] .profile-content,
+html[data-theme="dark"] .settings-content {
+    color: var(--tb-text);
+}
+html[data-theme="dark"] .tools-content h1,
+html[data-theme="dark"] .tools-content h2,
+html[data-theme="dark"] .tools-content h3,
+html[data-theme="dark"] .tools-content h4,
+html[data-theme="dark"] .tools-content h5,
+html[data-theme="dark"] .tools-content strong,
+html[data-theme="dark"] .materials-content h1,
+html[data-theme="dark"] .materials-content h2,
+html[data-theme="dark"] .materials-content h3,
+html[data-theme="dark"] .materials-content h4,
+html[data-theme="dark"] .materials-content h5,
+html[data-theme="dark"] .materials-content strong,
+html[data-theme="dark"] .employees-content h1,
+html[data-theme="dark"] .employees-content h2,
+html[data-theme="dark"] .employees-content h3,
+html[data-theme="dark"] .employees-content h4,
+html[data-theme="dark"] .employees-content h5,
+html[data-theme="dark"] .clients-content h1,
+html[data-theme="dark"] .clients-content h2,
+html[data-theme="dark"] .clients-content h3,
+html[data-theme="dark"] .clients-content h4,
+html[data-theme="dark"] .clients-content h5,
+html[data-theme="dark"] .calls-content h1,
+html[data-theme="dark"] .calls-content h2,
+html[data-theme="dark"] .calls-content h3,
+html[data-theme="dark"] .calls-content h4,
+html[data-theme="dark"] .calls-content h5 {
+    color: var(--tb-text) !important;
+}
+html[data-theme="dark"] .tools-content p,
+html[data-theme="dark"] .tools-content small,
+html[data-theme="dark"] .tools-content .text-muted,
+html[data-theme="dark"] .materials-content p,
+html[data-theme="dark"] .materials-content small,
+html[data-theme="dark"] .materials-content .text-muted,
+html[data-theme="dark"] .employees-content p,
+html[data-theme="dark"] .employees-content small,
+html[data-theme="dark"] .employees-content .text-muted,
+html[data-theme="dark"] .clients-content p,
+html[data-theme="dark"] .clients-content small,
+html[data-theme="dark"] .clients-content .text-muted,
+html[data-theme="dark"] .calls-content p,
+html[data-theme="dark"] .calls-content small,
+html[data-theme="dark"] .calls-content .text-muted {
+    color: var(--tb-muted) !important;
+}
+
+/* Tabelas: cabeçalho, corpo, linhas alternadas e hover */
+html[data-theme="dark"] table,
+html[data-theme="dark"] .table,
+html[data-theme="dark"] .clients-table,
+html[data-theme="dark"] .employee-table,
+html[data-theme="dark"] .materials-table,
+html[data-theme="dark"] .materials-compact-table {
+    --bs-table-bg: var(--tb-surface);
+    --bs-table-color: var(--tb-text);
+    --bs-table-border-color: var(--tb-border);
+    --bs-table-striped-bg: #382B49;
+    --bs-table-striped-color: var(--tb-text);
+    --bs-table-hover-bg: #49375D;
+    --bs-table-hover-color: #FFFFFF;
+    background-color: var(--tb-surface) !important;
+    color: var(--tb-text) !important;
+    border-color: var(--tb-border) !important;
+}
+html[data-theme="dark"] table thead,
+html[data-theme="dark"] table thead tr,
+html[data-theme="dark"] table thead th,
+html[data-theme="dark"] .clients-table thead th,
+html[data-theme="dark"] .employee-table thead th,
+html[data-theme="dark"] .materials-table thead th {
+    background: #40304F !important;
+    color: #E8DDF5 !important;
+    border-color: var(--tb-border) !important;
+}
+html[data-theme="dark"] table tbody,
+html[data-theme="dark"] table tbody tr,
+html[data-theme="dark"] table tbody td,
+html[data-theme="dark"] .table > :not(caption) > * > * {
+    background-color: var(--tb-surface) !important;
+    color: var(--tb-text) !important;
+    border-color: var(--tb-border) !important;
+    box-shadow: none;
+}
+html[data-theme="dark"] table tbody tr:nth-child(even) td {
+    background-color: #352941 !important;
+}
+html[data-theme="dark"] table tbody tr:hover td,
+html[data-theme="dark"] .clients-table tbody tr:hover td,
+html[data-theme="dark"] .employee-table tbody tr:hover td,
+html[data-theme="dark"] .materials-table tbody tr:hover td {
+    background-color: #49375D !important;
+    color: #FFFFFF !important;
+}
+html[data-theme="dark"] .table-responsive,
+html[data-theme="dark"] .table-wrapper,
+html[data-theme="dark"] .clients-table-wrap,
+html[data-theme="dark"] .materials-table-wrap {
+    background: transparent !important;
+    border-color: var(--tb-border) !important;
+}
+
+/* Inputs, pesquisa e filtros */
+html[data-theme="dark"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+html[data-theme="dark"] textarea,
+html[data-theme="dark"] select,
+html[data-theme="dark"] .form-control,
+html[data-theme="dark"] .form-select,
+html[data-theme="dark"] .input-group-text,
+html[data-theme="dark"] .clients-search input,
+html[data-theme="dark"] .employee-search input,
+html[data-theme="dark"] .materials-search input,
+html[data-theme="dark"] .tools-search-field input,
+html[data-theme="dark"] .tools-asset-search input,
+html[data-theme="dark"] .tools-asset-filters .form-select {
+    background-color: var(--tb-input-bg) !important;
+    color: var(--tb-text) !important;
+    border-color: var(--tb-border) !important;
+}
+html[data-theme="dark"] input::placeholder,
+html[data-theme="dark"] textarea::placeholder,
+html[data-theme="dark"] .form-control::placeholder {
+    color: #B7A9C7 !important;
+    opacity: 1;
+}
+html[data-theme="dark"] input:focus,
+html[data-theme="dark"] textarea:focus,
+html[data-theme="dark"] select:focus,
+html[data-theme="dark"] .form-control:focus,
+html[data-theme="dark"] .form-select:focus {
+    background-color: var(--tb-input-bg) !important;
+    color: var(--tb-text) !important;
+    border-color: var(--tb-purple) !important;
+    box-shadow: 0 0 0 .2rem rgba(185, 154, 232, .2) !important;
+}
+html[data-theme="dark"] option {
+    background: var(--tb-surface-raised);
+    color: var(--tb-text);
+}
+
+/* Botões de aparência neutra e ações secundárias */
+html[data-theme="dark"] .btn-light,
+html[data-theme="dark"] .btn-secondary,
+html[data-theme="dark"] .btn-outline-secondary,
+html[data-theme="dark"] .tools-modal-secondary,
+html[data-theme="dark"] .tools-modal-close,
+html[data-theme="dark"] .calls-calendar-nav,
+html[data-theme="dark"] .calls-calendar-today,
+html[data-theme="dark"] .profile-cancel-button,
+html[data-theme="dark"] .client-action-button,
+html[data-theme="dark"] .employee-action-button,
+html[data-theme="dark"] .materials-expand-button {
+    background: var(--tb-surface-raised) !important;
+    color: var(--tb-text) !important;
+    border-color: var(--tb-border) !important;
+}
+html[data-theme="dark"] .btn-light:hover,
+html[data-theme="dark"] .btn-secondary:hover,
+html[data-theme="dark"] .btn-outline-secondary:hover,
+html[data-theme="dark"] .tools-modal-secondary:hover,
+html[data-theme="dark"] .calls-calendar-nav:hover,
+html[data-theme="dark"] .calls-calendar-today:hover,
+html[data-theme="dark"] .profile-cancel-button:hover,
+html[data-theme="dark"] .client-action-button:hover,
+html[data-theme="dark"] .employee-action-button:hover {
+    background: #49375D !important;
+    color: #FFFFFF !important;
+    border-color: var(--tb-purple) !important;
+}
+html[data-theme="dark"] .btn-primary,
+html[data-theme="dark"] .btn-primary:hover,
+html[data-theme="dark"] .employee-primary-button,
+html[data-theme="dark"] .materials-primary-button {
+    color: #21182E;
+}
+html[data-theme="dark"] .btn-outline-primary {
+    color: var(--tb-purple);
+    border-color: var(--tb-purple);
+}
+html[data-theme="dark"] .btn-outline-primary:hover {
+    background: var(--tb-purple-soft);
+    color: #FFFFFF;
+}
+
+/* Paginação e dropdowns */
+html[data-theme="dark"] .page-link {
+    background: var(--tb-surface-raised) !important;
+    color: var(--tb-purple) !important;
+    border-color: var(--tb-border) !important;
+}
+html[data-theme="dark"] .page-item.active .page-link {
+    background: var(--tb-purple) !important;
+    color: #21182E !important;
+    border-color: var(--tb-purple) !important;
+}
+html[data-theme="dark"] .page-item.disabled .page-link {
+    background: #2B2037 !important;
+    color: #857895 !important;
+}
+html[data-theme="dark"] .dropdown-menu {
+    background: var(--tb-surface) !important;
+    border-color: var(--tb-border) !important;
+}
+html[data-theme="dark"] .dropdown-item {
+    color: var(--tb-text) !important;
+}
+html[data-theme="dark"] .dropdown-item:hover,
+html[data-theme="dark"] .dropdown-item:focus {
+    background: #49375D !important;
+    color: #FFFFFF !important;
+}
+
+/* Modais, tabelas internas e rodapés */
+html[data-theme="dark"] .modal-content,
+html[data-theme="dark"] .modal-header,
+html[data-theme="dark"] .modal-body,
+html[data-theme="dark"] .modal-footer,
+html[data-theme="dark"] .employee-modal,
+html[data-theme="dark"] .materials-modal,
+html[data-theme="dark"] .tools-modal-content {
+    background-color: var(--tb-surface) !important;
+    color: var(--tb-text) !important;
+    border-color: var(--tb-border) !important;
+}
+html[data-theme="dark"] .modal-footer,
+html[data-theme="dark"] .employee-modal .modal-footer,
+html[data-theme="dark"] .materials-modal .modal-footer,
+html[data-theme="dark"] .tools-modal-content .modal-footer {
+    background: var(--tb-surface-raised) !important;
+}
+html[data-theme="dark"] .modal-title,
+html[data-theme="dark"] .modal-body label,
+html[data-theme="dark"] .modal-body strong {
+    color: var(--tb-text);
+}
+html[data-theme="dark"] .modal-body p,
+html[data-theme="dark"] .modal-body small {
+    color: var(--tb-muted);
+}
+
+/* Status: mantém o significado visual, mas reduz o brilho dos fundos */
+html[data-theme="dark"] .status-pending,
+html[data-theme="dark"] .employee-status.away,
+html[data-theme="dark"] .tools-maintenance-callout {
+    background-color: #49351F !important;
+    color: #F5C27A !important;
+    border-color: #74512D !important;
+}
+html[data-theme="dark"] .status-progress {
+    background-color: #3D3154 !important;
+    color: #D1B9F4 !important;
+}
+html[data-theme="dark"] .employee-status.inactive {
+    background-color: #403A48 !important;
+    color: #C9C0D2 !important;
+}
+html[data-theme="dark"] .profile-danger-content,
+html[data-theme="dark"] .tools-archive-message {
+    background-color: #452A36 !important;
+    color: #F4C6D0 !important;
+    border-color: #704052 !important;
+}
+
+/* Selects aprimorados e calendário */
+html[data-theme="dark"] .ts-control,
+html[data-theme="dark"] .ts-dropdown,
+html[data-theme="dark"] .ts-dropdown .option,
+html[data-theme="dark"] .ts-dropdown .optgroup-header {
+    background: var(--tb-input-bg) !important;
+    color: var(--tb-text) !important;
+    border-color: var(--tb-border) !important;
+}
+html[data-theme="dark"] .ts-dropdown .active {
+    background: #49375D !important;
+    color: #FFFFFF !important;
+}
+html[data-theme="dark"] .fc .fc-scrollgrid,
+html[data-theme="dark"] .fc .fc-daygrid-day,
+html[data-theme="dark"] .fc .fc-timegrid-slot,
+html[data-theme="dark"] .fc .fc-list,
+html[data-theme="dark"] .fc .fc-list-day-cushion,
+html[data-theme="dark"] .fc .fc-col-header-cell {
+    background: var(--tb-surface) !important;
+    color: var(--tb-text) !important;
+    border-color: var(--tb-border) !important;
+}
+html[data-theme="dark"] .fc .fc-day-today {
+    background: #40304F !important;
+}
+
+/* Utilitários Bootstrap claros que escapavam dos estilos por módulo */
+html[data-theme="dark"] .bg-white,
+html[data-theme="dark"] .bg-light,
+html[data-theme="dark"] .list-group-item,
+html[data-theme="dark"] .accordion-item,
+html[data-theme="dark"] .accordion-button {
+    background-color: var(--tb-surface) !important;
+    color: var(--tb-text) !important;
+    border-color: var(--tb-border) !important;
+}
+html[data-theme="dark"] .accordion-button:not(.collapsed) {
+    background: #49375D !important;
+    color: #FFFFFF !important;
+}
+html[data-theme="dark"] .text-dark,
+html[data-theme="dark"] .text-body,
+html[data-theme="dark"] .link-dark {
+    color: var(--tb-text) !important;
+}
+html[data-theme="dark"] .text-muted,
+html[data-theme="dark"] .text-secondary {
+    color: var(--tb-muted) !important;
+}
+html[data-theme="dark"] .border,
+html[data-theme="dark"] .border-top,
+html[data-theme="dark"] .border-bottom,
+html[data-theme="dark"] .border-start,
+html[data-theme="dark"] .border-end {
+    border-color: var(--tb-border) !important;
+}
+
+/* Corrige SVGs e ícones em superfícies escuras sem alterar status */
+html[data-theme="dark"] .tools-content .text-dark,
+html[data-theme="dark"] .materials-content .text-dark,
+html[data-theme="dark"] .calls-content .text-dark,
+html[data-theme="dark"] .employees-content .text-dark {
+    color: var(--tb-text) !important;
+}
+
+/* Scrollbars */
+html[data-theme="dark"] * {
+    scrollbar-color: #655276 #2B2037;
+}
+html[data-theme="dark"] *::-webkit-scrollbar-track {
+    background: #2B2037;
+}
+html[data-theme="dark"] *::-webkit-scrollbar-thumb {
+    background: #655276;
+    border-color: #2B2037;
+}
+
+
+/* Correções específicas adicionais observadas nas telas reais */
+html[data-theme="dark"] .tools-page-intro {
+    background: var(--tb-surface) !important;
+    border-color: var(--tb-border) !important;
+    color: var(--tb-text) !important;
+}
+html[data-theme="dark"] .tools-intro-copy h1,
+html[data-theme="dark"] .tools-intro-copy h2,
+html[data-theme="dark"] .tools-intro-copy p {
+    color: var(--tb-text) !important;
+}
+html[data-theme="dark"] .tools-intro-copy p {
+    color: var(--tb-muted) !important;
+}
+html[data-theme="dark"] .tools-intro-decoration {
+    background: var(--tb-surface-raised) !important;
+    border-color: var(--tb-border) !important;
+}
+html[data-theme="dark"] .tools-inventory-heading h2,
+html[data-theme="dark"] .tools-recent-heading h2,
+html[data-theme="dark"] .tools-asset-card-data strong,
+html[data-theme="dark"] .tool-item-card strong {
+    color: var(--tb-text) !important;
+}
+html[data-theme="dark"] .tools-inventory-heading p,
+html[data-theme="dark"] .tools-recent-heading p,
+html[data-theme="dark"] .tools-inventory-total,
+html[data-theme="dark"] .tools-asset-card-data span,
+html[data-theme="dark"] .tool-item-card small,
+html[data-theme="dark"] .tool-item-card .text-muted {
+    color: var(--tb-muted) !important;
+}
+html[data-theme="dark"] .tools-asset-card-data {
+    border-top-color: var(--tb-border) !important;
+    border-bottom-color: var(--tb-border) !important;
+}
+html[data-theme="dark"] .tool-item-card:hover,
+html[data-theme="dark"] .tools-asset-card:hover {
+    background: #40304F !important;
+    border-color: var(--tb-purple) !important;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .24) !important;
+}
+html[data-theme="dark"] .tools-register-panel,
+html[data-theme="dark"] .tools-register-panel *:not(.badge):not([class*="status"]):not([class*="priority"]) {
+    color: inherit;
+}
+html[data-theme="dark"] .tools-register-panel h1,
+html[data-theme="dark"] .tools-register-panel h2,
+html[data-theme="dark"] .tools-register-panel h3,
+html[data-theme="dark"] .tools-register-panel h4,
+html[data-theme="dark"] .tools-register-panel h5,
+html[data-theme="dark"] .tools-register-panel label {
+    color: var(--tb-text) !important;
+}
+html[data-theme="dark"] .tools-register-panel p,
+html[data-theme="dark"] .tools-register-panel small,
+html[data-theme="dark"] .tools-register-panel .form-text {
+    color: var(--tb-muted) !important;
+}
+
+/* Hover consistente nos cartões internos e linhas de listagem */
+html[data-theme="dark"] .materials-item:hover,
+html[data-theme="dark"] .materials-history-item:hover,
+html[data-theme="dark"] .tools-recent-item:hover,
+html[data-theme="dark"] .tools-open-item:hover,
+html[data-theme="dark"] .calls-work-card:hover,
+html[data-theme="dark"] .employee-row:hover,
+html[data-theme="dark"] .client-row:hover {
+    background-color: #40304F !important;
+    border-color: var(--tb-purple) !important;
+}
+html[data-theme="dark"] .tools-asset-card-footer .btn-light,
+html[data-theme="dark"] .tools-asset-card-footer .btn-outline-secondary,
+html[data-theme="dark"] .tools-asset-card-footer .tools-modal-secondary {
+    background: #40304F !important;
+    color: var(--tb-text) !important;
+    border-color: var(--tb-border) !important;
+}
+
+/* Contraste de textos nas fichas de ferramentas e materiais */
+html[data-theme="dark"] .tool-detail-banner h1,
+html[data-theme="dark"] .tool-detail-banner h2,
+html[data-theme="dark"] .tool-detail-banner h3,
+html[data-theme="dark"] .tool-detail-banner strong,
+html[data-theme="dark"] .materials-detail-header h1,
+html[data-theme="dark"] .materials-detail-header h2,
+html[data-theme="dark"] .materials-detail-header strong {
+    color: var(--tb-text) !important;
+}
+html[data-theme="dark"] .tool-detail-banner p,
+html[data-theme="dark"] .tool-detail-banner small,
+html[data-theme="dark"] .materials-detail-header p,
+html[data-theme="dark"] .materials-detail-description {
+    color: var(--tb-muted) !important;
+}
+
+/* Mantém cores de feedback e semântica sem fundos brancos */
+html[data-theme="dark"] .alert-success {
+    background: #203D34 !important;
+    color: #A8E0C5 !important;
+    border-color: #356B57 !important;
+}
+html[data-theme="dark"] .alert-danger {
+    background: #482A35 !important;
+    color: #F2B7C3 !important;
+    border-color: #754151 !important;
+}
+html[data-theme="dark"] .alert-warning {
+    background: #49371F !important;
+    color: #F5D19A !important;
+    border-color: #74582D !important;
+}
+html[data-theme="dark"] .alert-info {
+    background: #26394B !important;
+    color: #B8D8F3 !important;
+    border-color: #3C5C78 !important;
+}
+
+
+/* =========================================================
+   MODO ESCURO | PALETA MAIS PROFUNDA E UNIFORME
+   Nesta proposta, lilás fica reservado principalmente à tipografia,
+   ícones e pequenos indicadores. Superfícies e controles permanecem escuros.
+========================================================= */
+html[data-theme="dark"] {
+    --tb-page-bg: #1D1428;
+    --tb-sidebar-bg: #24182F;
+    --tb-surface: #2B2037;
+    --tb-surface-raised: #332641;
+    --tb-surface-soft: #382A47;
+    --tb-input-bg: #30233D;
+    --tb-text: #F5EFFB;
+    --tb-muted: #B7A8C8;
+    --tb-muted-strong: #D2C5E0;
+    --tb-border: #493956;
+    --tb-purple: #B99AE8;
+    --tb-purple-hover: #D0B9F2;
+    --tb-purple-soft: #40304F;
+    --tb-shadow: 0 4px 18px rgba(0, 0, 0, .22);
+}
+
+/* SIDEBAR: sem hover branco, sem item ativo lilás claro */
+html[data-theme="dark"] .sidebar {
+    background: #24182F !important;
+    border-right: 1px solid #44334F !important;
+    color: var(--tb-text) !important;
+}
+html[data-theme="dark"] .sidebar .sidebar-label {
+    color: #A995C1 !important;
+}
+html[data-theme="dark"] .sidebar .sidebar-link,
+html[data-theme="dark"] .sidebar a.sidebar-link,
+html[data-theme="dark"] .sidebar .sidebar-sublink {
+    background: transparent !important;
+    color: #C8BBD7 !important;
+    border: 1px solid transparent !important;
+    transition: background-color .18s ease, color .18s ease, border-color .18s ease;
+}
+html[data-theme="dark"] .sidebar .sidebar-link i,
+html[data-theme="dark"] .sidebar .sidebar-sublink i {
+    color: #B99AE8 !important;
+}
+html[data-theme="dark"] .sidebar .sidebar-link:hover,
+html[data-theme="dark"] .sidebar a.sidebar-link:hover,
+html[data-theme="dark"] .sidebar .sidebar-sublink:hover {
+    background: #332440 !important;
+    color: #F7F1FF !important;
+    border-color: #493657 !important;
+    box-shadow: inset 3px 0 0 #A984D8 !important;
+}
+html[data-theme="dark"] .sidebar .sidebar-link:hover i,
+html[data-theme="dark"] .sidebar .sidebar-sublink:hover i {
+    color: #D0B9F2 !important;
+}
+html[data-theme="dark"] .sidebar .sidebar-link.active,
+html[data-theme="dark"] .sidebar .sidebar-link.active:hover,
+html[data-theme="dark"] .sidebar .sidebar-sublink.active {
+    background: #49345D !important;
+    color: #FFFFFF !important;
+    border-color: #59416F !important;
+    box-shadow: inset 3px 0 0 #B99AE8 !important;
+}
+html[data-theme="dark"] .sidebar .sidebar-link.active i,
+html[data-theme="dark"] .sidebar .sidebar-sublink.active i {
+    color: #E1D0F7 !important;
+}
+html[data-theme="dark"] .sidebar-footer {
+    background: #24182F !important;
+    border-top: 1px solid #44334F !important;
+}
+html[data-theme="dark"] .sidebar-user-avatar {
+    background: #49345D !important;
+    color: #E9DDF8 !important;
+}
+html[data-theme="dark"] .sidebar-user-info strong {
+    color: #F2EAFB !important;
+}
+html[data-theme="dark"] .sidebar-user-info small {
+    color: #AD9CBD !important;
+}
+html[data-theme="dark"] .sidebar .logout-button {
+    background: #332440 !important;
+    color: #C9B5E4 !important;
+    border: 1px solid #493657 !important;
+}
+html[data-theme="dark"] .sidebar .logout-button:hover {
+    background: #49304A !important;
+    color: #F3D3DF !important;
+    border-color: #70485F !important;
+}
+
+/* Áreas de arquivados e lixeira que ainda estavam brancas */
+html[data-theme="dark"] .materials-history-panel,
+html[data-theme="dark"] #materiais-arquivados,
+html[data-theme="dark"] #lixeira-materiais,
+html[data-theme="dark"] #materiais-arquivados .materials-panel-heading,
+html[data-theme="dark"] #lixeira-materiais .materials-panel-heading,
+html[data-theme="dark"] .materials-history-empty,
+html[data-theme="dark"] .materials-compact-table-wrap {
+    background: #2B2037 !important;
+    color: var(--tb-text) !important;
+    border-color: #493956 !important;
+}
+html[data-theme="dark"] .materials-history-panel .materials-panel-heading h5,
+html[data-theme="dark"] .materials-history-panel .materials-panel-heading strong {
+    color: #F3ECFA !important;
+}
+html[data-theme="dark"] .materials-history-panel .materials-panel-heading p,
+html[data-theme="dark"] .materials-history-empty {
+    color: #B7A8C8 !important;
+}
+html[data-theme="dark"] .materials-history-panel .materials-count {
+    background: #40304F !important;
+    color: #D7C3F2 !important;
+    border: 1px solid #58436B !important;
+}
+
+/* Botões claros dos módulos viram controles escuros.
+   Cores de estado (verde, amarelo e vermelho) são preservadas em badges. */
+html[data-theme="dark"] .materials-secondary-button,
+html[data-theme="dark"] .materials-action-button,
+html[data-theme="dark"] .materials-expand-button,
+html[data-theme="dark"] .tools-modal-secondary,
+html[data-theme="dark"] .tools-modal-close,
+html[data-theme="dark"] .tools-action-button,
+html[data-theme="dark"] .tools-secondary-button,
+html[data-theme="dark"] .tools-asset-card-footer button:not(.status-badge),
+html[data-theme="dark"] .profile-cancel-button,
+html[data-theme="dark"] .client-action-button,
+html[data-theme="dark"] .employee-action-button,
+html[data-theme="dark"] .calls-calendar-nav,
+html[data-theme="dark"] .calls-calendar-today,
+html[data-theme="dark"] .fc .fc-button,
+html[data-theme="dark"] .fc .fc-button-primary,
+html[data-theme="dark"] .fc .fc-button-primary:disabled {
+    background: #382A47 !important;
+    color: #D7C3F2 !important;
+    border-color: #554263 !important;
+    box-shadow: none !important;
+}
+html[data-theme="dark"] .materials-secondary-button:hover,
+html[data-theme="dark"] .materials-action-button:hover,
+html[data-theme="dark"] .materials-expand-button:hover,
+html[data-theme="dark"] .tools-modal-secondary:hover,
+html[data-theme="dark"] .tools-modal-close:hover,
+html[data-theme="dark"] .tools-action-button:hover,
+html[data-theme="dark"] .tools-secondary-button:hover,
+html[data-theme="dark"] .tools-asset-card-footer button:hover,
+html[data-theme="dark"] .profile-cancel-button:hover,
+html[data-theme="dark"] .client-action-button:hover,
+html[data-theme="dark"] .employee-action-button:hover,
+html[data-theme="dark"] .calls-calendar-nav:hover,
+html[data-theme="dark"] .calls-calendar-today:hover,
+html[data-theme="dark"] .fc .fc-button:hover,
+html[data-theme="dark"] .fc .fc-button-primary:hover {
+    background: #493657 !important;
+    color: #FFFFFF !important;
+    border-color: #755A8C !important;
+}
+html[data-theme="dark"] .materials-danger-button,
+html[data-theme="dark"] .materials-action-button.danger,
+html[data-theme="dark"] .client-delete-button {
+    background: #442A39 !important;
+    color: #F0B9C8 !important;
+    border-color: #704354 !important;
+}
+html[data-theme="dark"] .materials-danger-button:hover,
+html[data-theme="dark"] .materials-action-button.danger:hover,
+html[data-theme="dark"] .client-delete-button:hover {
+    background: #563246 !important;
+    color: #FFEAF0 !important;
+}
+
+/* Botões principais: roxo escuro, nunca lilás quase branco */
+html[data-theme="dark"] .materials-primary-button,
+html[data-theme="dark"] .tools-primary-button,
+html[data-theme="dark"] .employee-primary-button,
+html[data-theme="dark"] .settings-theme-button,
+html[data-theme="dark"] .btn-primary {
+    background: #604381 !important;
+    color: #FFFFFF !important;
+    border-color: #76569A !important;
+}
+html[data-theme="dark"] .materials-primary-button:hover,
+html[data-theme="dark"] .tools-primary-button:hover,
+html[data-theme="dark"] .employee-primary-button:hover,
+html[data-theme="dark"] .settings-theme-button:hover,
+html[data-theme="dark"] .btn-primary:hover {
+    background: #76549A !important;
+    color: #FFFFFF !important;
+    border-color: #9471B8 !important;
+}
+
+/* Inputs e filtros com o mesmo fundo escuro em todos os módulos */
+html[data-theme="dark"] .materials-search,
+html[data-theme="dark"] .tools-filters,
+html[data-theme="dark"] .tools-asset-filters,
+html[data-theme="dark"] .calls-filters,
+html[data-theme="dark"] .clients-search,
+html[data-theme="dark"] .employee-search {
+    background: #2B2037 !important;
+    border-color: #493956 !important;
+}
+html[data-theme="dark"] .materials-search input,
+html[data-theme="dark"] .tools-search-field input,
+html[data-theme="dark"] .tools-asset-search input,
+html[data-theme="dark"] .clients-search input,
+html[data-theme="dark"] .employee-search input {
+    background: #30233D !important;
+    color: #F5EFFB !important;
+    border-color: #51405F !important;
+}
+
+/* Calendário: remove células e botões brancos, inclusive o dia atual */
+html[data-theme="dark"] #calls-calendar,
+html[data-theme="dark"] #calls-calendar .fc-view,
+html[data-theme="dark"] #calls-calendar .fc-scrollgrid,
+html[data-theme="dark"] #calls-calendar .fc-daygrid,
+html[data-theme="dark"] #calls-calendar .fc-daygrid-body,
+html[data-theme="dark"] #calls-calendar .fc-daygrid-day,
+html[data-theme="dark"] #calls-calendar .fc-daygrid-day-frame,
+html[data-theme="dark"] #calls-calendar .fc-timegrid-col,
+html[data-theme="dark"] #calls-calendar .fc-timegrid-slot,
+html[data-theme="dark"] #calls-calendar .fc-list,
+html[data-theme="dark"] #calls-calendar .fc-list-day-cushion {
+    background: #2B2037 !important;
+    color: #E9DFF3 !important;
+    border-color: #493956 !important;
+}
+html[data-theme="dark"] #calls-calendar .fc-col-header-cell,
+html[data-theme="dark"] #calls-calendar .fc-col-header-cell-cushion {
+    background: #332641 !important;
+    color: #BDA9D4 !important;
+    border-color: #493956 !important;
+}
+html[data-theme="dark"] #calls-calendar .fc-day-today,
+html[data-theme="dark"] #calls-calendar .fc-day-today .fc-daygrid-day-frame {
+    background: #382A47 !important;
+}
+html[data-theme="dark"] #calls-calendar .fc-day-today .fc-daygrid-day-number {
+    background: #604381 !important;
+    color: #FFFFFF !important;
+    border-radius: 50%;
+}
+html[data-theme="dark"] #calls-calendar .fc-day-other {
+    background: #251B30 !important;
+}
+html[data-theme="dark"] #calls-calendar .fc-daygrid-day-number,
+html[data-theme="dark"] #calls-calendar .fc-col-header-cell-cushion {
+    color: #BDA9D4 !important;
+}
+html[data-theme="dark"] #calls-calendar .fc-button-primary:not(:disabled).fc-button-active,
+html[data-theme="dark"] #calls-calendar .fc-button-primary:not(:disabled):active {
+    background: #604381 !important;
+    color: #FFFFFF !important;
+    border-color: #76569A !important;
+}
+
+/* Ícones decorativos podem ser lilás; seus contêineres continuam escuros */
+html[data-theme="dark"] .materials-stat-icon,
+html[data-theme="dark"] .materials-overview-icon,
+html[data-theme="dark"] .tools-icon-box,
+html[data-theme="dark"] .tool-item-symbol,
+html[data-theme="dark"] .tools-recent-symbol,
+html[data-theme="dark"] .tools-open-symbol,
+html[data-theme="dark"] .materials-icon-box {
+    background: #40304F !important;
+    color: #C6A9EB !important;
+    border-color: #554263 !important;
+}
+
+/* Nenhum hover genérico deve clarear superfícies para branco/lilás */
+html[data-theme="dark"] .materials-history-panel a:hover,
+html[data-theme="dark"] .materials-history-panel button:hover,
+html[data-theme="dark"] .tools-panel a:hover,
+html[data-theme="dark"] .tools-panel button:hover,
+html[data-theme="dark"] .dashboard-panel a:hover,
+html[data-theme="dark"] .dashboard-panel button:hover {
+    text-decoration-color: #C6A9EB;
+}
+html[data-theme="dark"] .bg-white,
+html[data-theme="dark"] .bg-light,
+html[data-theme="dark"] [style*="background: white"],
+html[data-theme="dark"] [style*="background-color: white"],
+html[data-theme="dark"] [style*="background:#fff"],
+html[data-theme="dark"] [style*="background: #fff"],
+html[data-theme="dark"] [style*="background-color:#fff"],
+html[data-theme="dark"] [style*="background-color: #fff"] {
+    background-color: #2B2037 !important;
+    color: #F5EFFB !important;
+}

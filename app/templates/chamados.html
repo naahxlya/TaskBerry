@@ -1673,9 +1673,16 @@ document.addEventListener("DOMContentLoaded", function () {
 
             if (inicio.value && termino.value < inicio.value) {
 
-                alert(
-                    "A previsão de término não pode ser anterior ao início."
-                );
+                if (window.TaskBerryConfirm) {
+                    window.TaskBerryConfirm.ask({
+                        kicker: "VALIDAÇÃO DE DATAS",
+                        title: "Previsão de término inválida",
+                        message: "A previsão de término não pode ser anterior à data de início.",
+                        confirmText: "Entendi",
+                        icon: "bi-calendar-x",
+                        variant: "primary"
+                    });
+                }
 
                 termino.value = inicio.value;
 

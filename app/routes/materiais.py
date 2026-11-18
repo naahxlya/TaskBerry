@@ -408,9 +408,26 @@ def listar_materiais():
         {"usuario_id": usuario_id}
     ) > 5
 
+    material_recompra = None
+    recompra_id = request.args.get("recomprar", "").strip()
+    if recompra_id and ObjectId.is_valid(recompra_id):
+        candidato = colecao.find_one({
+            "_id": ObjectId(recompra_id),
+            "usuario_id": usuario_id,
+            "arquivado": {"$ne": True},
+            "excluido": {"$ne": True}
+        })
+        if candidato:
+            candidato = formatar_material(candidato)
+            if candidato["saldo_equivalente"] <= 0:
+                material_recompra = candidato
+            else:
+                flash("Este material ainda possui saldo em estoque. A nova compra não foi aberta.", "info")
+
     return render_template(
         "materiais.html",
         materiais=materiais,
+        material_recompra=material_recompra,
         materiais_arquivados=materiais_arquivados,
         materiais_lixeira=materiais_lixeira,
         busca=busca,
@@ -598,6 +615,107 @@ def cadastrar_material():
     except Exception:
         current_app.logger.exception("Erro ao cadastrar material.")
         flash("Não foi possível cadastrar o material.", "danger")
+
+    return voltar_para_lista()
+
+
+# =====================================================
+# REGISTRAR NOVA COMPRA DE MATERIAL EXISTENTE
+# =====================================================
+
+@materiais_bp.route("/materiais/<material_id>/comprar", methods=["POST"])
+def registrar_compra_material(material_id):
+    material = buscar_material(material_id)
+
+    if not material:
+        flash("Material não encontrado no estoque ativo.", "danger")
+        return voltar_para_lista()
+
+    saldo_atual = calcular_saldo(
+        material.get("quantidade_fechada", 0),
+        material.get("percentual_aberto", 0)
+    )
+    if saldo_atual > 0:
+        flash("Este material ainda possui estoque. A compra não foi registrada.", "warning")
+        return voltar_para_lista()
+
+    try:
+        quantidade_unidades = converter_inteiro(
+            request.form.get("quantidade_unidades", "0"), minimo=1
+        )
+        percentual_formulario = validar_percentual(
+            request.form.get("percentual_aberto", "100")
+        )
+        quantidade_fechada, percentual_aberto = converter_estoque_do_formulario(
+            quantidade_unidades, percentual_formulario
+        )
+        valor_unitario = converter_numero(
+            request.form.get("valor_unitario", ""), permitir_zero=False
+        )
+        data_compra = converter_data(request.form.get("data_compra", ""))
+    except (InvalidOperation, ValueError, TypeError):
+        flash("Informe uma quantidade, um valor unitário válido e confira a data da compra.", "danger")
+        return redirect(url_for("materiais.listar_materiais", recompra=material_id))
+
+    saldo_comprado = calcular_saldo(quantidade_fechada, percentual_aberto)
+    if saldo_comprado <= 0:
+        flash("A quantidade comprada precisa ser maior que zero.", "warning")
+        return redirect(url_for("materiais.listar_materiais", recompra=material_id))
+
+    fornecedor = request.form.get("fornecedor", "").strip()
+    agora = agora_utc()
+    db = get_database()
+
+    dados_atualizados = {
+        "quantidade_fechada": quantidade_fechada,
+        "percentual_aberto": percentual_aberto,
+        "valor_unitario": valor_unitario,
+        "atualizado_em": agora
+    }
+    if fornecedor:
+        dados_atualizados["fornecedor"] = fornecedor
+    if data_compra:
+        dados_atualizados["data_compra"] = data_compra
+
+    try:
+        resultado = db["materiais"].update_one(
+            {
+                "_id": material["_id"],
+                "usuario_id": obter_usuario_id(),
+                "arquivado": {"$ne": True},
+                "excluido": {"$ne": True},
+                "quantidade_fechada": material.get("quantidade_fechada", 0),
+                "percentual_aberto": material.get("percentual_aberto", 0)
+            },
+            {"$set": dados_atualizados}
+        )
+
+        if resultado.matched_count == 0:
+            flash("O estoque foi alterado enquanto você registrava a compra. Atualize a página e tente novamente.", "warning")
+            return voltar_para_lista()
+
+        material_atualizado = dict(material)
+        material_atualizado.update(dados_atualizados)
+
+        registrar_movimentacao(
+            db,
+            material_atualizado,
+            "compra_reabastecimento",
+            saldo_comprado,
+            "Nova compra registrada para reabastecer um material existente.",
+            {
+                "valor_unitario": valor_unitario,
+                "valor_total": round(saldo_comprado * valor_unitario, 2),
+                "fornecedor": fornecedor,
+                "data_compra": data_compra
+            }
+        )
+
+        flash(f"Compra registrada! O estoque de {material.get('nome', 'material')} foi atualizado.", "success")
+
+    except Exception:
+        current_app.logger.exception("Erro ao registrar nova compra de material.")
+        flash("Não foi possível registrar a compra do material.", "danger")
 
     return voltar_para_lista()
 

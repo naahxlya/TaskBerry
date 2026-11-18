@@ -21,8 +21,15 @@
                 <p class="text-center mb-0" data-confirm-message>Deseja realmente continuar?</p>
                 <div class="mt-3 d-none" data-confirm-password-wrap>
                     <label for="taskberryDeletePassword" class="form-label">Senha da sua conta</label>
-                    <input type="password" class="form-control" id="taskberryDeletePassword" autocomplete="current-password" placeholder="Digite sua senha">
-                    <small class="text-muted">A senha será verificada antes de concluir a exclusão.</small>
+                    <input type="password"
+                           class="form-control"
+                           id="taskberryDeletePassword"
+                           autocomplete="current-password"
+                           placeholder="Digite sua senha"
+                           aria-describedby="taskberryDeletePasswordHelp">
+                    <small id="taskberryDeletePasswordHelp" class="text-muted">
+                        Confirme sua senha para concluir a exclusão definitiva.
+                    </small>
                 </div>
             </div>
 

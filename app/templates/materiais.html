@@ -74,17 +74,40 @@
                         </div>
 
                         <div>
-                            <span>ENTRADA DE ESTOQUE</span>
-                            <h5>Cadastrar material</h5>
-                            <p>Preencha os dados para adicionar um novo item.</p>
+                            <span>{{ "REABASTECIMENTO DE ESTOQUE" if material_recompra else "ENTRADA DE ESTOQUE" }}</span>
+                            <h5>{{ "Registrar nova compra" if material_recompra else "Cadastrar material" }}</h5>
+                            <p>
+                                {% if material_recompra %}
+                                    Informe os dados desta compra. O registro será somado ao histórico do material existente.
+                                {% else %}
+                                    Preencha os dados para adicionar um novo item.
+                                {% endif %}
+                            </p>
                         </div>
                     </div>
 
                     <form id="formulario-material"
                           method="POST"
-                          action="{{ url_for('materiais.cadastrar_material') }}"
+                          action="{{ url_for('materiais.registrar_compra_material', material_id=material_recompra._id) if material_recompra else url_for('materiais.cadastrar_material') }}"
                           class="materials-registration-form">
 
+                        {% if material_recompra %}
+                            <input type="hidden" name="material_id" value="{{ material_recompra._id }}">
+                            <div class="materials-repurchase-identity">
+                                <i class="bi bi-box-seam"></i>
+                                <div class="flex-grow-1">
+                                    <small>Material selecionado</small>
+                                    <input type="text"
+                                           class="form-control"
+                                           value="{{ material_recompra.nome }}"
+                                           readonly
+                                           aria-label="Nome do material">
+                                </div>
+                            </div>
+                            <input type="hidden" name="capacidade_por_unidade" value="{{ material_recompra.capacidade_por_unidade }}">
+                        {% endif %}
+
+                        {% if not material_recompra %}
                         <!-- IDENTIFICAÇÃO -->
                         <div class="materials-form-section">
                             <h6>
@@ -147,18 +170,20 @@
                             </div>
 
                         </div>
+                        {% endif %}
 
 
                         <!-- ESTOQUE INICIAL -->
                         <div class="materials-form-section mt-4">
                             <h6>
                                 <i class="bi bi-boxes me-2"></i>
-                                Estoque inicial
+                                {{ "Quantidade comprada" if material_recompra else "Estoque inicial" }}
                             </h6>
                         </div>
 
                         <div class="row g-3">
 
+                            {% if not material_recompra %}
                             <div class="col-md-6">
                                 <label class="form-label">
                                     Capacidade por unidade *
@@ -175,30 +200,35 @@
                                     Use 1 para unidade simples.
                                 </small>
                             </div>
+                            {% endif %}
 
                             <div class="col-md-6">
                                 <label class="form-label">
-                                    Quantidade de unidades no estoque *
+                                    {{ "Quantidade de unidades compradas *" if material_recompra else "Quantidade de unidades no estoque *" }}
                                 </label>
 
                                 <input type="number"
                                        name="quantidade_unidades"
                                        class="form-control"
-                                       min="0" step="1"
-                                       value="0" required>
+                                       min="{{ '1' if material_recompra else '0' }}" step="1"
+                                       value="{{ '' if material_recompra else '0' }}" required>
                             </div>
 
                             <div class="col-md-6">
                                 <label class="form-label">
-                                    Conteúdo restante da última unidade
+                                    {{ "Conteúdo restante da última unidade comprada" if material_recompra else "Conteúdo restante da última unidade" }}
                                 </label>
 
                                 <select name="percentual_aberto"
-                                        class="form-select">
+                                        class="form-select"
+                                        {% if material_recompra %}required{% endif %}>
 
+                                    {% if material_recompra %}
+                                        <option value="" selected>Selecione o conteúdo restante</option>
+                                    {% endif %}
                                     {% for percentual in range(10, 101, 10) %}
                                         <option value="{{ percentual }}"
-                                            {% if percentual == 100 %}selected{% endif %}>
+                                            {% if not material_recompra and percentual == 100 %}selected{% endif %}>
                                             {{ percentual }}% restante
                                         </option>
                                     {% endfor %}
@@ -212,6 +242,7 @@
                                 </small>
                             </div>
 
+                            {% if not material_recompra %}
                             <div class="col-md-6">
                                 <label class="form-label">
                                     Estoque mínimo (unidades equivalentes)
@@ -223,6 +254,7 @@
                                        min="0" step="0.01"
                                        value="0">
                             </div>
+                            {% endif %}
 
                         </div>
 
@@ -247,7 +279,8 @@
                                        class="form-control"
                                        inputmode="decimal"
                                        placeholder="Ex.: 150,00"
-                                       value="0">
+                                       value="{{ '' if material_recompra else '0' }}"
+                                       {% if material_recompra %}required{% endif %}>
                             </div>
 
                             <div class="col-md-6">
@@ -312,7 +345,7 @@
                             <button type="submit"
                                     class="materials-primary-button">
                                 <i class="bi bi-check2-circle me-2"></i>
-                                Cadastrar material
+                                {{ "Registrar compra" if material_recompra else "Cadastrar material" }}
                             </button>
                         </div>
 
@@ -579,6 +612,15 @@
                                                         data-bs-target="#modalVisualizar{{ material._id }}">
                                                     <i class="bi bi-eye"></i>
                                                 </button>
+
+                                                {% if material.saldo_equivalente <= 0 %}
+                                                    <a href="{{ url_for('materiais.listar_materiais', recompra=material._id, _anchor='formulario-material') }}"
+                                                       class="materials-action-button materials-action-purchase"
+                                                       title="Registrar nova compra"
+                                                       aria-label="Registrar nova compra de {{ material.nome }}">
+                                                        <i class="bi bi-cart-plus"></i>
+                                                    </a>
+                                                {% endif %}
 
                                                 {% if material.saldo_equivalente > 0 %}
                                                     <button type="button"
