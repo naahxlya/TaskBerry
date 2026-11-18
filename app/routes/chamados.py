@@ -488,9 +488,12 @@ def listar_chamados():
 
     chamados = list(
         colecao.find(filtro)
+        # Número sequencial decrescente: chamados mais recentes primeiro.
+        # O formato TB-AAAA-00001 mantém a ordenação correta como texto.
         .sort([
-            ("data_inicio", 1),
-            ("criado_em", -1)
+            ("numero", -1),
+            ("criado_em", -1),
+            ("_id", -1)
         ])
         .skip((pagina - 1) * por_pagina)
         .limit(por_pagina)
@@ -1117,7 +1120,11 @@ def listar_arquivados():
 
     itens = list(
         colecao.find(filtro)
-        .sort("arquivado_em", -1)
+        .sort([
+            ("numero", -1),
+            ("criado_em", -1),
+            ("_id", -1)
+        ])
         .skip((pagina - 1) * por_pagina)
         .limit(por_pagina)
     )
@@ -1158,7 +1165,11 @@ def listar_lixeira():
 
     itens = list(
         colecao.find(filtro)
-        .sort("excluido_em", -1)
+        .sort([
+            ("numero", -1),
+            ("criado_em", -1),
+            ("_id", -1)
+        ])
         .skip((pagina - 1) * por_pagina)
         .limit(por_pagina)
     )
