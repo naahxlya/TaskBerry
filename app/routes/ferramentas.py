@@ -10,6 +10,7 @@ from flask import (
 )
 
 from app.database.connection import get_database
+from app.services.financeiro_service import registrar_despesa_aquisicao_ferramenta, registrar_despesa_manutencao_ferramenta
 
 
 ferramentas_bp = Blueprint("ferramentas", __name__)
@@ -305,7 +306,25 @@ def cadastrar_ferramenta():
     }
 
     try:
-        get_database()["ferramentas"].insert_one(ferramenta)
+        db = get_database()
+        resultado = db["ferramentas"].insert_one(ferramenta)
+        ferramenta["_id"] = resultado.inserted_id
+
+        if valor_aquisicao > 0:
+            try:
+                registrar_despesa_aquisicao_ferramenta(
+                    db,
+                    usuario_id(),
+                    ferramenta
+                )
+            except Exception:
+                current_app.logger.exception(
+                    "Ferramenta cadastrada, mas a aquisição não foi integrada ao Financeiro."
+                )
+                flash(
+                    "A ferramenta foi cadastrada, mas houve falha ao integrar a aquisição ao Financeiro.",
+                    "warning"
+                )
 
         flash(
             f"{nome} cadastrado com sucesso! Código: {codigo}",
@@ -465,6 +484,21 @@ def enviar_para_manutencao(ferramenta_id):
         )
 
         if resultado.modified_count:
+            try:
+                registrar_despesa_manutencao_ferramenta(
+                    get_database(),
+                    usuario_id(),
+                    ferramenta,
+                    registro
+                )
+            except Exception:
+                current_app.logger.exception(
+                    "Manutenção registrada, mas a previsão não foi integrada ao Financeiro."
+                )
+                flash(
+                    "A manutenção foi registrada, mas houve falha ao integrar a previsão ao Financeiro.",
+                    "warning"
+                )
             flash("Manutenção registrada com sucesso.", "success")
         else:
             flash(
@@ -546,6 +580,37 @@ def confirmar_reparo(ferramenta_id):
         )
 
         if resultado.modified_count:
+            try:
+                manutencao_atualizada = dict(registro)
+                manutencao_atualizada.update({
+                    "valor_final": valor_final,
+                    "situacao": "concluida",
+                    "data_conclusao": data_conclusao
+                })
+                registrar_despesa_manutencao_ferramenta(
+                    get_database(),
+                    usuario_id(),
+                    ferramenta,
+                    manutencao_atualizada,
+                    valor=valor_final,
+                    data_movimento=data_conclusao
+                )
+                get_database()["ferramentas"].update_one(
+                    {
+                        "_id": ferramenta["_id"],
+                        **filtro_usuario(),
+                        "historico_manutencao.manutencao_id": registro["manutencao_id"]
+                    },
+                    {"$set": {"historico_manutencao.$.integrado_erp": True}}
+                )
+            except Exception:
+                current_app.logger.exception(
+                    "Reparo confirmado, mas houve falha ao atualizar a despesa no Financeiro."
+                )
+                flash(
+                    "O reparo foi confirmado, mas a despesa não foi atualizada no Financeiro.",
+                    "warning"
+                )
             flash(
                 "Reparo confirmado. Equipamento disponível novamente!",
                 "success"

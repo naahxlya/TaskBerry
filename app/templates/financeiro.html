@@ -2,30 +2,354 @@
 
 {% block title %}Financeiro | TaskBerry{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/financeiro.css', v='20261118-3') }}">
+{% endblock %}
+
 {% block content %}
-
 <div class="dashboard-layout">
-
     {% include 'components/sidebar.html' %}
-
     <main class="dashboard-main">
-
         <header class="dashboard-header">
-            <button
-                class="sidebar-toggle"
-                id="sidebarToggle"
-                type="button"
-                aria-label="Abrir menu"
-            >
+            <button class="sidebar-toggle" id="sidebarToggle" type="button" aria-label="Abrir menu">
                 <i class="bi bi-list"></i>
             </button>
+            <div class="dashboard-breadcrumb">
+                <span>TaskBerry</span><i class="bi bi-chevron-right"></i><strong>Financeiro</strong>
+            </div>
         </header>
 
-        <section class="dashboard-content">
+        <section class="dashboard-content finance-page">
+            <div class="finance-heading materials-welcome">
+                <div>
+                    <span class="finance-eyebrow materials-eyebrow"><i class="bi bi-wallet2"></i> CONTROLE FINANCEIRO</span>
+                    <h1>Financeiro</h1>
+                    <p class="finance-subtitle">Acompanhe entradas, despesas, pagamentos de obras e compromissos financeiros do seu empreendimento.</p>
+                </div>
+                <form method="GET" action="{{ url_for('financeiro.index') }}" class="finance-period">
+                    <div>
+                        <label for="competencia">Competência</label>
+                        <input class="form-control" type="month" id="competencia" name="competencia" value="{{ competencia }}">
+                    </div>
+                    <button class="materials-primary-button finance-action-button" type="submit"><i class="bi bi-calendar-check"></i> Consultar</button>
+                </form>
+            </div>
+
+            {% with mensagens = get_flashed_messages(with_categories=true) %}
+                {% if mensagens %}
+                    {% for categoria, mensagem in mensagens %}
+                        <div class="alert alert-{{ categoria }} alert-dismissible fade show" role="alert">
+                            {{ mensagem }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="finance-grid">
+                <article class="finance-kpi income">
+                    <small><i class="bi bi-arrow-down-left-circle"></i> Entradas realizadas</small>
+                    <strong>R$ {{ "%.2f"|format(totais.entradas)|replace(".", ",") }}</strong>
+                    <div class="finance-kpi-foot">Dinheiro efetivamente recebido</div>
+                </article>
+                <article class="finance-kpi expense">
+                    <small><i class="bi bi-arrow-up-right-circle"></i> Saídas realizadas</small>
+                    <strong>R$ {{ "%.2f"|format(totais.saidas)|replace(".", ",") }}</strong>
+                    <div class="finance-kpi-foot">Despesas efetivamente pagas</div>
+                </article>
+                <article class="finance-kpi balance">
+                    <small><i class="bi bi-wallet"></i> Saldo do período</small>
+                    <strong>R$ {{ "%.2f"|format(totais.saldo)|replace(".", ",") }}</strong>
+                    <div class="finance-kpi-foot">Entradas menos saídas realizadas</div>
+                </article>
+                <article class="finance-kpi pending">
+                    <small><i class="bi bi-hourglass-split"></i> Valores pendentes</small>
+                    <strong>R$ {{ "%.2f"|format(totais.entradas_pendentes + totais.saidas_pendentes)|replace(".", ",") }}</strong>
+                    <div class="finance-kpi-foot">A receber: R$ {{ "%.2f"|format(totais.entradas_pendentes)|replace(".", ",") }} · A pagar: R$ {{ "%.2f"|format(totais.saidas_pendentes)|replace(".", ",") }}</div>
+                </article>
+            </div>
+
+            {% if obras_com_saldo %}
+            <section class="finance-panel finance-receivables-panel">
+                <div class="finance-panel-heading">
+                    <div>
+                        <h2><i class="bi bi-cash-coin"></i> Contas a receber por obra</h2>
+                        <p>Valores que ainda faltam receber. Eles não entram no saldo de caixa até serem lançados como recebidos.</p>
+                    </div>
+                    <span class="finance-pill">{{ obras_com_saldo|length }} obra(s) em aberto</span>
+                </div>
+                <div class="finance-table-wrap">
+                    <table class="finance-table">
+                        <thead>
+                            <tr><th>Obra</th><th>Cliente</th><th>Valor contratado</th><th>Recebido</th><th>Saldo pendente</th><th>Ação</th></tr>
+                        </thead>
+                        <tbody>
+                        {% for obra in obras_com_saldo %}
+                            <tr>
+                                <td><strong>{{ obra.numero }}</strong><span class="finance-secondary">{{ obra.titulo }}</span></td>
+                                <td>{{ obra.cliente_nome or "Não informado" }}</td>
+                                <td>R$ {{ "%.2f"|format(obra.valor_final_financeiro)|replace(".", ",") }}</td>
+                                <td class="finance-value income">R$ {{ "%.2f"|format(obra.valor_recebido_financeiro)|replace(".", ",") }}</td>
+                                <td class="finance-value">R$ {{ "%.2f"|format(obra.saldo_calculado_financeiro)|replace(".", ",") }}</td>
+                                <td>
+                                    <button type="button" class="materials-secondary-button finance-action-button finance-fill-payment"
+                                            data-chamado="{{ obra._id }}"
+                                            data-descricao="Recebimento da obra {{ obra.numero }}">
+                                        <i class="bi bi-plus-circle"></i> Lançar recebimento
+                                    </button>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+            {% endif %}
+
+            <section class="finance-panel" id="novo-lancamento">
+                <div class="finance-panel-heading">
+                    <div>
+                        <h2><i class="bi bi-plus-circle"></i> Novo lançamento</h2>
+                        <p>Registre um recebimento ou uma despesa. O saldo considera somente lançamentos realizados.</p>
+                    </div>
+                </div>
+
+                <form method="POST" action="{{ url_for('financeiro.criar_movimentacao') }}" class="finance-form">
+                    <div class="finance-type-choice">
+                        <label><input type="radio" name="tipo" value="entrada" checked> <i class="bi bi-arrow-down-left-circle text-success"></i> Entrada</label>
+                        <label><input type="radio" name="tipo" value="saida"> <i class="bi bi-arrow-up-right-circle text-danger"></i> Saída</label>
+                    </div>
+
+                    <div class="finance-form-grid">
+                        <div>
+                            <label for="categoria">Categoria *</label>
+                            <select class="form-select" name="categoria" id="categoria" required>
+                                <optgroup label="Entradas" data-tipo="entrada">
+                                    {% for chave, nome in categorias_entrada.items() %}
+                                    <option value="{{ chave }}">{{ nome }}</option>
+                                    {% endfor %}
+                                </optgroup>
+                                <optgroup label="Saídas" data-tipo="saida" disabled hidden>
+                                    {% for chave, nome in categorias_saida.items() %}
+                                    <option value="{{ chave }}">{{ nome }}</option>
+                                    {% endfor %}
+                                </optgroup>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="valor">Valor (R$) *</label>
+                            <input class="form-control" type="text" inputmode="decimal" name="valor" id="valor" placeholder="0,00" required>
+                        </div>
+                        <div>
+                            <label for="data_movimento">Data do movimento *</label>
+                            <input class="form-control" type="date" name="data_movimento" id="data_movimento" value="{{ now_date }}" required>
+                        </div>
+                        <div class="finance-field-full">
+                            <label for="descricao">Descrição *</label>
+                            <input class="form-control" type="text" name="descricao" id="descricao" maxlength="180" placeholder="Ex.: Pagamento da segunda parcela da obra" required>
+                        </div>
+                        <div>
+                            <label for="data_vencimento">Data de vencimento</label>
+                            <input class="form-control" type="date" name="data_vencimento" id="data_vencimento">
+                        </div>
+                        <div>
+                            <label for="forma_pagamento">Forma de pagamento</label>
+                            <select class="form-select" name="forma_pagamento" id="forma_pagamento">
+                                {% for chave, nome in formas_pagamento.items() %}
+                                <option value="{{ chave }}">{{ nome }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label for="status">Situação</label>
+                            <select class="form-select" name="status" id="status">
+                                {% for chave, nome in status_movimento.items() %}
+                                <option value="{{ chave }}">{{ nome }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label for="chamado_id">Obra / chamado relacionado</label>
+                            <select class="form-select" name="chamado_id" id="chamado_id">
+                                <option value="">Nenhum</option>
+                                {% for chamado in chamados %}
+                                <option value="{{ chamado._id }}">{{ chamado.numero }} · {{ chamado.titulo }} · {{ chamado.cliente_nome }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label for="cliente_id">Cliente</label>
+                            <select class="form-select" name="cliente_id" id="cliente_id">
+                                <option value="">Não vincular</option>
+                                {% for cliente in clientes %}
+                                <option value="{{ cliente._id }}">{{ cliente.nome }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label for="funcionario_id">Funcionário relacionado</label>
+                            <select class="form-select" name="funcionario_id" id="funcionario_id">
+                                <option value="">Não vincular</option>
+                                {% for funcionario in funcionarios %}
+                                <option value="{{ funcionario._id }}">{{ funcionario.nome }} · {{ funcionario.cargo }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label for="fornecedor">Fornecedor / favorecido</label>
+                            <input class="form-control" type="text" name="fornecedor" id="fornecedor" maxlength="140" placeholder="Nome do fornecedor ou favorecido">
+                        </div>
+                        <div class="finance-field-full">
+                            <label for="observacoes">Observações</label>
+                            <textarea class="form-control" name="observacoes" id="observacoes" rows="2" maxlength="1000" placeholder="Informações adicionais sobre o lançamento"></textarea>
+                        </div>
+                    </div>
+                    <div class="finance-note"><i class="bi bi-info-circle"></i> Pagamentos vinculados a obras atualizam automaticamente os campos de total recebido e saldo pendente do chamado. Compras registradas em Materiais também são lançadas como despesas.</div>
+                    <div class="finance-form-actions">
+                        <button class="materials-primary-button finance-action-button" type="submit"><i class="bi bi-check2-circle"></i> Registrar lançamento</button>
+                    </div>
+                </form>
+            </section>
+
+            <section class="finance-panel">
+                <div class="finance-panel-heading">
+                    <div>
+                        <h2><i class="bi bi-list-ul"></i> Movimentações financeiras</h2>
+                        <p>{{ total_registros }} registro(s) na competência {{ competencia }}. Exibindo até 20 por página.</p>
+                    </div>
+                    <a class="materials-secondary-button finance-action-button" href="{{ url_for('financeiro.exportar_csv', competencia=competencia, tipo=tipo_filtro, status=status_filtro) }}">
+                        <i class="bi bi-filetype-csv"></i> Exportar CSV
+                    </a>
+                </div>
+
+                <form method="GET" action="{{ url_for('financeiro.index') }}" class="finance-filter-row mb-4">
+                    <input type="hidden" name="competencia" value="{{ competencia }}">
+                    <div><label for="busca">Pesquisar</label><input class="form-control" id="busca" name="busca" value="{{ busca }}" placeholder="Descrição, obra, cliente..."></div>
+                    <div><label for="tipo_filtro">Tipo</label><select class="form-select" id="tipo_filtro" name="tipo"><option value="">Todos</option><option value="entrada" {% if tipo_filtro == 'entrada' %}selected{% endif %}>Entradas</option><option value="saida" {% if tipo_filtro == 'saida' %}selected{% endif %}>Saídas</option></select></div>
+                    <div><label for="status_filtro">Situação</label><select class="form-select" id="status_filtro" name="status"><option value="">Todas</option><option value="realizado" {% if status_filtro == 'realizado' %}selected{% endif %}>Realizado</option><option value="pendente" {% if status_filtro == 'pendente' %}selected{% endif %}>Pendente</option></select></div>
+                    <button class="materials-primary-button finance-action-button" type="submit"><i class="bi bi-funnel"></i> Filtrar</button>
+                    <a class="materials-secondary-button finance-action-button" href="{{ url_for('financeiro.index', competencia=competencia) }}">Limpar</a>
+                </form>
+
+                {% if movimentos %}
+                <div class="finance-table-wrap">
+                    <table class="finance-table">
+                        <thead><tr><th>Data</th><th>Descrição</th><th>Categoria / vínculo</th><th>Situação</th><th>Valor</th><th>Ação</th></tr></thead>
+                        <tbody>
+                        {% for item in movimentos %}
+                            <tr>
+                                <td>{{ item.data_movimento.strftime("%d/%m/%Y") if item.data_movimento else "—" }}
+                                    {% if item.data_vencimento %}<span class="finance-secondary">Vence: {{ item.data_vencimento.strftime("%d/%m/%Y") }}</span>{% endif %}
+                                </td>
+                                <td><span class="finance-description">{{ item.descricao }}</span><span class="finance-secondary">{{ formas_pagamento.get(item.forma_pagamento, item.forma_pagamento) }}</span></td>
+                                <td>{{ (categorias_entrada if item.tipo == 'entrada' else categorias_saida).get(item.categoria, item.categoria) }}
+                                    {% if item.chamado_numero %}<span class="finance-secondary">{{ item.chamado_numero }} · {{ item.chamado_titulo }}</span>{% endif %}
+                                    {% if item.funcionario_nome %}<span class="finance-secondary">{{ item.funcionario_nome }}</span>{% endif %}
+                                    {% if item.fornecedor %}<span class="finance-secondary">{{ item.fornecedor }}</span>{% endif %}
+                                </td>
+                                <td><span class="finance-pill {% if item.cancelada %}cancelled{% elif item.status == 'pendente' %}pending{% endif %}">{{ 'Cancelado' if item.cancelada else status_movimento.get(item.status, item.status) }}</span></td>
+                                <td class="finance-value {{ 'income' if item.tipo == 'entrada' else 'expense' }}">{{ '+' if item.tipo == 'entrada' else '−' }} R$ {{ "%.2f"|format(item.valor)|replace(".", ",") }}</td>
+                                <td>
+                                    {% if not item.cancelada and item.status == 'pendente' %}
+                                    <form method="POST" action="{{ url_for('financeiro.marcar_como_realizado', movimento_id=item._id) }}" class="mb-1">
+                                        <button class="btn btn-sm btn-outline-success finance-icon-action" type="submit" title="Marcar como realizado"><i class="bi bi-check2"></i></button>
+                                    </form>
+                                    {% endif %}
+                                    {% if not item.cancelada and item.origem != 'estoque' %}
+                                    <form method="POST" action="{{ url_for('financeiro.cancelar_movimentacao', movimento_id=item._id) }}" data-confirm="A movimentação será cancelada, mas permanecerá no histórico. Deseja continuar?" data-confirm-title="Cancelar movimentação" data-confirm-button="Cancelar lançamento" data-confirm-icon="bi-x-circle" data-confirm-variant="danger">
+                                        <button class="btn btn-sm btn-outline-danger finance-icon-action" type="submit" title="Cancelar lançamento"><i class="bi bi-x-circle"></i></button>
+                                    </form>
+                                    {% elif item.origem == 'estoque' %}
+                                    <span class="finance-secondary">Integrado ao estoque</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="finance-empty"><i class="bi bi-receipt"></i><strong>Nenhuma movimentação encontrada</strong><div>Registre uma entrada ou saída para começar a acompanhar seu fluxo financeiro.</div></div>
+                {% endif %}
+
+                {% if total_paginas > 1 %}
+                <nav class="finance-pagination" aria-label="Paginação financeira">
+                    {% if pagina > 1 %}<a href="{{ url_for('financeiro.index', competencia=competencia, tipo=tipo_filtro, status=status_filtro, busca=busca, pagina=pagina-1) }}">&lt;</a>{% endif %}
+                    {% for n in range(1,total_paginas+1) %}
+                    <a href="{{ url_for('financeiro.index', competencia=competencia, tipo=tipo_filtro, status=status_filtro, busca=busca, pagina=n) }}" class="{{ 'current' if n == pagina else '' }}">{{ n }}</a>
+                    {% endfor %}
+                    {% if pagina < total_paginas %}<a href="{{ url_for('financeiro.index', competencia=competencia, tipo=tipo_filtro, status=status_filtro, busca=busca, pagina=pagina+1) }}">&gt;</a>{% endif %}
+                </nav>
+                {% endif %}
+            </section>
+
+            <section class="finance-panel">
+                <div class="finance-panel-heading">
+                    <div>
+                        <h2><i class="bi bi-shield-check"></i> Regras e integridade dos registros</h2>
+                        <p>O Financeiro mantém um histórico separado dos cadastros operacionais.</p>
+                    </div>
+                </div>
+                <div class="finance-cashflow">
+                    <span><strong>Competência:</strong> considera o dia de fechamento definido em Configurações.</span>
+                    <span><strong>Histórico:</strong> cancelamentos não apagam registros.</span>
+                    <span><strong>Obras:</strong> recebimentos atualizam o saldo do chamado.</span>
+                    <span><strong>Materiais:</strong> compras do estoque são importadas automaticamente.</span>
+                </div>
+            </section>
         </section>
-
     </main>
-
 </div>
+{% endblock %}
 
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const radios = document.querySelectorAll('input[name="tipo"]');
+    const selectCategoria = document.getElementById("categoria");
+    const grupos = selectCategoria ? Array.from(selectCategoria.querySelectorAll("optgroup")) : [];
+
+    function atualizarTipo() {
+        const tipo = document.querySelector('input[name="tipo"]:checked')?.value || "entrada";
+        grupos.forEach(function (grupo) {
+            const ativo = grupo.dataset.tipo === tipo;
+            grupo.disabled = !ativo;
+            grupo.hidden = !ativo;
+        });
+        const opcoes = Array.from(selectCategoria.options).filter(op => op.parentElement.dataset.tipo === tipo);
+        if (opcoes.length && !opcoes.some(op => op.value === selectCategoria.value)) {
+            selectCategoria.value = opcoes[0].value;
+        }
+        const chamado = document.getElementById("chamado_id");
+        if (chamado) chamado.required = tipo === "entrada" && selectCategoria.value === "pagamento_obra";
+    }
+
+    radios.forEach(radio => radio.addEventListener("change", atualizarTipo));
+    selectCategoria?.addEventListener("change", atualizarTipo);
+    atualizarTipo();
+
+    document.querySelectorAll(".finance-fill-payment").forEach(button => {
+        button.addEventListener("click", () => {
+            const entrada = document.querySelector('input[name="tipo"][value="entrada"]');
+            if (entrada) entrada.checked = true;
+            atualizarTipo();
+
+            const categoria = document.getElementById("categoria");
+            if (categoria) categoria.value = "pagamento_obra";
+
+            const chamado = document.getElementById("chamado_id");
+            if (chamado) chamado.value = button.dataset.chamado || "";
+
+            const descricao = document.getElementById("descricao");
+            if (descricao) descricao.value = button.dataset.descricao || "";
+
+            document.getElementById("novo-lancamento")?.scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
+            document.getElementById("valor")?.focus({ preventScroll: true });
+        });
+    });
+});
+</script>
 {% endblock %}

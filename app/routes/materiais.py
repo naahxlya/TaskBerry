@@ -17,6 +17,7 @@ from flask import (
 )
 
 from app.database.connection import get_database
+from app.services.financeiro_service import registrar_despesa_compra_material
 
 
 materiais_bp = Blueprint("materiais", __name__)
@@ -198,7 +199,26 @@ def registrar_movimentacao(
     if dados_adicionais:
         registro.update(dados_adicionais)
 
-    db["movimentacoes_estoque"].insert_one(registro)
+    resultado = db["movimentacoes_estoque"].insert_one(registro)
+    registro["_id"] = resultado.inserted_id
+
+    # Compras de materiais também geram uma saída financeira.
+    # Consumos, ajustes e arquivamentos permanecem apenas no histórico de estoque.
+    if tipo in ("compra", "compra_reabastecimento") and registro.get("valor_total"):
+        try:
+            registrar_despesa_compra_material(
+                db,
+                obter_usuario_id(),
+                registro
+            )
+        except Exception:
+            current_app.logger.exception(
+                "A compra foi registrada no estoque, mas houve falha ao espelhar a despesa no Financeiro."
+            )
+            flash(
+                "A compra foi registrada no estoque, mas não foi possível integrá-la ao Financeiro. Consulte o log do servidor.",
+                "warning"
+            )
 
 
 # =====================================================
