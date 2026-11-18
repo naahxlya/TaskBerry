@@ -42112,3 +42112,20 @@ a {
         flex-wrap:wrap; 
     } 
 }
+
+
+/* Preferências configuráveis */
+.settings-preference-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.25rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--tb-border, #e8e0f0);
+}
+.settings-preference-row:last-of-type { border-bottom: 0; }
+.settings-preference-row .form-switch { padding-left: 2.8em; margin: 0; }
+.settings-preference-row .form-check-input { width: 2.5em; height: 1.3em; cursor: pointer; }
+@media (max-width: 575.98px) {
+    .settings-preference-row { align-items: flex-start; }
+}

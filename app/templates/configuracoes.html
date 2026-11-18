@@ -183,6 +183,7 @@
                             method="POST"
                             action="{{ url_for('configuracoes.minhas_configuracoes') }}"
                         >
+                            <input type="hidden" name="acao" value="controle_mensal">
 
                             <div class="row align-items-end g-3">
 
@@ -334,6 +335,107 @@
 
                 </div>
 
+
+                <!-- =================================
+                     PREFERÊNCIAS DE FUNCIONAMENTO
+                ================================== -->
+                <div class="col-12">
+                    <div class="profile-card settings-card">
+                        <div class="d-flex align-items-center gap-3 mb-4">
+                            <div class="settings-icon"><i class="bi bi-sliders2"></i></div>
+                            <div>
+                                <h5 class="mb-1">Preferências de funcionamento</h5>
+                                <p class="text-muted small mb-0">Defina como o TaskBerry organiza os registros e confirma operações.</p>
+                            </div>
+                        </div>
+
+                        <div class="settings-preference-row">
+                            <div>
+                                <strong>Incluir clientes arquivados e excluídos nos chamados</strong>
+                                <p class="text-muted small mb-0">Quando ativado, esses clientes também aparecerão na seleção de clientes ao cadastrar ou editar uma obra.</p>
+                            </div>
+                            <form method="POST" action="{{ url_for('configuracoes.minhas_configuracoes') }}" data-setting-switch>
+                                <input type="hidden" name="acao" value="preferencia_switch">
+                                <input type="hidden" name="chave" value="incluir_clientes_arquivados_excluidos">
+                                <input type="hidden" name="valor" value="{{ 'false' if preferencias.incluir_clientes_arquivados_excluidos else 'true' }}" data-switch-value>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="incluirClientesInativos" {% if preferencias.incluir_clientes_arquivados_excluidos %}checked{% endif %} data-setting-switch-input data-confirm-title="Incluir clientes inativos?" data-confirm-message="Ao ativar, clientes arquivados e que estão na lixeira poderão ser associados a novos chamados. Deseja realmente permitir isso?">
+                                </div>
+                            </form>
+                        </div>
+
+                        <div class="settings-preference-row">
+                            <div>
+                                <strong>Exigir senha ao excluir registros</strong>
+                                <p class="text-muted small mb-0">Solicita a senha da conta além da confirmação padrão antes de enviar registros à lixeira ou excluí-los permanentemente.</p>
+                            </div>
+                            <form method="POST" action="{{ url_for('configuracoes.minhas_configuracoes') }}" data-setting-switch>
+                                <input type="hidden" name="acao" value="preferencia_switch">
+                                <input type="hidden" name="chave" value="exigir_senha_exclusao">
+                                <input type="hidden" name="valor" value="{{ 'false' if preferencias.exigir_senha_exclusao else 'true' }}" data-switch-value>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="exigirSenhaExclusao" {% if preferencias.exigir_senha_exclusao %}checked{% endif %} data-setting-switch-input data-confirm-title="Alterar confirmação por senha?" data-confirm-message="Deseja alterar a exigência de senha nas operações de exclusão?">
+                                </div>
+                            </form>
+                        </div>
+
+                        <div class="settings-preference-row">
+                            <div>
+                                <strong>Botão voltar ao topo</strong>
+                                <p class="text-muted small mb-0">Exibe ou oculta o botão flutuante de rolagem para o início da página.</p>
+                            </div>
+                            <form method="POST" action="{{ url_for('configuracoes.minhas_configuracoes') }}" data-setting-switch>
+                                <input type="hidden" name="acao" value="preferencia_switch">
+                                <input type="hidden" name="chave" value="mostrar_botao_topo">
+                                <input type="hidden" name="valor" value="{{ 'false' if preferencias.mostrar_botao_topo else 'true' }}" data-switch-value>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="mostrarBotaoTopo" {% if preferencias.mostrar_botao_topo %}checked{% endif %} data-setting-switch-input data-confirm-title="Alterar botão voltar ao topo?" data-confirm-message="Deseja alterar a exibição do botão voltar ao topo?">
+                                </div>
+                            </form>
+                        </div>
+
+                        <form method="POST" action="{{ url_for('configuracoes.minhas_configuracoes') }}" class="mt-4">
+                            <input type="hidden" name="acao" value="salvar_preferencias">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label" for="prioridade_chamados_primeiro">Prioridade que aparece primeiro nos chamados</label>
+                                    <select class="form-select" id="prioridade_chamados_primeiro" name="prioridade_chamados_primeiro">
+                                        <option value="urgente" {% if preferencias.prioridade_chamados_primeiro == 'urgente' %}selected{% endif %}>Urgente</option>
+                                        <option value="alta" {% if preferencias.prioridade_chamados_primeiro == 'alta' %}selected{% endif %}>Alta</option>
+                                        <option value="normal" {% if preferencias.prioridade_chamados_primeiro == 'normal' %}selected{% endif %}>Normal</option>
+                                        <option value="baixa" {% if preferencias.prioridade_chamados_primeiro == 'baixa' %}selected{% endif %}>Baixa</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="ordem_clientes">Ordem padrão dos clientes</label>
+                                    <select class="form-select" id="ordem_clientes" name="ordem_clientes">
+                                        <option value="nome_asc" {% if preferencias.ordem_clientes == 'nome_asc' %}selected{% endif %}>Ordem alfabética</option>
+                                        <option value="atualizado_desc" {% if preferencias.ordem_clientes == 'atualizado_desc' %}selected{% endif %}>Modificados mais recentemente</option>
+                                        <option value="atualizado_asc" {% if preferencias.ordem_clientes == 'atualizado_asc' %}selected{% endif %}>Modificados há mais tempo</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="ordem_funcionarios">Ordem padrão dos funcionários</label>
+                                    <select class="form-select" id="ordem_funcionarios" name="ordem_funcionarios">
+                                        <option value="nome_asc" {% if preferencias.ordem_funcionarios == 'nome_asc' %}selected{% endif %}>Ordem alfabética</option>
+                                        <option value="contratacao_desc" {% if preferencias.ordem_funcionarios == 'contratacao_desc' %}selected{% endif %}>Contratados mais recentemente</option>
+                                        <option value="contratacao_asc" {% if preferencias.ordem_funcionarios == 'contratacao_asc' %}selected{% endif %}>Contratados há mais tempo</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="ordem_materiais">Ordem padrão dos materiais</label>
+                                    <select class="form-select" id="ordem_materiais" name="ordem_materiais">
+                                        <option value="atualizado_desc" {% if preferencias.ordem_materiais == 'atualizado_desc' %}selected{% endif %}>Modificados mais recentemente</option>
+                                        <option value="atualizado_asc" {% if preferencias.ordem_materiais == 'atualizado_asc' %}selected{% endif %}>Modificados há mais tempo</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-end mt-4">
+                                <button type="submit" class="settings-save-button"><i class="bi bi-check2-circle me-2"></i>Salvar preferências</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
 
                 <!-- =================================
                      INTEGRAÇÃO DOS MÓDULOS

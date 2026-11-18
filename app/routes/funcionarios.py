@@ -100,9 +100,16 @@ def listar_funcionarios():
     if filtro_situacao in SITUACOES:
         filtro["situacao"] = filtro_situacao
 
-    funcionarios = list(
-        colecao.find(filtro).sort("criado_em", -1)
-    )
+    configuracao = get_database()["configuracoes"].find_one(
+        {"usuario_id": usuario_id}, {"preferencias.ordem_funcionarios": 1}
+    ) or {}
+    ordem_funcionarios = configuracao.get("preferencias", {}).get("ordem_funcionarios", "nome_asc")
+    ordenacao = {
+        "nome_asc": [("nome", 1), ("_id", 1)],
+        "contratacao_desc": [("data_contratacao", -1), ("nome", 1)],
+        "contratacao_asc": [("data_contratacao", 1), ("nome", 1)]
+    }.get(ordem_funcionarios, [("nome", 1), ("_id", 1)])
+    funcionarios = list(colecao.find(filtro).sort(ordenacao))
 
     total_funcionarios = colecao.count_documents({
         "usuario_id": usuario_id
@@ -160,7 +167,8 @@ def listar_funcionarios():
         total_ativos=total_ativos,
         total_afastados=total_afastados,
         total_desligados=total_desligados,
-        total_remuneracao_mensal=total_remuneracao_mensal
+        total_remuneracao_mensal=total_remuneracao_mensal,
+        ordem_funcionarios=ordem_funcionarios
     )
 
 

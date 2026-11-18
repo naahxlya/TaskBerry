@@ -344,9 +344,17 @@ def listar_materiais():
     if categoria:
         filtro["categoria"] = categoria
 
+    configuracao = db["configuracoes"].find_one(
+        {"usuario_id": usuario_id}, {"preferencias.ordem_materiais": 1}
+    ) or {}
+    ordem_materiais = configuracao.get("preferencias", {}).get("ordem_materiais", "atualizado_desc")
+    ordenacao = {
+        "atualizado_desc": [("atualizado_em", -1), ("_id", -1)],
+        "atualizado_asc": [("atualizado_em", 1), ("_id", 1)]
+    }.get(ordem_materiais, [("atualizado_em", -1), ("_id", -1)])
     materiais = [
         formatar_material(item)
-        for item in colecao.find(filtro).sort("criado_em", -1)
+        for item in colecao.find(filtro).sort(ordenacao)
     ]
 
     todos = list(colecao.find({
@@ -414,7 +422,8 @@ def listar_materiais():
         total_estoque_baixo=total_estoque_baixo,
         valor_total_estoque=valor_total_estoque,
         movimentacoes=movimentacoes,
-        movimentacoes_tem_mais=movimentacoes_tem_mais
+        movimentacoes_tem_mais=movimentacoes_tem_mais,
+        ordem_materiais=ordem_materiais
     )
 
 

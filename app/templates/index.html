@@ -43,11 +43,12 @@
       {% block extra_css %}{% endblock %}
 </head>
 
-<body>
+<body data-require-delete-password="{{ 'true' if preferencias_taskberry.exigir_senha_exclusao else 'false' }}">
 
     {% block content %}
     {% endblock %}
 
+    {% if preferencias_taskberry.mostrar_botao_topo %}
     <button type="button"
             id="taskberryBackToTop"
             class="taskberry-back-to-top"
@@ -55,6 +56,7 @@
             title="Voltar ao topo">
         <i class="bi bi-arrow-up"></i>
     </button>
+    {% endif %}
 
     {% include 'components/confirmacao_modal.html' %}
 

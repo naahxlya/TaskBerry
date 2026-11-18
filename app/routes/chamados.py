@@ -157,13 +157,25 @@ def buscar_chamado(chamado_id):
 
 
 def carregar_clientes():
-    return list(
-        get_database()["clientes"].find(
-            {
-                "usuario_id": obter_usuario_id()
-            }
-        ).sort("nome", 1)
+    db = get_database()
+    configuracao = db["configuracoes"].find_one(
+        {"usuario_id": obter_usuario_id()}, {"preferencias.incluir_clientes_arquivados_excluidos": 1}
+    ) or {}
+    incluir_inativos = configuracao.get("preferencias", {}).get(
+        "incluir_clientes_arquivados_excluidos", False
     )
+    filtro = {"usuario_id": obter_usuario_id()}
+    if not incluir_inativos:
+        filtro.update({"arquivado": {"$ne": True}, "excluido": {"$ne": True}})
+    clientes = list(db["clientes"].find(filtro).sort("nome", 1))
+    for cliente in clientes:
+        if cliente.get("excluido"):
+            cliente["status_cadastro"] = "Na lixeira"
+        elif cliente.get("arquivado"):
+            cliente["status_cadastro"] = "Arquivado"
+        else:
+            cliente["status_cadastro"] = "Ativo"
+    return clientes
 
 
 def carregar_funcionarios():
@@ -181,10 +193,22 @@ def obter_cliente_valido(cliente_id):
     if not ObjectId.is_valid(cliente_id or ""):
         return None
 
-    return get_database()["clientes"].find_one({
+    db = get_database()
+    cliente = db["clientes"].find_one({
         "_id": ObjectId(cliente_id),
         "usuario_id": obter_usuario_id()
     })
+    if not cliente:
+        return None
+    configuracao = db["configuracoes"].find_one(
+        {"usuario_id": obter_usuario_id()}, {"preferencias.incluir_clientes_arquivados_excluidos": 1}
+    ) or {}
+    incluir_inativos = configuracao.get("preferencias", {}).get(
+        "incluir_clientes_arquivados_excluidos", False
+    )
+    if not incluir_inativos and (cliente.get("arquivado") or cliente.get("excluido")):
+        return None
+    return cliente
 
 
 def obter_funcionarios_validos(ids):
@@ -486,18 +510,26 @@ def listar_chamados():
     total_paginas = max(1, (total_registros + por_pagina - 1) // por_pagina)
     pagina = min(pagina, total_paginas)
 
-    chamados = list(
-        colecao.find(filtro)
-        # Número sequencial decrescente: chamados mais recentes primeiro.
-        # O formato TB-AAAA-00001 mantém a ordenação correta como texto.
-        .sort([
-            ("numero", -1),
-            ("criado_em", -1),
-            ("_id", -1)
-        ])
-        .skip((pagina - 1) * por_pagina)
-        .limit(por_pagina)
+    configuracao_usuario = db["configuracoes"].find_one(
+        {"usuario_id": usuario_id}, {"preferencias.prioridade_chamados_primeiro": 1}
+    ) or {}
+    prioridade_primeira = configuracao_usuario.get("preferencias", {}).get(
+        "prioridade_chamados_primeiro", "urgente"
     )
+    ordem_prioridades = [prioridade_primeira] + [
+        item for item in ["urgente", "alta", "normal", "baixa"]
+        if item != prioridade_primeira
+    ]
+
+    pipeline_chamados = [
+        {"$match": filtro},
+        {"$addFields": {"_prioridade_ordem": {"$indexOfArray": [ordem_prioridades, "$prioridade"]}}},
+        {"$sort": {"_prioridade_ordem": 1, "numero": -1, "criado_em": -1, "_id": -1}},
+        {"$skip": (pagina - 1) * por_pagina},
+        {"$limit": por_pagina},
+        {"$project": {"_prioridade_ordem": 0}}
+    ]
+    chamados = list(colecao.aggregate(pipeline_chamados))
 
     chamados = [
         preparar_chamado_para_template(chamado)

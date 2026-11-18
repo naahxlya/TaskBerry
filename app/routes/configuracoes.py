@@ -21,6 +21,23 @@ configuracoes_bp = Blueprint("configuracoes", __name__)
 FUSO_HORARIO = ZoneInfo("America/Sao_Paulo")
 DIA_FECHAMENTO_PADRAO = 30
 
+PREFERENCIAS_PADRAO = {
+    "incluir_clientes_arquivados_excluidos": False,
+    "prioridade_chamados_primeiro": "urgente",
+    "mostrar_botao_topo": True,
+    "exigir_senha_exclusao": False,
+    "ordem_clientes": "nome_asc",
+    "ordem_funcionarios": "nome_asc",
+    "ordem_materiais": "atualizado_desc"
+}
+
+OPCOES_PREFERENCIAS = {
+    "prioridade_chamados_primeiro": {"urgente", "alta", "normal", "baixa"},
+    "ordem_clientes": {"nome_asc", "atualizado_desc", "atualizado_asc"},
+    "ordem_funcionarios": {"nome_asc", "contratacao_desc", "contratacao_asc"},
+    "ordem_materiais": {"atualizado_desc", "atualizado_asc"}
+}
+
 
 def obter_usuario_id():
     return session.get("usuario_id")
@@ -119,7 +136,53 @@ def minhas_configuracoes():
             "fuso_horario": "America/Sao_Paulo"
         }
 
+    preferencias = {**PREFERENCIAS_PADRAO, **configuracao.get("preferencias", {})}
+    configuracao["preferencias"] = preferencias
+
     if request.method == "POST":
+        acao = request.form.get("acao", "controle_mensal")
+
+        if acao == "preferencia_switch":
+            chave = request.form.get("chave", "")
+            valor = request.form.get("valor", "").lower() == "true"
+            chaves_booleanas = {
+                "incluir_clientes_arquivados_excluidos",
+                "mostrar_botao_topo",
+                "exigir_senha_exclusao"
+            }
+            if chave not in chaves_booleanas:
+                flash("Preferência inválida.", "danger")
+                return redirect(url_for("configuracoes.minhas_configuracoes"))
+            colecao.update_one(
+                {"usuario_id": usuario_id},
+                {"$set": {f"preferencias.{chave}": valor,
+                          "atualizado_em": datetime.now(FUSO_HORARIO)},
+                 "$setOnInsert": {"usuario_id": usuario_id,
+                                  "criado_em": datetime.now(FUSO_HORARIO)}},
+                upsert=True
+            )
+            flash("Preferência atualizada com sucesso.", "success")
+            return redirect(url_for("configuracoes.minhas_configuracoes"))
+
+        if acao == "salvar_preferencias":
+            atualizadas = {}
+            for chave, permitidos in OPCOES_PREFERENCIAS.items():
+                valor = request.form.get(chave, "")
+                if valor not in permitidos:
+                    flash("Uma das opções selecionadas é inválida.", "danger")
+                    return redirect(url_for("configuracoes.minhas_configuracoes"))
+                atualizadas[f"preferencias.{chave}"] = valor
+            atualizadas["atualizado_em"] = datetime.now(FUSO_HORARIO)
+            colecao.update_one(
+                {"usuario_id": usuario_id},
+                {"$set": atualizadas,
+                 "$setOnInsert": {"usuario_id": usuario_id,
+                                  "criado_em": datetime.now(FUSO_HORARIO)}},
+                upsert=True
+            )
+            flash("Preferências de organização salvas com sucesso.", "success")
+            return redirect(url_for("configuracoes.minhas_configuracoes"))
+
         try:
             dia_fechamento = int(
                 request.form.get("dia_fechamento", "")
@@ -191,6 +254,7 @@ def minhas_configuracoes():
     return render_template(
         "configuracoes.html",
         configuracao=configuracao,
+        preferencias=preferencias,
         dia_fechamento=dia_fechamento,
         data_atual=formatar_data(hoje),
         data_inicio=formatar_data(data_inicio),

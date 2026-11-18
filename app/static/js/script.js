@@ -190,6 +190,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const icon = modalElement.querySelector("[data-confirm-icon]");
     const dangerIcon = modalElement.querySelector("[data-confirm-danger-icon]");
     const neutralIcon = modalElement.querySelector("[data-confirm-neutral-icon]");
+    const passwordWrap = modalElement.querySelector("[data-confirm-password-wrap]");
+    const passwordInput = modalElement.querySelector("#taskberryDeletePassword");
 
     let pendingForm = null;
     let pendingResolver = null;
@@ -222,6 +224,8 @@ document.addEventListener("DOMContentLoaded", function () {
         if (icon) icon.className = "bi " + safeIconClass(options.icon);
         if (dangerIcon) dangerIcon.classList.toggle("d-none", variant !== "danger");
         if (neutralIcon) neutralIcon.classList.toggle("d-none", variant !== "primary");
+        if (passwordWrap) passwordWrap.classList.toggle("d-none", options.requirePassword !== true);
+        if (passwordInput) passwordInput.value = "";
 
         modal.show();
 
@@ -241,9 +245,10 @@ document.addEventListener("DOMContentLoaded", function () {
     // Intercepta somente formulários explicitamente marcados com data-confirm.
     document.addEventListener("submit", function (event) {
         const form = event.target;
-        if (!(form instanceof HTMLFormElement) || !form.hasAttribute("data-confirm")) {
-            return;
-        }
+        if (!(form instanceof HTMLFormElement)) return;
+        const actionPath = new URL(form.action, window.location.href).pathname;
+        const isDeleteAction = /\/(excluir(?:-permanentemente)?|lixeira)(?:\/|$)/i.test(actionPath);
+        if (!form.hasAttribute("data-confirm") && !isDeleteAction) return;
 
         if (approvedForm === form || form.dataset.confirmApproved === "true") {
             form.dataset.confirmApproved = "false";
@@ -254,19 +259,42 @@ document.addEventListener("DOMContentLoaded", function () {
         event.preventDefault();
         pendingForm = form;
 
+        const requirePassword = document.body.dataset.requireDeletePassword === "true" && isDeleteAction;
         openConfirmation({
             kicker: form.dataset.confirmKicker,
             title: form.dataset.confirmTitle,
             message: form.dataset.confirm,
             confirmText: form.dataset.confirmButton || "Confirmar",
             icon: form.dataset.confirmIcon || "bi-exclamation-circle",
-            variant: form.dataset.confirmVariant || "danger"
+            variant: form.dataset.confirmVariant || "danger",
+            requirePassword: requirePassword
         });
     }, true);
 
     confirmButton.addEventListener("click", function () {
         const form = pendingForm;
         const resolver = pendingResolver;
+
+        if (form && form.isConnected && passwordWrap && !passwordWrap.classList.contains("d-none")) {
+            const senha = passwordInput ? passwordInput.value : "";
+            if (!senha) {
+                if (passwordInput) {
+                    passwordInput.classList.add("is-invalid");
+                    passwordInput.focus();
+                }
+                pendingForm = form;
+                pendingResolver = resolver;
+                return;
+            }
+            let hiddenPassword = form.querySelector('input[name="senha_confirmacao"]');
+            if (!hiddenPassword) {
+                hiddenPassword = document.createElement("input");
+                hiddenPassword.type = "hidden";
+                hiddenPassword.name = "senha_confirmacao";
+                form.appendChild(hiddenPassword);
+            }
+            hiddenPassword.value = senha;
+        }
 
         pendingForm = null;
         pendingResolver = null;
@@ -294,6 +322,38 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         pendingForm = null;
+    });
+});
+
+/* =====================================================
+   TASKBERRY | SWITCHES DE PREFERÊNCIAS COM CONFIRMAÇÃO
+===================================================== */
+document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll("[data-setting-switch-input]").forEach(function (input) {
+        const form = input.closest("form[data-setting-switch]");
+        if (!form) return;
+        const valor = form.querySelector("[data-switch-value]");
+        const estadoInicial = input.checked;
+        input.addEventListener("change", async function () {
+            const novoEstado = input.checked;
+            input.disabled = true;
+            const confirmar = window.TaskBerryConfirm
+                ? await window.TaskBerryConfirm.ask({
+                    title: input.dataset.confirmTitle || "Confirmar alteração?",
+                    message: input.dataset.confirmMessage || "Deseja realmente alterar esta preferência?",
+                    confirmText: "Sim, alterar",
+                    icon: "bi-sliders",
+                    variant: "primary"
+                })
+                : window.confirm(input.dataset.confirmMessage || "Confirmar alteração?");
+            if (!confirmar) {
+                input.checked = !novoEstado;
+                input.disabled = false;
+                return;
+            }
+            if (valor) valor.value = novoEstado ? "true" : "false";
+            form.submit();
+        });
     });
 });
 

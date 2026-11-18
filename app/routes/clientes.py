@@ -76,7 +76,16 @@ def listar_clientes():
     pagina = min(pagina, total_paginas)
     deslocamento = (pagina - 1) * ITENS_POR_PAGINA
 
-    clientes = list(colecao.find(filtro).sort("criado_em", -1).skip(deslocamento).limit(ITENS_POR_PAGINA))
+    configuracao = db["configuracoes"].find_one(
+        {"usuario_id": session.get("usuario_id")}, {"preferencias.ordem_clientes": 1}
+    ) or {}
+    ordem_clientes = configuracao.get("preferencias", {}).get("ordem_clientes", "nome_asc")
+    ordenacao = {
+        "nome_asc": [("nome", 1), ("_id", 1)],
+        "atualizado_desc": [("atualizado_em", -1), ("_id", -1)],
+        "atualizado_asc": [("atualizado_em", 1), ("_id", 1)]
+    }.get(ordem_clientes, [("nome", 1), ("_id", 1)])
+    clientes = list(colecao.find(filtro).sort(ordenacao).skip(deslocamento).limit(ITENS_POR_PAGINA))
     total_clientes = colecao.count_documents({**filtro_usuario(), "arquivado": {"$ne": True}, "excluido": {"$ne": True}})
     arquivados = list(colecao.find({**filtro_usuario(), "arquivado": True, "excluido": {"$ne": True}}).sort("arquivado_em", -1).limit(100))
     lixeira = list(colecao.find({**filtro_usuario(), "excluido": True}).sort("excluido_em", -1).limit(100))
@@ -87,7 +96,7 @@ def listar_clientes():
         primeira_linha=deslocamento + 1 if total_filtrado else 0,
         ultima_linha=min(deslocamento + ITENS_POR_PAGINA, total_filtrado),
         arquivados=arquivados, lixeira=lixeira,
-        agora=agora(), prazo_dias=PRAZO_DIAS
+        agora=agora(), prazo_dias=PRAZO_DIAS, ordem_clientes=ordem_clientes
     )
 
 
