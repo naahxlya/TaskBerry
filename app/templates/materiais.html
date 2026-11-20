@@ -301,6 +301,25 @@
                                        class="form-control">
                             </div>
 
+                            {% if not material_recompra %}
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input class="form-check-input"
+                                           type="checkbox"
+                                           id="materialCompraAntiga"
+                                           name="compra_antiga"
+                                           value="1">
+                                    <label class="form-check-label" for="materialCompraAntiga">
+                                        Este material já existia antes.
+                                    </label>
+                                    <small class="d-block text-muted mt-1">
+                                        Marque para registrar o estoque inicial sem gerar uma despesa no Financeiro.
+                                        Compras futuras deste material serão lançadas normalmente.
+                                    </small>
+                                </div>
+                            </div>
+                            {% endif %}
+
                             <div class="col-md-6">
                                 <label class="form-label">
                                     Localização no estoque
@@ -329,12 +348,12 @@
                                   rows="3" maxlength="1000"
                                   placeholder="Observações sobre o material..."></textarea>
 
-                        <div class="materials-info-notice mt-3">
+                        <!--<div class="materials-info-notice mt-3">
                             <i class="bi bi-info-circle"></i>
                             O registro da aquisição será armazenado no histórico
                             de estoque. A integração com o ERP será implementada
                             na etapa financeira.
-                        </div>
+                        </div>-->
 
                         <div class="materials-registration-footer">
                             <button type="reset"

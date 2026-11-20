@@ -63,6 +63,13 @@
                     </p>
                 </div>
 
+
+                <div class="employees-header-actions">
+                    <button type="button" class="employee-secondary-button employees-trash-button" data-bs-toggle="modal" data-bs-target="#modalLixeiraFuncionarios">
+                        <i class="bi bi-trash3"></i> Lixeira ({{ total_lixeira|default(0) }})
+                    </button>
+                </div>
+
                 <button
                     type="button"
                     class="dashboard-primary-button"
@@ -701,9 +708,29 @@
 
                     <p class="employee-financial-note">
                         Este valor representa a remuneração-base cadastrada.
-                        Pagamentos, horas extras, adiantamentos e descontos
-                        serão controlados na próxima etapa de integração financeira.
+                        Pagamentos, horas extras, adiantamentos e benefícios podem ser registrados abaixo.
                     </p>
+                    <div class="employee-finance-card">
+                        <h6><i class="bi bi-wallet2"></i> Pagamentos e despesas</h6>
+                        <form method="POST" action="{{ url_for('funcionarios.registrar_pagamento_funcionario', funcionario_id=funcionario._id) }}" class="employee-payment-form mb-3">
+                            <div><label class="form-label">Data do pagamento</label><input type="date" name="data_pagamento" class="form-control" value="{{ now_date }}" required></div>
+                            <div><label class="form-label">Valor pago (R$)</label><input type="number" step="0.01" min="0.01" name="valor" class="form-control employee-paid-value" data-remuneracao="{{ funcionario.valor_remuneracao or 0 }}" required></div>
+                            <div class="employee-payment-submit my-3"><button class="employee-primary-button" type="submit">Registrar pagamento</button></div>
+                            <label class="form-check employee-payment-check"><input class="form-check-input employee-same-value" type="checkbox" name="usar_remuneracao"><span class="form-check-label">O valor é igual à remuneração cadastrada. Preencher automaticamente.</span></label>
+                        </form>
+                        <div class="d-flex flex-wrap gap-2 mb-3">
+                            <button type="button" class="employee-secondary-button" data-bs-toggle="collapse" data-bs-target="#valeFuncionario{{ funcionario._id }}">Registrar vale</button>
+                            <a class="employee-secondary-button" href="{{ url_for('funcionarios.despesas_funcionario', funcionario_id=funcionario._id) }}">Ver despesas por mês</a>
+                        </div>
+                        <div class="collapse" id="valeFuncionario{{ funcionario._id }}">
+                            <form method="POST" action="{{ url_for('funcionarios.registrar_vale_funcionario', funcionario_id=funcionario._id) }}" class="employee-voucher-form">
+                                <div><label class="form-label">Tipo de vale</label><select name="tipo_vale" class="form-select" required><option value="adiantamento">Adiantamento</option><option value="vr">Vale-refeição (VR)</option><option value="vt">Vale-transporte (VT)</option></select></div>
+                                <div><label class="form-label">Valor (R$)</label><input type="number" name="valor" min="0.01" step="0.01" class="form-control" required></div>
+                                <div><label class="form-label">Data</label><input type="date" name="data_pagamento" class="form-control" value="{{ now_date }}" required></div>
+                                <div><button class="employee-primary-button" type="submit">Lançar vale</button></div>
+                            </form>
+                        </div>
+                    </div>
 
                 </div>
 
@@ -719,11 +746,13 @@
             </div>
 
 
-            <div class="modal-footer">
-                <button type="button" class="employee-secondary-button"
-                        data-bs-dismiss="modal">
-                    Fechar
-                </button>
+            <div class="modal-footer employee-detail-footer">
+                {% if funcionario.tipo_vinculo != 'proprietario' %}
+                <form method="POST" action="{{ url_for('funcionarios.enviar_funcionario_lixeira', funcionario_id=funcionario._id) }}" data-confirm="O cadastro ficará na lixeira por 10 dias. As despesas e pagamentos já registrados serão preservados. Deseja continuar?" data-confirm-title="Excluir funcionário" data-confirm-button="Enviar à lixeira" data-confirm-icon="bi-trash" data-confirm-variant="danger">
+                    <button type="submit" class="employee-danger-button">Excluir funcionário</button>
+                </form>
+                {% endif %}
+                <button type="button" class="employee-secondary-button" data-bs-dismiss="modal">Fechar</button>
             </div>
 
         </div>
@@ -953,4 +982,35 @@
 
 {% endfor %}
 
+
+{% if total_paginas|default(1) > 1 %}
+<nav class="d-flex justify-content-center gap-2 my-3" aria-label="Paginação de funcionários">
+{% for n in range(1, total_paginas + 1) %}
+<a class="btn btn-sm {{ 'btn-primary' if n == pagina else 'btn-outline-secondary' }}" href="{{ url_for('funcionarios.listar_funcionarios', pagina=n, busca=busca, situacao=filtro_situacao) }}">{{ n }}</a>
+{% endfor %}
+</nav>
+{% endif %}
+
+<div class="modal fade" id="modalLixeiraFuncionarios" tabindex="-1" aria-hidden="true">
+<div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable"><div class="modal-content employee-modal">
+<div class="modal-header"><h5 class="modal-title">Lixeira de funcionários</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+<div class="modal-body"><p>Os cadastros permanecem aqui por até 10 dias. As movimentações financeiras são preservadas.</p>
+{% for item in lixeira|default([]) %}<div class="d-flex justify-content-between align-items-center border-bottom py-2"><span>{{ item.nome }}</span><form method="POST" action="{{ url_for('funcionarios.restaurar_funcionario', funcionario_id=item._id) }}"><button class="employee-secondary-button" type="submit">Restaurar</button></form></div>{% else %}<p class="text-muted">A lixeira está vazia.</p>{% endfor %}
+{% if total_lixeira_paginas|default(1) > 1 %}<nav class="d-flex justify-content-center gap-2 mt-3">{% for n in range(1,total_lixeira_paginas+1) %}<a class="btn btn-sm {{ 'btn-primary' if n==lixeira_pagina else 'btn-outline-secondary' }}" href="{{ url_for('funcionarios.listar_funcionarios', lixeira_pagina=n) }}#modalLixeiraFuncionarios">{{ n }}</a>{% endfor %}</nav>{% endif %}
+</div></div></div></div>
+<script>
+document.querySelectorAll('.employee-same-value').forEach(function(check){
+ check.addEventListener('change', function(){
+  const field=check.closest('form').querySelector('.employee-paid-value');
+  if(check.checked){field.value=field.dataset.remuneracao;field.readOnly=true;}
+  else{field.readOnly=false;}
+ });
+});
+</script>
+<script>
+if (window.location.hash === "#modalLixeiraFuncionarios") {
+    const modalLixeira = document.getElementById("modalLixeiraFuncionarios");
+    if (modalLixeira && window.bootstrap) bootstrap.Modal.getOrCreateInstance(modalLixeira).show();
+}
+</script>
 {% endblock %}

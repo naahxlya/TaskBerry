@@ -405,3 +405,72 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 });
+
+/* =====================================================
+   TASKBERRY | PRESERVAR POSIÇÃO DA PÁGINA
+   Mantém a rolagem após formulários e filtros que retornam
+   à mesma tela. Não interfere em navegações para outras telas.
+===================================================== */
+(function () {
+    const storageKey = "taskberry:scroll-position";
+
+    function salvarPosicao() {
+        try {
+            sessionStorage.setItem(storageKey, JSON.stringify({
+                path: window.location.pathname,
+                y: window.scrollY,
+                savedAt: Date.now()
+            }));
+        } catch (error) {
+            // A navegação continua normalmente se o armazenamento estiver indisponível.
+        }
+    }
+
+    document.addEventListener("submit", function (event) {
+        const formulario = event.target;
+        if (!(formulario instanceof HTMLFormElement)) return;
+        if (formulario.target && formulario.target !== "_self") return;
+        salvarPosicao();
+    }, true);
+
+    document.addEventListener("click", function (event) {
+        const elemento = event.target instanceof Element
+            ? event.target
+            : event.target.parentElement;
+        const link = elemento ? elemento.closest("a[href]") : null;
+        if (!link || event.defaultPrevented) return;
+        if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+        if (link.target && link.target !== "_self") return;
+
+        const destino = new URL(link.href, window.location.href);
+        if (destino.origin !== window.location.origin) return;
+        if (destino.pathname !== window.location.pathname) return;
+        if (destino.hash && destino.hash !== window.location.hash) return;
+
+        salvarPosicao();
+    }, true);
+
+    window.addEventListener("pageshow", function () {
+        let estado = null;
+
+        try {
+            estado = JSON.parse(sessionStorage.getItem(storageKey) || "null");
+            sessionStorage.removeItem(storageKey);
+        } catch (error) {
+            return;
+        }
+
+        if (!estado || estado.path !== window.location.pathname) return;
+        if (Date.now() - Number(estado.savedAt || 0) > 60000) return;
+
+        requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+                window.scrollTo({
+                    top: Math.max(0, Number(estado.y) || 0),
+                    left: 0,
+                    behavior: "auto"
+                });
+            });
+        });
+    });
+})();

@@ -271,6 +271,7 @@ def cadastrar_ferramenta():
     codigo = gerar_codigo()
     data_criacao = agora()
     fornecedor = request.form.get("fornecedor", "").strip()
+    compra_antiga = request.form.get("compra_antiga") == "1"
 
     ferramenta = {
         "usuario_id": usuario_id(),
@@ -286,9 +287,11 @@ def cadastrar_ferramenta():
             "data": data_aquisicao,
             "valor": valor_aquisicao,
             "fornecedor": fornecedor,
-            "integrado_erp": False
+            "integrado_erp": False,
+            "compra_antiga": compra_antiga
         },
 
+        "compra_antiga": compra_antiga,
         "data_aquisicao": data_aquisicao,
         "valor_aquisicao": valor_aquisicao,
         "fornecedor": fornecedor,
@@ -310,7 +313,7 @@ def cadastrar_ferramenta():
         resultado = db["ferramentas"].insert_one(ferramenta)
         ferramenta["_id"] = resultado.inserted_id
 
-        if valor_aquisicao > 0:
+        if valor_aquisicao > 0 and not compra_antiga:
             try:
                 registrar_despesa_aquisicao_ferramenta(
                     db,

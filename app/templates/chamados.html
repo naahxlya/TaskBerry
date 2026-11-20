@@ -997,16 +997,6 @@
 
                                     <div class="calls-work-card-actions">
                                         <a href="{{ url_for('chamados.visualizar_chamado', chamado_id=chamado._id) }}" class="calls-icon-button" title="Visualizar chamado" aria-label="Visualizar chamado"><i class="bi bi-eye"></i></a>
-                                        <form method="POST" action="{{ url_for('chamados.arquivar_chamado', chamado_id=chamado._id) }}" data-confirm="Deseja arquivar este chamado? Ele ficará disponível na área de chamados arquivados."
-                                            data-confirm-title="Arquivar chamado"
-                                            data-confirm-button="Arquivar chamado"
-                                            data-confirm-icon="bi-archive"
-                                            data-confirm-variant="primary"><button type="submit" class="calls-icon-button" title="Arquivar chamado" aria-label="Arquivar chamado"><i class="bi bi-archive"></i></button></form>
-                                        <form method="POST" action="{{ url_for('chamados.enviar_para_lixeira', chamado_id=chamado._id) }}" data-confirm="Deseja enviar este chamado para a lixeira? Você poderá restaurá-lo depois."
-                                            data-confirm-title="Enviar chamado para a lixeira"
-                                            data-confirm-button="Enviar para a lixeira"
-                                            data-confirm-icon="bi-trash"
-                                            data-confirm-variant="danger"><button type="submit" class="calls-icon-button" title="Enviar para lixeira" aria-label="Enviar para lixeira"><i class="bi bi-trash"></i></button></form>
 
                                         <a
                                             href="{{ url_for(
@@ -1599,6 +1589,25 @@
 
                 </section>
 
+            {% endif %}
+
+            {% if not chamado_edicao %}
+            <section class="calls-form-panel mt-4">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                    <div><h2 class="mb-1">Histórico recente</h2><p class="text-muted mb-0">Últimas alterações relevantes nos chamados e obras.</p></div>
+                    <span class="badge text-bg-light">Até 20 registros</span>
+                </div>
+                {% if historico_recente %}
+                <div class="calls-recent-history">
+                    {% for registro in historico_recente %}
+                    <article class="d-flex justify-content-between gap-3 border-bottom py-2">
+                        <div><strong>{{ registro.historico.descricao }}</strong><div class="text-muted small">{{ registro.numero }} · {{ registro.titulo }} · {{ registro.historico.usuario_nome or 'Usuário' }}</div></div>
+                        <time class="text-muted small text-nowrap">{{ registro.historico.data.strftime('%d/%m/%Y %H:%M') if registro.historico.data else '' }}</time>
+                    </article>
+                    {% endfor %}
+                </div>
+                {% else %}<p class="text-muted mb-0">As alterações dos chamados aparecerão aqui.</p>{% endif %}
+            </section>
             {% endif %}
 
         </section>

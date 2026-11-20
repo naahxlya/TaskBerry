@@ -527,6 +527,7 @@ def cadastrar_material():
     fornecedor = request.form.get("fornecedor", "").strip()
     localizacao = request.form.get("localizacao", "").strip()
     observacoes = request.form.get("observacoes", "").strip()
+    compra_antiga = request.form.get("compra_antiga") == "1"
 
     try:
         quantidade_unidades = converter_inteiro(
@@ -589,6 +590,7 @@ def cadastrar_material():
         "estoque_minimo": estoque_minimo,
         "fornecedor": fornecedor,
         "data_compra": data_compra,
+        "compra_antiga": compra_antiga,
         "localizacao": localizacao,
         "observacoes": observacoes,
         "arquivado": False,
@@ -626,7 +628,8 @@ def cadastrar_material():
                 {
                     "valor_unitario": valor_unitario,
                     "valor_total": round(saldo * valor_unitario, 2),
-                    "fornecedor": fornecedor
+                    "fornecedor": fornecedor,
+                    "compra_antiga": compra_antiga
                 }
             )
 

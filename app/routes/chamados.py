@@ -28,7 +28,8 @@ STATUS_CHAMADO = {
     "a_iniciar": "A iniciar",
     "em_andamento": "Em andamento",
     "aguardando": "Aguardando",
-    "concluido": "Concluído"
+    "concluido": "Concluído",
+    "cancelado": "Cancelado"
 }
 
 PRIORIDADES = {
@@ -597,8 +598,17 @@ def listar_chamados():
         for mes in meses
     ]
 
+    historico_recente = list(get_database()["chamados"].aggregate([
+        {"$match": {"usuario_id": usuario_id, "historico.0": {"$exists": True}}},
+        {"$unwind": "$historico"},
+        {"$sort": {"historico.data": -1}},
+        {"$limit": 20},
+        {"$project": {"numero": 1, "titulo": 1, "historico": 1}}
+    ]))
+
     return render_template(
         "chamados.html",
+        historico_recente=historico_recente,
         chamados=chamados,
         clientes=carregar_clientes(),
         funcionarios=carregar_funcionarios(),
@@ -685,7 +695,14 @@ def cadastrar_chamado():
     }
 
     try:
-        colecao.insert_one(chamado)
+        resultado = colecao.insert_one(chamado)
+        for item in dados.get("ferramentas_previstas", []):
+            ferramenta_id = item.get("ferramenta_id")
+            if ferramenta_id and ObjectId.is_valid(str(ferramenta_id)):
+                db["ferramentas"].update_one(
+                    {"_id": ObjectId(str(ferramenta_id)), "usuario_id": obter_usuario_id(), "situacao": "disponivel"},
+                    {"$set": {"chamado_atual_id": resultado.inserted_id, "situacao": "em_uso", "atualizado_em": data_criacao}}
+                )
 
         flash(
             f"Chamado {numero} cadastrado com sucesso!",
@@ -1029,7 +1046,17 @@ def visualizar_chamado(chamado_id):
         flash("Chamado não encontrado.", "danger")
         return voltar_para_lista()
     chamado = preparar_chamado_para_template(chamado)
-    return render_template("chamado_detalhes.html", chamado=chamado, status_opcoes=STATUS_CHAMADO, prioridades=PRIORIDADES)
+    db = get_database()
+    ferramentas = list(db["ferramentas"].find({
+        "usuario_id": obter_usuario_id(), "arquivada": {"$ne": True},
+        "situacao": {"$ne": "baixada"}
+    }).sort("nome", 1))
+    outros_chamados = list(db["chamados"].find({
+        "usuario_id": obter_usuario_id(), "_id": {"$ne": chamado["_id"]},
+        "excluido": {"$ne": True}, "arquivado": {"$ne": True},
+        "status": {"$nin": ["concluido", "cancelado"]}
+    }, {"numero": 1, "titulo": 1}).sort("criado_em", -1).limit(300))
+    return render_template("chamado_detalhes.html", chamado=chamado, status_opcoes=STATUS_CHAMADO, prioridades=PRIORIDADES, ferramentas_disponiveis=ferramentas, outros_chamados=outros_chamados)
 
 
 def registrar_acao_chamado(chamado_id, campo, valor, acao, descricao):
@@ -1269,3 +1296,141 @@ def excluir_permanentemente(chamado_id):
     get_database()["chamados"].delete_one({"_id": chamado["_id"], "usuario_id": obter_usuario_id(), "excluido": True})
     flash("Chamado excluído permanentemente.", "success")
     return redirect(url_for("chamados.listar_lixeira"))
+
+@chamados_bp.route("/chamados/<chamado_id>/concluir", methods=["POST"])
+def concluir_chamado(chamado_id):
+    chamado = buscar_chamado(chamado_id)
+    if not chamado:
+        flash("Chamado não encontrado.", "danger")
+        return voltar_para_lista()
+    data = agora()
+    get_database()["chamados"].update_one(
+        {"_id": chamado["_id"], "usuario_id": obter_usuario_id()},
+        {"$set": {"status": "concluido", "concluido_em": data, "atualizado_em": data},
+         "$push": {"historico": {"acao": "conclusao", "descricao": "Chamado marcado como concluído.", "data": data, "usuario_nome": session.get("usuario_nome", "Usuário")}}}
+    )
+    db = get_database()
+    for item in chamado.get("ferramentas_previstas", []):
+        ferramenta_id = item.get("ferramenta_id")
+        if ferramenta_id and ObjectId.is_valid(str(ferramenta_id)):
+            db["ferramentas"].update_one({"_id": ObjectId(str(ferramenta_id)), "usuario_id": obter_usuario_id(), "chamado_atual_id": chamado["_id"]}, {"$set": {"chamado_atual_id": None, "situacao": "disponivel", "atualizado_em": data}})
+    flash("Chamado concluído. As ferramentas vinculadas foram liberadas.", "success")
+    return redirect(url_for("chamados.visualizar_chamado", chamado_id=chamado_id))
+
+
+@chamados_bp.route("/chamados/<chamado_id>/cancelar", methods=["POST"])
+def cancelar_chamado(chamado_id):
+    chamado = buscar_chamado(chamado_id)
+    if not chamado:
+        flash("Chamado não encontrado.", "danger")
+        return voltar_para_lista()
+    if chamado.get("status") in ("cancelado", "concluido"):
+        flash("Este chamado já foi encerrado e não pode ser cancelado novamente.", "warning")
+        return redirect(url_for("chamados.visualizar_chamado", chamado_id=chamado_id))
+    motivo = request.form.get("motivo_cancelamento", "").strip()
+    data = agora()
+    db = get_database()
+    usuario_id = obter_usuario_id()
+    descricao = "Chamado cancelado." + (f" Motivo: {motivo}" if motivo else "")
+
+    # Receitas já realizadas permanecem no razão. Somente contas a receber
+    # ainda pendentes deste chamado são canceladas.
+    db["movimentacoes_financeiras"].update_many(
+        {"usuario_id": usuario_id, "chamado_id": chamado["_id"],
+         "tipo": "entrada", "status": {"$ne": "realizado"}, "cancelada": {"$ne": True}},
+        {"$set": {"status": "cancelado", "cancelada": True,
+                  "cancelada_em": data, "motivo_cancelamento": motivo or "Chamado cancelado",
+                  "atualizado_em": data}}
+    )
+
+    ferramentas_liberadas = []
+    for item in chamado.get("ferramentas_previstas", []):
+        ferramenta_id = item.get("ferramenta_id")
+        if ferramenta_id and ObjectId.is_valid(str(ferramenta_id)):
+            ferramenta = db["ferramentas"].find_one({
+                "_id": ObjectId(str(ferramenta_id)), "usuario_id": usuario_id,
+                "chamado_atual_id": chamado["_id"]
+            })
+            if ferramenta:
+                novo_status = "manutencao" if ferramenta.get("situacao") == "manutencao" else "disponivel"
+                db["ferramentas"].update_one(
+                    {"_id": ferramenta["_id"], "usuario_id": usuario_id, "chamado_atual_id": chamado["_id"]},
+                    {"$set": {"chamado_atual_id": None, "situacao": novo_status, "atualizado_em": data}}
+                )
+                ferramentas_liberadas.append(item)
+
+    # Guarda um retrato dos vínculos para auditoria, depois libera a equipe e
+    # remove as reservas previstas. Consumos já registrados nunca são estornados.
+    vinculos = {
+        "equipe_prevista": chamado.get("equipe_prevista", []),
+        "materiais_previstos": chamado.get("materiais_previstos", []),
+        "ferramentas_previstas": chamado.get("ferramentas_previstas", []),
+        "ferramentas_liberadas": ferramentas_liberadas
+    }
+    db["chamados"].update_one(
+        {"_id": chamado["_id"], "usuario_id": usuario_id},
+        {"$set": {"status": "cancelado", "motivo_cancelamento": motivo,
+                  "cancelado_em": data, "atualizado_em": data,
+                  "saldo_pendente": 0.0, "cancelamento_vinculos": vinculos,
+                  "equipe_prevista": [], "materiais_previstos": [], "ferramentas_previstas": []},
+         "$push": {"historico": {"acao": "cancelamento", "descricao": descricao,
+                    "data": data, "usuario_nome": session.get("usuario_nome", "Usuário")}}}
+    )
+    flash("Chamado cancelado. Valores pendentes cancelados, recebimentos preservados e equipe, reservas e ferramentas liberadas.", "success")
+    return redirect(url_for("chamados.visualizar_chamado", chamado_id=chamado_id))
+
+
+@chamados_bp.route("/chamados/<chamado_id>/ferramentas/vincular", methods=["POST"])
+def vincular_ferramenta_chamado(chamado_id):
+    chamado = buscar_chamado(chamado_id)
+    ferramenta_id = request.form.get("ferramenta_id", "")
+    if not chamado or chamado.get("status") in ("cancelado", "concluido") or not ObjectId.is_valid(ferramenta_id):
+        flash("Não foi possível vincular a ferramenta. O chamado pode estar encerrado.", "danger")
+        return redirect(url_for("chamados.visualizar_chamado", chamado_id=chamado_id))
+    db = get_database()
+    ferramenta = db["ferramentas"].find_one({"_id": ObjectId(ferramenta_id), "usuario_id": obter_usuario_id()})
+    if not ferramenta:
+        flash("Ferramenta não encontrada.", "danger")
+        return redirect(url_for("chamados.visualizar_chamado", chamado_id=chamado_id))
+    atual = ferramenta.get("chamado_atual_id")
+    if atual and str(atual) != str(chamado["_id"]):
+        flash("Esta ferramenta já está vinculada a outro chamado. Desvincule-a antes de transferir.", "warning")
+        return redirect(url_for("chamados.visualizar_chamado", chamado_id=chamado_id))
+    db["ferramentas"].update_one({"_id": ferramenta["_id"], "usuario_id": obter_usuario_id()}, {"$set": {"chamado_atual_id": chamado["_id"], "situacao": "em_uso", "atualizado_em": agora()}})
+    db["chamados"].update_one({"_id": chamado["_id"], "usuario_id": obter_usuario_id()}, {"$addToSet": {"ferramentas_previstas": {"ferramenta_id": str(ferramenta["_id"]), "nome": ferramenta.get("nome"), "codigo": ferramenta.get("codigo")}}, "$push": {"historico": {"acao": "ferramenta_vinculada", "descricao": f"Ferramenta {ferramenta.get('nome')} vinculada ao chamado.", "data": agora(), "usuario_nome": session.get("usuario_nome", "Usuário")}}})
+    flash("Ferramenta vinculada ao chamado.", "success")
+    return redirect(url_for("chamados.visualizar_chamado", chamado_id=chamado_id))
+
+
+@chamados_bp.route("/chamados/<chamado_id>/ferramentas/<ferramenta_id>/desvincular", methods=["POST"])
+def desvincular_ferramenta_chamado(chamado_id, ferramenta_id):
+    chamado = buscar_chamado(chamado_id)
+    if not chamado or not ObjectId.is_valid(ferramenta_id):
+        return voltar_para_lista()
+    db = get_database()
+    ferramenta = db["ferramentas"].find_one({"_id": ObjectId(ferramenta_id), "usuario_id": obter_usuario_id()})
+    if ferramenta and str(ferramenta.get("chamado_atual_id")) == str(chamado["_id"]):
+        db["ferramentas"].update_one({"_id": ferramenta["_id"]}, {"$set": {"chamado_atual_id": None, "situacao": "disponivel", "atualizado_em": agora()}})
+        db["chamados"].update_one({"_id": chamado["_id"], "usuario_id": obter_usuario_id()}, {"$pull": {"ferramentas_previstas": {"ferramenta_id": str(ferramenta["_id"])}}, "$push": {"historico": {"acao": "ferramenta_desvinculada", "descricao": f"Ferramenta {ferramenta.get('nome')} desvinculada do chamado.", "data": agora(), "usuario_nome": session.get("usuario_nome", "Usuário")}}})
+        flash("Ferramenta desvinculada e marcada como disponível.", "success")
+    return redirect(url_for("chamados.visualizar_chamado", chamado_id=chamado_id))
+
+
+@chamados_bp.route("/chamados/<chamado_id>/ferramentas/<ferramenta_id>/transferir", methods=["POST"])
+def transferir_ferramenta_chamado(chamado_id, ferramenta_id):
+    origem = buscar_chamado(chamado_id)
+    destino_id = request.form.get("destino_chamado_id", "")
+    if not origem or not ObjectId.is_valid(ferramenta_id) or not ObjectId.is_valid(destino_id):
+        flash("Selecione um chamado de destino válido.", "warning")
+        return redirect(url_for("chamados.visualizar_chamado", chamado_id=chamado_id))
+    db = get_database()
+    destino = db["chamados"].find_one({"_id": ObjectId(destino_id), "usuario_id": obter_usuario_id(), "excluido": {"$ne": True}, "arquivado": {"$ne": True}})
+    ferramenta = db["ferramentas"].find_one({"_id": ObjectId(ferramenta_id), "usuario_id": obter_usuario_id(), "chamado_atual_id": origem["_id"]})
+    if not destino or not ferramenta or destino.get("status") in ("concluido", "cancelado"):
+        flash("Não foi possível transferir a ferramenta.", "danger")
+        return redirect(url_for("chamados.visualizar_chamado", chamado_id=chamado_id))
+    db["chamados"].update_one({"_id": origem["_id"], "usuario_id": obter_usuario_id()}, {"$pull": {"ferramentas_previstas": {"ferramenta_id": str(ferramenta["_id"])}}, "$push": {"historico": {"acao": "ferramenta_transferida", "descricao": f"Ferramenta {ferramenta.get('nome')} transferida para {destino.get('numero', destino.get('titulo'))}.", "data": agora(), "usuario_nome": session.get("usuario_nome", "Usuário")}}})
+    db["chamados"].update_one({"_id": destino["_id"], "usuario_id": obter_usuario_id()}, {"$addToSet": {"ferramentas_previstas": {"ferramenta_id": str(ferramenta["_id"]), "nome": ferramenta.get("nome"), "codigo": ferramenta.get("codigo")}}, "$push": {"historico": {"acao": "ferramenta_recebida", "descricao": f"Ferramenta {ferramenta.get('nome')} recebida de outro chamado.", "data": agora(), "usuario_nome": session.get("usuario_nome", "Usuário")}}})
+    db["ferramentas"].update_one({"_id": ferramenta["_id"], "usuario_id": obter_usuario_id()}, {"$set": {"chamado_atual_id": destino["_id"], "situacao": "em_uso", "atualizado_em": agora()}})
+    flash("Ferramenta transferida para o chamado selecionado.", "success")
+    return redirect(url_for("chamados.visualizar_chamado", chamado_id=destino["_id"]))

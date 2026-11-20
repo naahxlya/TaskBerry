@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from decimal import Decimal, InvalidOperation
 import re
 
@@ -40,7 +40,8 @@ def buscar_funcionario(funcionario_id):
 
     return get_database()["funcionarios"].find_one({
         "_id": ObjectId(funcionario_id),
-        "usuario_id": obter_usuario_id()
+        "usuario_id": obter_usuario_id(),
+        "excluido": {"$ne": True}
     })
 
 
@@ -83,11 +84,19 @@ def listar_funcionarios():
 
     db = get_database()
     colecao = db["funcionarios"]
+    agora = agora_utc()
+    limite_lixeira = agora - timedelta(days=10)
+    vencidos = list(colecao.find({
+        "usuario_id": usuario_id, "excluido": True,
+        "excluido_em": {"$lte": limite_lixeira}
+    }, {"_id": 1}))
+    for registro in vencidos:
+        colecao.delete_one({"_id": registro["_id"], "usuario_id": usuario_id, "excluido": True})
 
     busca = request.args.get("busca", "").strip()
     filtro_situacao = request.args.get("situacao", "").strip()
 
-    filtro = {"usuario_id": usuario_id}
+    filtro = {"usuario_id": usuario_id, "excluido": {"$ne": True}}
 
     if busca:
         termo = re.escape(busca)
@@ -109,25 +118,45 @@ def listar_funcionarios():
         "contratacao_desc": [("data_contratacao", -1), ("nome", 1)],
         "contratacao_asc": [("data_contratacao", 1), ("nome", 1)]
     }.get(ordem_funcionarios, [("nome", 1), ("_id", 1)])
-    funcionarios = list(colecao.find(filtro).sort(ordenacao))
+    try:
+        pagina = max(1, int(request.args.get("pagina", 1)))
+    except (TypeError, ValueError):
+        pagina = 1
+    por_pagina = 25
+    total_registros = colecao.count_documents(filtro)
+    total_paginas = max(1, (total_registros + por_pagina - 1) // por_pagina)
+    pagina = min(pagina, total_paginas)
+    funcionarios = list(colecao.find(filtro).sort(ordenacao).skip((pagina - 1) * por_pagina).limit(por_pagina))
+    total_lixeira = colecao.count_documents({"usuario_id": usuario_id, "excluido": True})
+    try:
+        lixeira_pagina = max(1, int(request.args.get("lixeira_pagina", 1)))
+    except (TypeError, ValueError):
+        lixeira_pagina = 1
+    total_lixeira_paginas = max(1, (total_lixeira + 24) // 25)
+    lixeira_pagina = min(lixeira_pagina, total_lixeira_paginas)
+    lixeira = list(colecao.find({"usuario_id": usuario_id, "excluido": True}).sort("nome", 1).skip((lixeira_pagina-1)*25).limit(25))
 
     total_funcionarios = colecao.count_documents({
-        "usuario_id": usuario_id
+        "usuario_id": usuario_id,
+        "excluido": {"$ne": True}
     })
 
     total_ativos = colecao.count_documents({
         "usuario_id": usuario_id,
-        "situacao": "ativo"
+        "situacao": "ativo",
+        "excluido": {"$ne": True}
     })
 
     total_afastados = colecao.count_documents({
         "usuario_id": usuario_id,
-        "situacao": "afastado"
+        "situacao": "afastado",
+        "excluido": {"$ne": True}
     })
 
     total_desligados = colecao.count_documents({
         "usuario_id": usuario_id,
-        "situacao": "desligado"
+        "situacao": "desligado",
+        "excluido": {"$ne": True}
     })
 
     # Soma somente remunerações mensais ativas.
@@ -137,7 +166,8 @@ def listar_funcionarios():
             "$match": {
                 "usuario_id": usuario_id,
                 "situacao": "ativo",
-                "tipo_remuneracao": "mensal"
+                "tipo_remuneracao": "mensal",
+                "excluido": {"$ne": True}
             }
         },
         {
@@ -168,7 +198,14 @@ def listar_funcionarios():
         total_afastados=total_afastados,
         total_desligados=total_desligados,
         total_remuneracao_mensal=total_remuneracao_mensal,
-        ordem_funcionarios=ordem_funcionarios
+        ordem_funcionarios=ordem_funcionarios,
+        pagina=pagina,
+        total_paginas=total_paginas,
+        lixeira=lixeira,
+        total_lixeira=total_lixeira,
+        lixeira_pagina=lixeira_pagina,
+        total_lixeira_paginas=total_lixeira_paginas,
+        now_date=agora_utc().strftime("%Y-%m-%d")
     )
 
 
@@ -428,4 +465,115 @@ def desligar_funcionario(funcionario_id):
         )
         flash("Não foi possível desligar o funcionário.", "danger")
 
+    return voltar_para_lista()
+
+# =========================================================
+# PAGAMENTOS, VALES E HISTÓRICO FINANCEIRO DO FUNCIONÁRIO
+# =========================================================
+
+def registrar_despesa_funcionario(funcionario, tipo, valor, data_pagamento, descricao):
+    db = get_database()
+    usuario = obter_usuario_id()
+    from app.services.financeiro_service import preparar_movimentacao
+    registro = preparar_movimentacao(
+        db, usuario, "saida", "funcionarios", descricao, valor,
+        data_pagamento, status="realizado", forma_pagamento="nao_informado",
+        funcionario_id=funcionario["_id"], funcionario_nome=funcionario.get("nome", ""),
+        origem="folha_funcionario", subtipo_funcionario=tipo,
+        observacoes="Despesa registrada pelo módulo de Funcionários."
+    )
+    db["movimentacoes_financeiras"].insert_one(registro)
+
+
+@funcionarios_bp.route("/funcionarios/<funcionario_id>/pagamento", methods=["POST"])
+def registrar_pagamento_funcionario(funcionario_id):
+    funcionario = buscar_funcionario(funcionario_id)
+    if not funcionario:
+        flash("Funcionário não encontrado.", "danger")
+        return voltar_para_lista()
+    try:
+        data_pagamento = datetime.strptime(request.form.get("data_pagamento", ""), "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        valor = float(funcionario.get("valor_remuneracao", 0) or 0) if request.form.get("usar_remuneracao") == "on" else converter_valor(request.form.get("valor"))
+        if valor <= 0:
+            raise ValueError
+    except (ValueError, TypeError, InvalidOperation):
+        flash("Informe um valor e uma data de pagamento válidos.", "danger")
+        return voltar_para_lista()
+    registrar_despesa_funcionario(funcionario, "salario", valor, data_pagamento, f"Pagamento de {funcionario.get('nome', 'funcionário')}")
+    flash("Pagamento registrado e lançado nas despesas do Financeiro.", "success")
+    return voltar_para_lista()
+
+
+@funcionarios_bp.route("/funcionarios/<funcionario_id>/vale", methods=["POST"])
+def registrar_vale_funcionario(funcionario_id):
+    funcionario = buscar_funcionario(funcionario_id)
+    if not funcionario:
+        flash("Funcionário não encontrado.", "danger")
+        return voltar_para_lista()
+    tipo = request.form.get("tipo_vale", "")
+    if tipo not in ("adiantamento", "vr", "vt"):
+        flash("Selecione um tipo de vale válido.", "danger")
+        return voltar_para_lista()
+    try:
+        data_pagamento = datetime.strptime(request.form.get("data_pagamento", ""), "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        valor = converter_valor(request.form.get("valor"))
+        if valor <= 0:
+            raise ValueError
+    except (ValueError, TypeError, InvalidOperation):
+        flash("Informe um valor e uma data válidos.", "danger")
+        return voltar_para_lista()
+    nomes = {"adiantamento": "Adiantamento", "vr": "Vale-refeição", "vt": "Vale-transporte"}
+    registrar_despesa_funcionario(funcionario, tipo, valor, data_pagamento, f"{nomes[tipo]}: {funcionario.get('nome', 'funcionário')}")
+    flash(f"{nomes[tipo]} registrado e lançado no Financeiro.", "success")
+    return voltar_para_lista()
+
+
+@funcionarios_bp.route("/funcionarios/<funcionario_id>/despesas")
+def despesas_funcionario(funcionario_id):
+    funcionario = buscar_funcionario(funcionario_id)
+    if not funcionario:
+        flash("Funcionário não encontrado.", "danger")
+        return voltar_para_lista()
+    db = get_database()
+    competencia = request.args.get("competencia", datetime.now().strftime("%Y-%m")).strip()
+    filtro = {"usuario_id": obter_usuario_id(), "funcionario_id": funcionario["_id"], "competencia": competencia, "tipo": "saida"}
+    try:
+        pagina = max(1, int(request.args.get("pagina", 1)))
+    except (TypeError, ValueError):
+        pagina = 1
+    total = db["movimentacoes_financeiras"].count_documents(filtro)
+    por_pagina = 25
+    paginas = max(1, (total + por_pagina - 1) // por_pagina)
+    pagina = min(pagina, paginas)
+    movimentos = list(db["movimentacoes_financeiras"].find(filtro).sort("data_movimento", -1).skip((pagina-1)*por_pagina).limit(por_pagina))
+    return render_template("funcionario_despesas.html", funcionario=funcionario, movimentos=movimentos, competencia=competencia, pagina=pagina, total_paginas=paginas, total=total)
+
+
+@funcionarios_bp.route("/funcionarios/<funcionario_id>/excluir", methods=["POST"])
+def enviar_funcionario_lixeira(funcionario_id):
+    funcionario = buscar_funcionario(funcionario_id)
+    if not funcionario:
+        flash("Funcionário não encontrado.", "danger")
+        return voltar_para_lista()
+    if funcionario.get("tipo_vinculo") == "proprietario":
+        flash("O cadastro do proprietário não pode ser excluído.", "warning")
+        return voltar_para_lista()
+    agora = agora_utc()
+    get_database()["funcionarios"].update_one(
+        {"_id": funcionario["_id"], "usuario_id": obter_usuario_id()},
+        {"$set": {"excluido": True, "excluido_em": agora, "atualizado_em": agora}}
+    )
+    flash("Funcionário enviado à lixeira. O cadastro será excluído permanentemente após 10 dias; movimentações financeiras serão preservadas.", "success")
+    return voltar_para_lista()
+
+
+@funcionarios_bp.route("/funcionarios/<funcionario_id>/restaurar", methods=["POST"])
+def restaurar_funcionario(funcionario_id):
+    if not ObjectId.is_valid(funcionario_id):
+        return voltar_para_lista()
+    get_database()["funcionarios"].update_one(
+        {"_id": ObjectId(funcionario_id), "usuario_id": obter_usuario_id(), "excluido": True},
+        {"$unset": {"excluido": "", "excluido_em": ""}, "$set": {"atualizado_em": agora_utc()}}
+    )
+    flash("Funcionário restaurado.", "success")
     return voltar_para_lista()

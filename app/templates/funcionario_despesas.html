@@ -1,0 +1,15 @@
+{% extends "index.html" %}
+{% block title %}Despesas de {{ funcionario.nome }} | TaskBerry{% endblock %}
+{% block content %}
+<div class="dashboard-layout">{% include 'components/sidebar.html' %}<main class="dashboard-main">
+<header class="dashboard-header"><button class="sidebar-toggle" id="sidebarToggle" type="button"><i class="bi bi-list"></i></button><div class="dashboard-breadcrumb"><span>TaskBerry</span><i class="bi bi-chevron-right"></i><span>Funcionários</span><i class="bi bi-chevron-right"></i><strong>Despesas</strong></div></header>
+<section class="dashboard-content employees-content employee-expenses-content">
+<div class="materials-welcome employee-expenses-welcome"><div><span class="materials-eyebrow"><i class="bi bi-wallet2"></i> GESTÃO DE PESSOAS</span><h1>Despesas de {{ funcionario.nome }}</h1><p>Acompanhe pagamentos, adiantamentos e benefícios registrados para este funcionário.</p></div><a href="{{ url_for('funcionarios.listar_funcionarios') }}" class="materials-secondary-button"><i class="bi bi-arrow-left"></i> Voltar aos funcionários</a></div>
+<section class="employee-expenses-panel">
+<div class="employee-expenses-toolbar"><div><h2>Movimentações financeiras</h2><p>{{ total }} lançamento(s) na competência {{ competencia }}.</p></div><form method="GET" class="employee-expenses-filter"><label for="competencia">Competência</label><input id="competencia" type="month" class="form-control" name="competencia" value="{{ competencia }}"><button type="submit" class="materials-primary-button">Consultar</button></form></div>
+<div class="table-responsive employee-expenses-table-wrap"><table class="table employee-expenses-table"><thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Valor</th><th>Situação</th></tr></thead><tbody>
+{% for item in movimentos %}<tr><td>{{ item.data_movimento.strftime('%d/%m/%Y') if item.data_movimento else '—' }}</td><td><strong>{{ item.descricao }}</strong></td><td>{{ item.subtipo_funcionario or item.categoria }}</td><td class="employee-expense-value">R$ {{ '%.2f'|format(item.valor)|replace('.', ',') }}</td><td><span class="employee-expense-status {{ 'is-cancelled' if item.cancelada or item.status == 'cancelado' else 'is-pending' if item.status == 'pendente' else 'is-done' }}">{{ item.status|capitalize }}</span></td></tr>{% else %}<tr><td colspan="5"><div class="employee-expenses-empty"><i class="bi bi-receipt"></i><strong>Nenhuma despesa neste mês</strong><span>Os lançamentos deste funcionário aparecerão aqui.</span></div></td></tr>{% endfor %}
+</tbody></table></div>
+{% if total_paginas > 1 %}<nav class="employee-expenses-pagination" aria-label="Paginação">{% for n in range(1,total_paginas+1) %}<a class="{{ 'active' if n==pagina else '' }}" href="{{ url_for('funcionarios.despesas_funcionario', funcionario_id=funcionario._id, competencia=competencia, pagina=n) }}">{{ n }}</a>{% endfor %}</nav>{% endif %}
+</section></section></main></div>
+{% endblock %}

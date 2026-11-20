@@ -598,6 +598,7 @@
                                                         <strong>
                                                             R$ {{ "%.2f"|format(ferramenta.valor_aquisicao or 0)|replace(".", ",") }}
                                                         </strong>
+                                                        
                                                     </div>
                                                 </div>
 
@@ -949,8 +950,9 @@
                                                         <div class="tools-form-field">
                                                             <label>Valor de aquisição</label>
                                                             <input name="valor_aquisicao"
-                                                                   class="form-control"
+                                                                   class="form-control required"
                                                                    value="{{ '%.2f'|format(ferramenta.valor_aquisicao or 0)|replace('.', ',') }}">
+
                                                         </div>
 
                                                         <div class="tools-form-field tools-edit-wide">
@@ -1195,6 +1197,9 @@
                                            class="form-control"
                                            placeholder="Ex.: 2.500,00"
                                            inputmode="decimal">
+                                           <small class="d-block text-muted mt-1">
+                                                                Se vazio, o equipamento não será contabilizado como despesa no Financeiro.
+                                                            </small>
                                 </div>
 
                                 <div class="tools-form-field">
@@ -1203,6 +1208,22 @@
                                            name="fornecedor"
                                            class="form-control"
                                            placeholder="Loja ou fornecedor">
+                                </div>
+
+                                <div class="tools-form-field">
+                                    <div class="form-check mt-2">
+                                        <input class="form-check-input"
+                                               type="checkbox"
+                                               id="ferramentaCompraAntiga"
+                                               name="compra_antiga"
+                                               value="1">
+                                        <label class="form-check-label" for="ferramentaCompraAntiga">
+                                            Já fazia parte do empreendimento antes.
+                                        </label>
+                                    </div>
+                                    <small class="d-block text-muted mt-1">
+                                        Ao marcar esta opção, o equipamento não será contabilizado como despesa no Financeiro.
+                                    </small>
                                 </div>
 
                             </div>

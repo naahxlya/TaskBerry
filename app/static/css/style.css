@@ -21489,3 +21489,72 @@ html[data-theme="dark"] .finance-pill.cancelled { border-color: #754354; backgro
     .finance-form-actions .finance-action-button { width: 100%; }
     .finance-cashflow { flex-direction: column; gap: 8px; }
 }
+
+/* =====================================================
+   TASKBERRY | Pagamentos de funcionários e chamados
+===================================================== */
+.employee-finance-card{margin-top:18px;padding:18px;border:1px solid var(--tb-border);border-radius:16px;background:var(--tb-surface)}
+.employee-finance-card h6{font-weight:800;color:var(--tb-text);margin-bottom:12px}
+.employee-finance-card .form-label{font-size:.82rem;font-weight:700;color:var(--tb-muted)}
+.employee-finance-card .form-control,.employee-finance-card .form-select{background:var(--tb-input-bg);border-color:var(--tb-border);color:var(--tb-text)}
+.employee-danger-button{border:1px solid #d77979;background:transparent;color:#c65e68;border-radius:10px;padding:9px 14px;font-weight:700}
+.employee-danger-button:hover{background:#c65e68;color:#fff}
+.calls-content .calls-form-panel{border:1px solid var(--tb-border);border-radius:16px;background:var(--tb-surface);padding:20px;color:var(--tb-text)}
+.calls-content .calls-form-panel h2{font-size:1.05rem;font-weight:800;margin-bottom:14px}
+.calls-content .calls-form-panel .form-control,.calls-content .calls-form-panel .form-select{background:var(--tb-input-bg);border-color:var(--tb-border);color:var(--tb-text)}
+html[data-theme="dark"] .employee-finance-card{background:var(--tb-surface);border-color:var(--tb-border);color:var(--tb-text)}
+html[data-theme="dark"] .employee-finance-card .form-control,html[data-theme="dark"] .employee-finance-card .form-select{background:var(--tb-input-bg);color:var(--tb-text);border-color:var(--tb-border)}
+\n.calls-recent-history article:last-child{border-bottom:0!important}\n.calls-recent-history time{font-variant-numeric:tabular-nums}\n
+
+/* TASKBERRY | Ajustes de layout: financeiro de funcionários e vínculos */
+.employee-finance-card form.employee-payment-form,
+.employee-finance-card form.employee-voucher-form{display:grid!important;flex:initial!important;min-height:0!important;overflow:visible!important;gap:12px;align-items:end;margin:0 0 14px}
+.employee-finance-card form.employee-payment-form{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(190px,.8fr)}
+.employee-finance-card form.employee-voucher-form{grid-template-columns:1.2fr 1fr 1fr minmax(130px,.7fr)}
+.employee-finance-card form.employee-payment-form>div,.employee-finance-card form.employee-voucher-form>div{min-width:0}
+.employee-finance-card .employee-payment-submit{display:flex;align-items:end}
+.employee-finance-card .employee-payment-submit button,.employee-finance-card form.employee-voucher-form button{width:100%;white-space:nowrap}
+.employee-finance-card .employee-payment-check{grid-column:1/-1;margin:0;display:flex;align-items:center;gap:8px;color:var(--tb-muted)}
+.employee-finance-card .employee-payment-check .form-check-input{margin:0}
+.employee-finance-card .form-control,.employee-finance-card .form-select{width:100%;min-width:0}
+.employee-detail-footer{display:flex!important;align-items:center;gap:10px}
+.employee-detail-footer form{display:block!important;flex:1 1 auto!important;min-width:0;overflow:visible!important}
+.employee-detail-footer form button{width:100%}
+.employee-detail-footer>button{flex:0 0 auto}
+.employees-header-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px}
+.employees-trash-button{min-height:46px;padding:0 20px;white-space:nowrap}
+.employee-expenses-content{max-width:1500px}
+.employee-expenses-welcome{align-items:center}
+.employee-expenses-welcome .materials-secondary-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;border:1px solid var(--tb-border);border-radius:10px;background:var(--tb-surface);color:var(--tb-text);text-decoration:none;font-weight:800;white-space:nowrap}
+.employee-expenses-panel{margin-top:22px;padding:24px;border:1px solid var(--tb-border);border-radius:18px;background:var(--tb-surface);box-shadow:0 8px 24px rgba(35,20,55,.04)}
+.employee-expenses-toolbar{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:18px}
+.employee-expenses-toolbar h2{margin:0 0 5px;color:var(--tb-text);font-size:1.05rem;font-weight:900}
+.employee-expenses-toolbar p{margin:0;color:var(--tb-muted);font-size:.86rem}
+.employee-expenses-filter{display:flex!important;flex-direction:row!important;align-items:end;gap:10px;flex:0 1 520px;min-width:0;overflow:visible!important}
+.employee-expenses-filter label{font-size:.78rem;font-weight:800;color:var(--tb-muted);white-space:nowrap}
+.employee-expenses-filter input{min-width:160px}
+.employee-expenses-table{margin:0;color:var(--tb-text);vertical-align:middle}
+.employee-expenses-table thead th{padding:13px 14px;background:var(--tb-soft);color:var(--tb-muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--tb-border);white-space:nowrap}
+.employee-expenses-table tbody td{padding:15px 14px;border-color:var(--tb-border);font-size:.84rem;color:var(--tb-text)}
+.employee-expenses-table tbody tr:hover{background:var(--tb-soft)}
+.employee-expense-value{font-weight:900;white-space:nowrap}
+.employee-expense-status{display:inline-flex;padding:5px 10px;border-radius:30px;font-size:.72rem;font-weight:800;background:#e8f6ee;color:#24794b}
+.employee-expense-status.is-pending{background:#fff3d8;color:#946200}
+.employee-expense-status.is-cancelled{background:#fde8e8;color:#a63e48}
+.employee-expenses-empty{display:flex;flex-direction:column;align-items:center;gap:6px;padding:35px 10px;color:var(--tb-muted)}
+.employee-expenses-empty i{font-size:1.7rem;color:var(--tb-purple)}
+.employee-expenses-empty strong{color:var(--tb-text)}
+.employee-expenses-pagination{display:flex;justify-content:center;gap:7px;margin-top:20px}
+.employee-expenses-pagination a{display:grid;place-items:center;min-width:36px;height:36px;padding:0 9px;border:1px solid var(--tb-border);border-radius:9px;color:var(--tb-text);text-decoration:none;font-weight:800}
+.employee-expenses-pagination a.active{background:var(--tb-purple);border-color:var(--tb-purple);color:#fff}
+html[data-theme="dark"] .employee-expenses-panel{background:var(--tb-surface);border-color:var(--tb-border)}
+html[data-theme="dark"] .employee-expenses-table thead th{background:var(--tb-raised);color:var(--tb-muted)}
+html[data-theme="dark"] .employee-expenses-table tbody td{color:var(--tb-text);background:transparent}
+html[data-theme="dark"] .employee-expenses-welcome .materials-secondary-button{background:var(--tb-surface);color:var(--tb-text);border-color:var(--tb-border)}
+@media(max-width:767px){.employee-finance-card form.employee-payment-form,.employee-finance-card form.employee-voucher-form{grid-template-columns:1fr}.employee-finance-card .employee-payment-check{grid-column:auto}.employee-expenses-toolbar{align-items:stretch;flex-direction:column}.employee-expenses-filter{flex-wrap:wrap}.employee-expenses-filter input{flex:1}.employee-expenses-panel{padding:15px}.employee-expenses-welcome{align-items:flex-start;flex-direction:column}.employee-detail-footer{flex-wrap:wrap}.employee-detail-footer form{flex-basis:100%}}
+
+.calls-tool-link-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:stretch;width:100%;max-width:100%}
+.calls-tool-link-form .form-select{min-width:0;width:100%;min-height:46px;border:1px solid var(--tb-border);border-radius:10px;background:var(--tb-input-bg);color:var(--tb-text)}
+.calls-tool-link-form button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:112px;min-height:46px;padding:0 17px;border:1px solid var(--tb-purple);border-radius:10px;color:var(--tb-purple);font-weight:800;white-space:nowrap}
+.calls-tool-link-form button:hover{background:var(--tb-purple);color:#fff}
+@media(max-width:520px){.calls-tool-link-form{grid-template-columns:1fr}.calls-tool-link-form button{width:100%}}
