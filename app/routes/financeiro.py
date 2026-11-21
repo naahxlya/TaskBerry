@@ -1,4 +1,6 @@
 from datetime import datetime, timezone
+import calendar
+import json
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from io import StringIO
 import csv
@@ -11,6 +13,8 @@ from flask import (
 )
 
 from app.database.connection import get_database
+import plotly.graph_objects as go
+from plotly.utils import PlotlyJSONEncoder
 from app.services.financeiro_service import (
     preparar_movimentacao,
     sincronizar_compras_estoque,
@@ -54,6 +58,133 @@ STATUS_MOVIMENTO = {
     "pendente": "Pendente"
 }
 ITENS_POR_PAGINA = 20
+
+
+
+def montar_analise_graficos(db, usuario, competencia):
+    """Monta indicadores de resultado com base no caixa realizado por competência."""
+    try:
+        ano_ref, mes_ref = map(int, competencia.split("-"))
+    except (TypeError, ValueError):
+        hoje = agora()
+        ano_ref, mes_ref = hoje.year, hoje.month
+
+    meses = []
+    ano, mes = ano_ref, mes_ref
+    for _ in range(12):
+        meses.append(f"{ano:04d}-{mes:02d}")
+        mes -= 1
+        if mes == 0:
+            mes = 12
+            ano -= 1
+    meses.reverse()
+
+    totais = {item: {"entrada": 0.0, "saida": 0.0} for item in meses}
+    despesas_categoria = {}
+    cursor = db["movimentacoes_financeiras"].find({
+        "usuario_id": usuario,
+        "competencia": {"$in": meses},
+        "status": "realizado",
+        "cancelada": {"$ne": True}
+    }, {"competencia": 1, "tipo": 1, "valor": 1, "categoria": 1})
+    for movimento in cursor:
+        comp = movimento.get("competencia")
+        if comp not in totais:
+            continue
+        try:
+            valor = float(movimento.get("valor", 0) or 0)
+        except (TypeError, ValueError):
+            valor = 0.0
+        if movimento.get("tipo") == "entrada":
+            totais[comp]["entrada"] += valor
+        elif movimento.get("tipo") == "saida":
+            totais[comp]["saida"] += valor
+            categoria = movimento.get("categoria") or "outros_gastos"
+            despesas_categoria[categoria] = despesas_categoria.get(categoria, 0.0) + valor
+
+    nomes_meses = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"]
+    labels = [f"{nomes_meses[int(item[5:7]) - 1]}/{item[2:4]}" for item in meses]
+    entradas = [round(totais[item]["entrada"], 2) for item in meses]
+    saidas = [round(totais[item]["saida"], 2) for item in meses]
+    resultados = [round(totais[item]["entrada"] - totais[item]["saida"], 2) for item in meses]
+    total_entradas = round(sum(entradas), 2)
+    total_saidas = round(sum(saidas), 2)
+    resultado_acumulado = round(total_entradas - total_saidas, 2)
+    margem = round((resultado_acumulado / total_entradas) * 100, 1) if total_entradas else 0.0
+    meses_com_prejuizo = sum(1 for valor in resultados if valor < 0)
+    meses_com_lucro = sum(1 for valor in resultados if valor > 0)
+
+    fig_tendencia = go.Figure()
+    fig_tendencia.add_trace(go.Scatter(
+        name="Entradas", x=labels, y=entradas, mode="lines+markers",
+        line=dict(color="#9B78D0", width=3), marker=dict(size=6),
+        hovertemplate="Entradas: R$ %{y:,.2f}<extra></extra>"
+    ))
+    fig_tendencia.add_trace(go.Scatter(
+        name="Despesas", x=labels, y=saidas, mode="lines+markers",
+        line=dict(color="#E6A2C5", width=3), marker=dict(size=6),
+        hovertemplate="Despesas: R$ %{y:,.2f}<extra></extra>"
+    ))
+    fig_tendencia.update_layout(
+        height=310, margin=dict(l=12, r=12, t=20, b=12),
+        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(family="Nunito Sans, sans-serif", color="#82758F", size=11),
+        legend=dict(orientation="h", y=1.16, x=0),
+        xaxis=dict(showgrid=False, fixedrange=True),
+        yaxis=dict(showgrid=True, gridcolor="rgba(150,130,170,.13)", tickprefix="R$ ", tickformat="~s", fixedrange=True),
+        hovermode="x unified"
+    )
+
+    cores_resultado = ["#65B895" if valor >= 0 else "#D97991" for valor in resultados]
+    fig_resultado = go.Figure(go.Bar(
+        x=labels, y=resultados,
+        marker_color=cores_resultado,
+        hovertemplate="Resultado: R$ %{y:,.2f}<extra></extra>"
+    ))
+    fig_resultado.add_hline(y=0, line_color="#9A8AA8", line_width=1)
+    fig_resultado.update_layout(
+        height=285, margin=dict(l=12, r=12, t=20, b=12),
+        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(family="Nunito Sans, sans-serif", color="#82758F", size=11),
+        showlegend=False, xaxis=dict(showgrid=False, fixedrange=True),
+        yaxis=dict(showgrid=True, gridcolor="rgba(150,130,170,.13)", tickprefix="R$ ", tickformat="~s", fixedrange=True)
+    )
+
+    categorias_nomes = {
+        "materiais": "Materiais", "funcionarios": "Funcionários",
+        "ferramentas": "Ferramentas e manutenção", "transporte": "Transporte",
+        "alimentacao": "Alimentação", "impostos": "Impostos e taxas",
+        "contas": "Contas fixas", "servicos_terceiros": "Serviços de terceiros",
+        "outros_gastos": "Outras despesas"
+    }
+    categorias_ordenadas = sorted(despesas_categoria.items(), key=lambda item: item[1], reverse=True)
+    fig_categorias = go.Figure(go.Pie(
+        labels=[categorias_nomes.get(chave, chave.replace("_", " ").title()) for chave, _ in categorias_ordenadas],
+        values=[round(valor, 2) for _, valor in categorias_ordenadas],
+        hole=.62, sort=False,
+        marker=dict(colors=["#9B78D0", "#E6A2C5", "#78B8A5", "#E7B96F", "#8CAED6", "#B8A9C9", "#C58DB8", "#7C9B9A", "#A9A0D0"]),
+        textinfo="percent", hovertemplate="%{label}: R$ %{value:,.2f} (%{percent})<extra></extra>"
+    ))
+    fig_categorias.update_layout(
+        height=285, margin=dict(l=8, r=8, t=14, b=8),
+        paper_bgcolor="rgba(0,0,0,0)",
+        font=dict(family="Nunito Sans, sans-serif", color="#82758F", size=10),
+        legend=dict(orientation="h", y=-.12, x=.5, xanchor="center")
+    )
+
+    return {
+        "grafico_tendencia": json.dumps(fig_tendencia, cls=PlotlyJSONEncoder),
+        "grafico_resultado": json.dumps(fig_resultado, cls=PlotlyJSONEncoder),
+        "grafico_categorias": json.dumps(fig_categorias, cls=PlotlyJSONEncoder),
+        "analise": {
+            "total_entradas_12m": total_entradas,
+            "total_saidas_12m": total_saidas,
+            "resultado_12m": resultado_acumulado,
+            "margem_12m": margem,
+            "meses_lucro": meses_com_lucro,
+            "meses_prejuizo": meses_com_prejuizo
+        }
+    }
 
 
 def usuario_id():
@@ -230,6 +361,7 @@ def index():
     totais_competencia = somar_movimentos(db, filtro_competencia)
 
     chamados, clientes, funcionarios = carregar_opcoes(db, usuario)
+    analise_graficos = montar_analise_graficos(db, usuario, competencia)
 
     # Painel de contas a receber: saldo pendente das obras, sem tratar
     # o valor contratado como receita recebida.
@@ -266,6 +398,7 @@ def index():
         categorias_saida=CATEGORIAS_SAIDA,
         formas_pagamento=FORMAS_PAGAMENTO,
         status_movimento=STATUS_MOVIMENTO,
+        **analise_graficos,
         now_date=agora().strftime("%Y-%m-%d")
     )
 

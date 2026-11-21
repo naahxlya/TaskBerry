@@ -187,3 +187,22 @@ html[data-theme="dark"] .status-em_andamento { background: #293f52; color: #a9d0
 html[data-theme="dark"] .status-aguardando { background: #51432f; color: #e8c88d; }
 html[data-theme="dark"] .status-concluido { background: #29473c; color: #a2d8bd; }
 html[data-theme="dark"] .status-cancelado { background: #4b303b; color: #e3a9b5; }
+
+
+/* Dashboard: módulos inferiores independentes e evolução dos custos de materiais. */
+.tb-bottom-grid { grid-template-columns: minmax(0, 1fr); }
+.tb-bottom-grid > .tb-dashboard-card { width: 100%; }
+.tb-materials-chart-row { grid-template-columns: minmax(0, 1fr); }
+.tb-materials-chart-card { width: 100%; }
+.tb-materials-chart-total { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; white-space: nowrap; }
+.tb-materials-chart-total small { color: var(--text-secondary, #71639e); font-size: 10px; }
+.tb-materials-chart-total strong { color: var(--text-primary, #21134d); font-size: 18px; font-weight: 800; }
+.tb-chart-note { display: flex; align-items: flex-start; gap: 7px; margin: 0; color: var(--text-secondary, #71639e); font-size: 10px; line-height: 1.5; }
+.tb-chart-note i { color: #9b78d0; }
+html[data-theme="dark"] .tb-materials-chart-total strong { color: var(--tb-text, #f5effb); }
+html[data-theme="dark"] .tb-materials-chart-total small,
+html[data-theme="dark"] .tb-chart-note { color: var(--tb-muted, #b9adc8); }
+@media (max-width: 650px) {
+    .tb-materials-chart-card .tb-card-heading { flex-wrap: wrap; }
+    .tb-materials-chart-total { align-items: flex-start; }
+}

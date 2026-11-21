@@ -7,6 +7,7 @@ import plotly.graph_objects as go
 from plotly.utils import PlotlyJSONEncoder
 
 from app.database.connection import get_database
+from app.services.financeiro_service import sincronizar_compras_estoque
 
 
 dashboard_bp = Blueprint("dashboard", __name__)
@@ -75,6 +76,29 @@ def _criar_grafico_financeiro(meses, entradas, saidas):
     return fig
 
 
+
+def _criar_grafico_despesas_materiais(meses, valores):
+    meses_pt = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"]
+    labels = [f"{meses_pt[mes - 1]}/{str(ano)[-2:]}" for ano, mes in meses]
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        name="Materiais", x=labels, y=valores,
+        marker_color="#B99AE8", marker_line_width=0,
+        hovertemplate="Gasto com materiais: R$ %{y:,.2f}<extra></extra>"
+    ))
+    fig.update_layout(
+        height=290, margin=dict(l=12, r=12, t=12, b=12),
+        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(family="Nunito Sans, sans-serif", color="#82758F", size=11),
+        showlegend=False,
+        xaxis=dict(showgrid=False, zeroline=False, fixedrange=True),
+        yaxis=dict(showgrid=True, gridcolor="rgba(150,130,170,.13)", zeroline=False,
+                   tickprefix="R$ ", tickformat="~s", fixedrange=True),
+        hovermode="x"
+    )
+    return fig
+
+
 def _criar_grafico_status(rotulos, valores):
     cores = ["#9B78D0", "#78B8A5", "#E7B96F", "#E6A2C5", "#B8A9C9"]
     fig = go.Figure(go.Pie(
@@ -104,6 +128,11 @@ def dashboard():
         return redirect(url_for("inicio"))
 
     db = get_database()
+    # Garante que compras registradas no estoque também estejam refletidas no razão financeiro.
+    try:
+        sincronizar_compras_estoque(db, usuario_id)
+    except Exception:
+        pass
     usuario = None
     if ObjectId.is_valid(str(usuario_id)):
         usuario = db["usuarios"].find_one({"_id": ObjectId(str(usuario_id))})
@@ -174,6 +203,22 @@ def dashboard():
         elif tipo == "saida":
             totais_mensais[chave]["saida"] += valor
             total_saidas += valor
+
+    gastos_materiais_mensais = {chave: 0.0 for chave in meses}
+    total_gastos_materiais = 0.0
+    for movimento in movimentos_periodo:
+        data_mov = _data_segura(movimento.get("data_movimento"))
+        if not data_mov or movimento.get("tipo") != "saida" or movimento.get("categoria") != "materiais":
+            continue
+        chave = (data_mov.year, data_mov.month)
+        if chave in gastos_materiais_mensais:
+            valor = _dinheiro(movimento.get("valor"))
+            gastos_materiais_mensais[chave] += valor
+            total_gastos_materiais += valor
+
+    grafico_materiais = _criar_grafico_despesas_materiais(
+        meses, [round(gastos_materiais_mensais[chave], 2) for chave in meses]
+    )
 
     saldo_periodo = total_entradas - total_saidas
     entradas_pendentes = sum(
@@ -284,5 +329,7 @@ def dashboard():
         estoque_baixo=estoque_baixo, chamados_recentes=chamados_recentes,
         atividades=atividades, grafico_financeiro=_grafico_json(grafico_financeiro),
         grafico_chamados=_grafico_json(grafico_chamados),
+        grafico_materiais=_grafico_json(grafico_materiais),
+        total_gastos_materiais=round(total_gastos_materiais, 2),
         periodo_label=f"últimos {quantidade_meses} meses", now_year=agora.year
     )

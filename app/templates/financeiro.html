@@ -69,6 +69,66 @@
                 </article>
             </div>
 
+
+            <section class="finance-analytics" aria-label="Análise de resultados financeiros">
+                <div class="finance-analytics-heading">
+                    <div>
+                        <span class="finance-eyebrow"><i class="bi bi-graph-up-arrow"></i> INTELIGÊNCIA FINANCEIRA</span>
+                        <h2>Lucros, prejuízos e desempenho</h2>
+                        <p>Análise dos últimos 12 meses, considerando somente movimentações realizadas e não canceladas.</p>
+                    </div>
+                    <span class="finance-analytics-period"><i class="bi bi-calendar3"></i> 12 competências até {{ competencia }}</span>
+                </div>
+
+                <div class="finance-analysis-kpis">
+                    <article class="finance-analysis-kpi">
+                        <small>Resultado acumulado</small>
+                        <strong class="{{ 'positive' if analise.resultado_12m >= 0 else 'negative' }}">R$ {{ "%.2f"|format(analise.resultado_12m)|replace(".", ",") }}</strong>
+                        <span>{{ "Superávit no período" if analise.resultado_12m >= 0 else "Déficit no período" }}</span>
+                    </article>
+                    <article class="finance-analysis-kpi">
+                        <small>Margem operacional de caixa</small>
+                        <strong>{{ "%.1f"|format(analise.margem_12m)|replace(".", ",") }}%</strong>
+                        <span>Resultado ÷ entradas realizadas</span>
+                    </article>
+                    <article class="finance-analysis-kpi">
+                        <small>Meses com resultado positivo</small>
+                        <strong class="positive">{{ analise.meses_lucro }}</strong>
+                        <span>De 12 competências analisadas</span>
+                    </article>
+                    <article class="finance-analysis-kpi">
+                        <small>Meses com prejuízo</small>
+                        <strong class="negative">{{ analise.meses_prejuizo }}</strong>
+                        <span>Despesas superiores às entradas</span>
+                    </article>
+                </div>
+
+                <div class="finance-analytics-grid">
+                    <article class="finance-panel finance-chart-panel finance-chart-wide">
+                        <div class="finance-panel-heading">
+                            <div><h3><i class="bi bi-activity"></i> Evolução de entradas e despesas</h3>
+                                <p>Compare o dinheiro recebido com o que saiu do caixa mês a mês.</p></div>
+                        </div>
+                        <div id="financeTrendChart" class="finance-plot" role="img" aria-label="Evolução mensal de entradas e despesas"></div>
+                    </article>
+                    <article class="finance-panel finance-chart-panel">
+                        <div class="finance-panel-heading">
+                            <div><h3><i class="bi bi-bar-chart"></i> Lucro ou prejuízo por mês</h3>
+                                <p>Acima de zero representa superávit; abaixo, déficit.</p></div>
+                        </div>
+                        <div id="financeResultChart" class="finance-plot" role="img" aria-label="Resultado líquido mensal"></div>
+                    </article>
+                    <article class="finance-panel finance-chart-panel">
+                        <div class="finance-panel-heading">
+                            <div><h3><i class="bi bi-pie-chart"></i> Onde o dinheiro é gasto</h3>
+                                <p>Distribuição das despesas realizadas por categoria nos últimos 12 meses.</p></div>
+                        </div>
+                        <div id="financeCategoryChart" class="finance-plot" role="img" aria-label="Despesas por categoria"></div>
+                    </article>
+                </div>
+                <p class="finance-analytics-note"><i class="bi bi-lightbulb"></i> <strong>Como interpretar:</strong> resultado positivo indica que as entradas superaram as saídas no período. Resultado negativo indica que o caixa gastou mais do que recebeu. Esta é uma análise de fluxo de caixa, não um demonstrativo contábil de lucro líquido.</p>
+            </section>
+
             {% if obras_com_saldo %}
             <section class="finance-panel finance-receivables-panel">
                 <div class="finance-panel-heading">
@@ -303,6 +363,35 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://cdn.plot.ly/plotly-3.0.1.min.js" charset="utf-8"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const charts = [
+        { id: "financeTrendChart", data: {{ grafico_tendencia|safe }} },
+        { id: "financeResultChart", data: {{ grafico_resultado|safe }} },
+        { id: "financeCategoryChart", data: {{ grafico_categorias|safe }} }
+    ];
+    const dark = document.documentElement.getAttribute("data-theme") === "dark";
+    const textColor = dark ? "#C8BBD8" : "#82758F";
+    const gridColor = dark ? "rgba(210,190,230,.12)" : "rgba(150,130,170,.13)";
+    charts.forEach(function (chart) {
+        const element = document.getElementById(chart.id);
+        if (!element || !chart.data || !window.Plotly) return;
+        const original = chart.data.layout || {};
+        const layout = Object.assign({}, original, {
+            font: Object.assign({}, original.font || {}, { color: textColor }),
+            paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)",
+            xaxis: Object.assign({}, original.xaxis || {}, { gridcolor: gridColor, tickfont: { color: textColor } }),
+            yaxis: Object.assign({}, original.yaxis || {}, { gridcolor: gridColor, tickfont: { color: textColor } }),
+            legend: Object.assign({}, original.legend || {}, { font: { color: textColor } })
+        });
+        Plotly.newPlot(element, chart.data.data || [], layout, {
+            responsive: true, displaylogo: false,
+            modeBarButtonsToRemove: ["lasso2d", "select2d", "autoScale2d"]
+        });
+    });
+});
+</script>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
     const radios = document.querySelectorAll('input[name="tipo"]');

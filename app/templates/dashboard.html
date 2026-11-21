@@ -114,6 +114,25 @@
                 </section>
             </div>
 
+
+            <div class="tb-dashboard-grid tb-materials-chart-row">
+                <section class="tb-dashboard-card tb-materials-chart-card">
+                    <div class="tb-card-heading">
+                        <div>
+                            <span class="tb-card-kicker">CUSTO OPERACIONAL</span>
+                            <h3>Investimento em materiais</h3>
+                            <p>Despesas efetivamente registradas no Financeiro, agrupadas por mês.</p>
+                        </div>
+                        <div class="tb-materials-chart-total">
+                            <small>Total no período</small>
+                            <strong>R$ {{ "{:,.2f}".format(total_gastos_materiais).replace(",", "X").replace(".", ",").replace("X", ".") }}</strong>
+                        </div>
+                    </div>
+                    <div id="materialsExpenseChart" class="tb-chart" role="img" aria-label="Gráfico mensal de despesas com materiais"></div>
+                    <p class="tb-chart-note"><i class="bi bi-info-circle"></i> Considera compras de materiais com situação realizada. Lançamentos pendentes não entram no total pago.</p>
+                </section>
+            </div>
+
             <div class="tb-dashboard-grid tb-secondary-grid">
                 <section class="tb-dashboard-card tb-recent-card">
                     <div class="tb-card-heading"><div><span class="tb-card-kicker">ACOMPANHAMENTO</span><h3>Chamados recentes</h3>
@@ -199,7 +218,8 @@
 document.addEventListener("DOMContentLoaded", function () {
     const charts = [
         { id: "financeChart", data: {{ grafico_financeiro|safe }} },
-        { id: "callsChart", data: {{ grafico_chamados|safe }} }
+        { id: "callsChart", data: {{ grafico_chamados|safe }} },
+        { id: "materialsExpenseChart", data: {{ grafico_materiais|safe }} }
     ];
     const dark = document.documentElement.getAttribute("data-theme") === "dark";
     const textColor = dark ? "#C8BBD8" : "#82758F";
