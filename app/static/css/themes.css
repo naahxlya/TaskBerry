@@ -1439,3 +1439,181 @@ html[data-theme="dark"] [style*="background-color: #fff"] {
     background-color: #2B2037 !important;
     color: #F5EFFB !important;
 }
+
+
+/* =========================================================
+   TASKBERRY | ACABAMENTO DO TEMA ESCURO
+   Corrige superfícies lilás claras e estados de hover nos módulos.
+   ========================================================= */
+html[data-theme="dark"] .calls-history-panel,
+html[data-theme="dark"] .calls-history-entry,
+html[data-theme="dark"] .calls-history-empty {
+    background: var(--tb-surface) !important;
+    color: var(--tb-text) !important;
+    border-color: var(--tb-border) !important;
+}
+html[data-theme="dark"] .calls-history-title,
+html[data-theme="dark"] .calls-history-action {
+    color: var(--tb-text) !important;
+}
+html[data-theme="dark"] .calls-history-description,
+html[data-theme="dark"] .calls-history-meta,
+html[data-theme="dark"] .calls-history-date,
+html[data-theme="dark"] .calls-history-empty {
+    color: var(--tb-muted) !important;
+}
+html[data-theme="dark"] .calls-history-counter,
+html[data-theme="dark"] .calls-history-marker {
+    background: var(--tb-purple-soft) !important;
+    color: #E9DDF8 !important;
+    border-color: var(--tb-border) !important;
+}
+html[data-theme="dark"] .calls-history-number,
+html[data-theme="dark"] .calls-history-eyebrow,
+html[data-theme="dark"] .calls-history-empty i {
+    color: var(--tb-purple-hover) !important;
+}
+
+/* Tons claros usados originalmente nos chamados passam a usar a paleta escura. */
+html[data-theme="dark"] .calls-hero {
+    background:
+        radial-gradient(circle at 85% 15%, rgba(185,154,232,.12), transparent 27%),
+        linear-gradient(120deg, #2B2037 0%, #30243F 55%, #332641 100%) !important;
+    border-color: var(--tb-border) !important;
+}
+html[data-theme="dark"] .calls-month-summary,
+html[data-theme="dark"] .calls-metric-icon.purple,
+html[data-theme="dark"] .calls-section-icon,
+html[data-theme="dark"] .calls-form-icon,
+html[data-theme="dark"] .calls-next-business-day,
+html[data-theme="dark"] .calls-page-heading,
+html[data-theme="dark"] .calls-work-count,
+html[data-theme="dark"] .calls-filters .filter-count,
+html[data-theme="dark"] .calls-empty-icon,
+html[data-theme="dark"] .calls-form-panel .ts-control .item,
+html[data-theme="dark"] .calls-form-panel .ts-dropdown .active {
+    background: var(--tb-purple-soft) !important;
+    color: #E9DDF8 !important;
+    border-color: var(--tb-border) !important;
+}
+html[data-theme="dark"] .calls-month-summary strong,
+html[data-theme="dark"] .calls-month-summary span,
+html[data-theme="dark"] .calls-month-summary p {
+    color: var(--tb-text) !important;
+}
+html[data-theme="dark"] .calls-metric-icon.blue,
+html[data-theme="dark"] .calls-metric-icon.green,
+html[data-theme="dark"] .calls-metric-icon.orange {
+    background: #332D49 !important;
+    border-color: var(--tb-border) !important;
+}
+html[data-theme="dark"] .calls-work-card,
+html[data-theme="dark"] .calls-daily-card,
+html[data-theme="dark"] .calls-form-panel,
+html[data-theme="dark"] .calls-calendar-panel,
+html[data-theme="dark"] .calls-daily-panel,
+html[data-theme="dark"] .calls-empty-state {
+    background-color: var(--tb-surface) !important;
+    color: var(--tb-text) !important;
+    border-color: var(--tb-border) !important;
+}
+html[data-theme="dark"] .calls-work-card:hover,
+html[data-theme="dark"] .calls-daily-card:hover {
+    background-color: var(--tb-surface) !important;
+    border-color: #72588B !important;
+    box-shadow: 0 5px 16px rgba(0,0,0,.16) !important;
+    transform: translateY(-1px);
+}
+html[data-theme="dark"] .calls-button-light,
+html[data-theme="dark"] .calls-calendar-nav,
+html[data-theme="dark"] .calls-calendar-today {
+    background: #382A47 !important;
+    color: #E9DDF8 !important;
+    border-color: #554263 !important;
+}
+html[data-theme="dark"] .calls-button-light:hover,
+html[data-theme="dark"] .calls-calendar-nav:hover,
+html[data-theme="dark"] .calls-calendar-today:hover,
+html[data-theme="dark"] .calls-next-business-day:hover {
+    background: #493657 !important;
+    color: #FFFFFF !important;
+    border-color: #755A8C !important;
+}
+html[data-theme="dark"] .calls-button-primary,
+html[data-theme="dark"] .calls-icon-button {
+    color: #FFFFFF !important;
+}
+html[data-theme="dark"] .calls-button-primary:hover,
+html[data-theme="dark"] .calls-icon-button:hover {
+    background: #76549A !important;
+    color: #FFFFFF !important;
+}
+html[data-theme="dark"] .calls-section-heading h2,
+html[data-theme="dark"] .calls-form-panel h2,
+html[data-theme="dark"] .calls-work-card h3,
+html[data-theme="dark"] .calls-daily-card h3,
+html[data-theme="dark"] .calls-form-panel label {
+    color: var(--tb-text);
+}
+html[data-theme="dark"] .calls-form-panel .text-muted,
+html[data-theme="dark"] .calls-work-card .text-muted,
+html[data-theme="dark"] .calls-daily-card .text-muted {
+    color: var(--tb-muted) !important;
+}
+html[data-theme="dark"] .calls-form-panel input,
+html[data-theme="dark"] .calls-form-panel select,
+html[data-theme="dark"] .calls-form-panel textarea,
+html[data-theme="dark"] .calls-filters input,
+html[data-theme="dark"] .calls-filters select {
+    background: var(--tb-input-bg) !important;
+    color: var(--tb-text) !important;
+    border-color: var(--tb-border) !important;
+}
+html[data-theme="dark"] .calls-form-panel input::placeholder,
+html[data-theme="dark"] .calls-form-panel textarea::placeholder {
+    color: var(--tb-muted) !important;
+}
+html[data-theme="dark"] .calls-form-panel .ts-control,
+html[data-theme="dark"] .calls-form-panel .ts-dropdown {
+    background: var(--tb-input-bg) !important;
+    color: var(--tb-text) !important;
+    border-color: var(--tb-border) !important;
+}
+html[data-theme="dark"] .calls-form-panel .ts-dropdown .option,
+html[data-theme="dark"] .calls-form-panel .ts-control .item {
+    color: var(--tb-text) !important;
+}
+html[data-theme="dark"] .calls-form-panel .ts-dropdown .active {
+    background: var(--tb-purple-soft) !important;
+    color: #FFFFFF !important;
+}
+html[data-theme="dark"] .calls-work-card a,
+html[data-theme="dark"] .calls-daily-card a {
+    color: var(--tb-purple-hover);
+}
+html[data-theme="dark"] .calls-work-card a:hover,
+html[data-theme="dark"] .calls-daily-card a:hover {
+    color: #FFFFFF;
+}
+html[data-theme="dark"] .calls-work-card *,
+html[data-theme="dark"] .calls-daily-card * {
+    transition-property: color, border-color, box-shadow, background-color, transform;
+}
+
+/* Classes auxiliares claras que aparecem em cartões e avisos de outros módulos. */
+html[data-theme="dark"] .materials-overview-tip,
+html[data-theme="dark"] .tool-detail-banner,
+html[data-theme="dark"] .tool-detail-banner-icon,
+html[data-theme="dark"] .materials-info-notice {
+    background: var(--tb-surface-raised) !important;
+    color: var(--tb-text) !important;
+    border-color: var(--tb-border) !important;
+}
+html[data-theme="dark"] .materials-overview-tip strong,
+html[data-theme="dark"] .tool-detail-banner strong {
+    color: var(--tb-text) !important;
+}
+html[data-theme="dark"] .materials-overview-tip p,
+html[data-theme="dark"] .tool-detail-banner p {
+    color: var(--tb-muted) !important;
+}

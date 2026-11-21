@@ -1592,21 +1592,35 @@
             {% endif %}
 
             {% if not chamado_edicao %}
-            <section class="calls-form-panel mt-4">
-                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-                    <div><h2 class="mb-1">Histórico recente</h2><p class="text-muted mb-0">Últimas alterações relevantes nos chamados e obras.</p></div>
-                    <span class="badge text-bg-light">Até 20 registros</span>
+            <section class="calls-form-panel calls-history-panel mt-4">
+                <div class="calls-history-header">
+                    <div class="calls-history-title-wrap">
+                        <span class="calls-history-eyebrow">ACOMPANHAMENTO</span>
+                        <h2 class="calls-history-title">Histórico de modificações</h2>
+                        <p class="calls-history-description">Acompanhe as últimas atividades registradas nas obras.</p>
+                    </div>
+                    <span class="calls-history-counter"><i class="bi bi-clock-history"></i> Até 20 atividades</span>
                 </div>
                 {% if historico_recente %}
                 <div class="calls-recent-history">
                     {% for registro in historico_recente %}
-                    <article class="d-flex justify-content-between gap-3 border-bottom py-2">
-                        <div><strong>{{ registro.historico.descricao }}</strong><div class="text-muted small">{{ registro.numero }} · {{ registro.titulo }} · {{ registro.historico.usuario_nome or 'Usuário' }}</div></div>
-                        <time class="text-muted small text-nowrap">{{ registro.historico.data.strftime('%d/%m/%Y %H:%M') if registro.historico.data else '' }}</time>
+                    <article class="calls-history-entry">
+                        <span class="calls-history-marker"><i class="bi bi-check2"></i></span>
+                        <div class="calls-history-entry-content">
+                            <strong class="calls-history-action">{{ registro.historico.descricao }}</strong>
+                            <div class="calls-history-meta">
+                                <span class="calls-history-number">{{ registro.numero }}</span>
+                                <span>{{ registro.titulo }}</span>
+                                <span>{{ registro.historico.usuario_nome or 'Usuário' }}</span>
+                            </div>
+                        </div>
+                        <time class="calls-history-date">{{ registro.historico.data.strftime('%d/%m/%Y · %H:%M') if registro.historico.data else '' }}</time>
                     </article>
                     {% endfor %}
                 </div>
-                {% else %}<p class="text-muted mb-0">As alterações dos chamados aparecerão aqui.</p>{% endif %}
+                {% else %}
+                <div class="calls-history-empty"><i class="bi bi-clock"></i><span>As alterações dos chamados aparecerão aqui.</span></div>
+                {% endif %}
             </section>
             {% endif %}
 
