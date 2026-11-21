@@ -495,14 +495,7 @@
                         {% endif %}
                     </div>
 
-                     <div class="clients-management-actions my-3">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalClientesArquivados">
-                            <i class="bi bi-archive"></i> Arquivados <span>{{ arquivados|length }}</span>
-                        </button>
-                        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalClientesLixeira">
-                            <i class="bi bi-trash3"></i> Lixeira <span>{{ lixeira|length }}</span>
-                        </button>
-                    </div>
+                     
 
                 {% else %}
 
@@ -554,56 +547,9 @@
             </section>
 
 
-            <!-- MODAL: CLIENTES ARQUIVADOS -->
-            <div class="modal fade" id="modalClientesArquivados" tabindex="-1" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <div><h5 class="modal-title"><i class="bi bi-archive me-2"></i>Clientes arquivados</h5><small class="text-muted">Após 10 dias, os registros seguem automaticamente para a lixeira.</small></div>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-                        </div>
-                        <div class="modal-body">
-                            {% if arquivados %}
-                            <div class="table-responsive"><table class="table clients-table align-middle"><thead><tr><th>CLIENTE</th><th>ARQUIVADO EM</th><th class="text-end">AÇÃO</th></tr></thead><tbody>
-                            {% for cliente in arquivados %}
-                            <tr><td><strong>{{ cliente.nome }}</strong><div class="text-muted small">{{ cliente.telefone }}</div></td><td>{{ cliente.arquivado_em.strftime('%d/%m/%Y') if cliente.arquivado_em else '-' }}</td><td><div class="client-actions"><form method="POST" action="{{ url_for('clientes.restaurar_cliente', cliente_id=cliente._id) }}"><button class="btn btn-sm btn-outline-primary" type="submit"><i class="bi bi-arrow-counterclockwise"></i> Restaurar</button></form></div></td></tr>
-                            {% endfor %}
-                            </tbody></table></div>
-                            {% else %}<div class="clients-modal-empty"><i class="bi bi-archive"></i><p>Nenhum cliente arquivado.</p></div>{% endif %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- MODAL: LIXEIRA -->
-            <div class="modal fade" id="modalClientesLixeira" tabindex="-1" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <div><h5 class="modal-title"><i class="bi bi-trash3 me-2"></i>Lixeira de clientes</h5><small class="text-muted">Você pode restaurar para Arquivados. Após 10 dias, a exclusão é permanente.</small></div>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-                        </div>
-                        <div class="modal-body">
-                            {% if lixeira %}
-                            <div class="table-responsive"><table class="table clients-table align-middle"><thead><tr><th>CLIENTE</th><th>NA LIXEIRA DESDE</th><th class="text-end">AÇÕES</th></tr></thead><tbody>
-                            {% for cliente in lixeira %}
-                            <tr><td><strong>{{ cliente.nome }}</strong><div class="text-muted small">{{ cliente.telefone }}</div></td><td>{{ cliente.excluido_em.strftime('%d/%m/%Y') if cliente.excluido_em else '-' }}</td><td><div class="client-actions">
-                                <form method="POST" action="{{ url_for('clientes.restaurar_cliente', cliente_id=cliente._id) }}"><button class="btn btn-sm btn-outline-primary" type="submit"><i class="bi bi-arrow-counterclockwise"></i> Restaurar</button></form>
-                                <form method="POST"
-      action="{{ url_for('clientes.excluir_permanentemente', cliente_id=cliente._id) }}"
-      data-confirm="Esta ação não poderá ser desfeita. Deseja realmente excluir este cliente?"
-      data-confirm-title="Excluir cliente permanentemente"
-      data-confirm-button="Excluir definitivamente"
-      data-confirm-icon="bi-trash3"
-      data-confirm-variant="danger">
-    <button class="btn btn-sm btn-outline-danger" type="submit"><i class="bi bi-trash3"></i></button></form>
-                            </div></td></tr>
-                            {% endfor %}
-                            </tbody></table></div>
-                            {% else %}<div class="clients-modal-empty"><i class="bi bi-trash3"></i><p>A lixeira está vazia.</p></div>{% endif %}
-                        </div>
-                    </div>
-                </div>
+            <div class="d-flex flex-wrap justify-content-end gap-2 my-4">
+                <a class="btn btn-outline-secondary" href="{{ url_for('clientes.registros_especiais_clientes', tipo='arquivados') }}"><i class="bi bi-archive me-1"></i> Arquivados</a>
+                <a class="btn btn-outline-secondary" href="{{ url_for('clientes.registros_especiais_clientes', tipo='lixeira') }}"><i class="bi bi-trash3 me-1"></i> Lixeira</a>
             </div>
 
             <footer class="dashboard-footer my-3">

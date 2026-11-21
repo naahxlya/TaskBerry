@@ -209,6 +209,24 @@ def listar_funcionarios():
     )
 
 
+@funcionarios_bp.route("/funcionarios/lixeira")
+def lixeira_funcionarios():
+    usuario = obter_usuario_id()
+    colecao = get_database()["funcionarios"]
+    agora = agora_utc()
+    colecao.delete_many({"usuario_id": usuario, "excluido": True, "excluido_em": {"$lte": agora - timedelta(days=10)}})
+    try:
+        pagina = max(1, int(request.args.get("pagina", 1)))
+    except (TypeError, ValueError):
+        pagina = 1
+    filtro = {"usuario_id": usuario, "excluido": True}
+    total = colecao.count_documents(filtro)
+    paginas = max(1, (total + 24) // 25)
+    pagina = min(pagina, paginas)
+    itens = list(colecao.find(filtro).sort("nome", 1).skip((pagina-1)*25).limit(25))
+    return render_template("registros_especiais.html", modulo="Funcionários", tipo="lixeira", itens=itens, total=total, pagina=pagina, total_paginas=paginas, voltar=url_for("funcionarios.listar_funcionarios"), restaurar_endpoint="funcionarios.restaurar_funcionario", excluir_endpoint=None, campo_data="excluido_em", nome_campo="nome", detalhe_campo="cargo", rota_lista="funcionarios.listar_funcionarios")
+
+
 @funcionarios_bp.route("/funcionarios/novo", methods=["POST"])
 def cadastrar_funcionario():
     usuario_id = obter_usuario_id()

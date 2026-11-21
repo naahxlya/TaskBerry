@@ -429,7 +429,7 @@ def listar_materiais():
     ) > 5
 
     material_recompra = None
-    recompra_id = request.args.get("recomprar", "").strip()
+    recompra_id = request.args.get("recomprar", request.args.get("recompra", "")).strip()
     if recompra_id and ObjectId.is_valid(recompra_id):
         candidato = colecao.find_one({
             "_id": ObjectId(recompra_id),
@@ -468,6 +468,23 @@ def listar_materiais():
 # =====================================================
 # CARREGAR MAIS MOVIMENTAÇÕES (10 POR VEZ)
 # =====================================================
+
+@materiais_bp.route("/materiais/registros/<tipo>")
+def registros_especiais_materiais(tipo):
+    if tipo not in ("arquivados", "lixeira"):
+        return voltar_para_lista()
+    db = get_database()
+    filtro = {"usuario_id": obter_usuario_id(), "arquivado": True, "excluido": {"$ne": True}} if tipo == "arquivados" else {"usuario_id": obter_usuario_id(), "excluido": True}
+    try:
+        pagina = max(1, int(request.args.get("pagina", 1)))
+    except (TypeError, ValueError):
+        pagina = 1
+    total = db["materiais"].count_documents(filtro)
+    paginas = max(1, (total + 24) // 25)
+    pagina = min(pagina, paginas)
+    itens = [formatar_material(x) for x in db["materiais"].find(filtro).sort("arquivado_em" if tipo == "arquivados" else "excluido_em", -1).skip((pagina-1)*25).limit(25)]
+    return render_template("registros_especiais.html", modulo="Materiais", tipo=tipo, itens=itens, total=total, pagina=pagina, total_paginas=paginas, voltar=url_for("materiais.listar_materiais"), restaurar_endpoint="materiais.restaurar_material", excluir_endpoint="materiais.excluir_material_permanentemente" if tipo == "lixeira" else None, campo_data="arquivado_em" if tipo == "arquivados" else "excluido_em", nome_campo="nome", detalhe_campo="categoria", rota_lista="materiais.listar_materiais")
+
 
 @materiais_bp.route("/materiais/movimentacoes/mais")
 def carregar_mais_movimentacoes():
@@ -554,7 +571,7 @@ def cadastrar_material():
             request.form.get("valor_unitario")
         )
 
-        estoque_minimo = converter_numero(
+        estoque_minimo = converter_inteiro(
             request.form.get("estoque_minimo", "0")
         )
 
@@ -792,7 +809,7 @@ def editar_material(material_id):
             request.form.get("valor_unitario")
         )
 
-        estoque_minimo = converter_numero(
+        estoque_minimo = converter_inteiro(
             request.form.get("estoque_minimo", "0")
         )
 

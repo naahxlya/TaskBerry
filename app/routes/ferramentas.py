@@ -133,7 +133,7 @@ def listar_ferramentas():
     categoria = request.args.get("categoria", "").strip()
     situacao = request.args.get("situacao", "").strip()
 
-    filtro = filtro_usuario()
+    filtro = {**filtro_usuario(), "arquivada": {"$ne": True}}
 
     if busca:
         termo = re.escape(busca)
@@ -157,7 +157,7 @@ def listar_ferramentas():
         for item in colecao.find(filtro).sort("criado_em", -1)
     ]
 
-    todas = list(colecao.find(filtro_usuario()))
+    todas = list(colecao.find({**filtro_usuario(), "arquivada": {"$ne": True}}))
 
     total_ferramentas = len(todas)
 
@@ -626,6 +626,34 @@ def confirmar_reparo(ferramenta_id):
         flash("Ocorreu um erro ao confirmar o reparo.", "danger")
 
     return voltar()
+
+
+@ferramentas_bp.route("/ferramentas/arquivadas")
+def ferramentas_arquivadas():
+    db = get_database()
+    filtro = {**filtro_usuario(), "arquivada": True}
+    try:
+        pagina = max(1, int(request.args.get("pagina", 1)))
+    except (TypeError, ValueError):
+        pagina = 1
+    total = db["ferramentas"].count_documents(filtro)
+    paginas = max(1, (total + 24) // 25)
+    pagina = min(pagina, paginas)
+    itens = [preparar_ferramenta(x) for x in db["ferramentas"].find(filtro).sort("arquivada_em", -1).skip((pagina-1)*25).limit(25)]
+    return render_template("registros_especiais.html", modulo="Ferramentas", tipo="arquivados", itens=itens, total=total, pagina=pagina, total_paginas=paginas, voltar=url_for("ferramentas.listar_ferramentas"), restaurar_endpoint="ferramentas.restaurar_ferramenta", excluir_endpoint=None, campo_data="arquivada_em", nome_campo="nome", detalhe_campo="codigo", rota_lista="ferramentas.listar_ferramentas")
+
+
+@ferramentas_bp.route("/ferramentas/<ferramenta_id>/restaurar", methods=["POST"])
+def restaurar_ferramenta(ferramenta_id):
+    if not ObjectId.is_valid(ferramenta_id):
+        flash("Equipamento não encontrado.", "danger")
+        return redirect(url_for("ferramentas.ferramentas_arquivadas"))
+    resultado = get_database()["ferramentas"].update_one(
+        {"_id": ObjectId(ferramenta_id), **filtro_usuario(), "arquivada": True},
+        {"$set": {"arquivada": False, "atualizado_em": agora()}, "$unset": {"arquivada_em": ""}}
+    )
+    flash("Equipamento restaurado para a lista de ferramentas." if resultado.modified_count else "Não foi possível restaurar o equipamento.", "success" if resultado.modified_count else "warning")
+    return redirect(url_for("ferramentas.ferramentas_arquivadas"))
 
 
 # =====================================================

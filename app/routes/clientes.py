@@ -100,6 +100,24 @@ def listar_clientes():
     )
 
 
+@clientes_bp.route("/clientes/registros/<tipo>")
+def registros_especiais_clientes(tipo):
+    if tipo not in ("arquivados", "lixeira"):
+        return redirect(url_for("clientes.listar_clientes"))
+    colecao = get_database()["clientes"]
+    processar_prazos(colecao)
+    try:
+        pagina = max(1, int(request.args.get("pagina", 1)))
+    except (TypeError, ValueError):
+        pagina = 1
+    filtro = {**filtro_usuario(), "arquivado": True, "excluido": {"$ne": True}} if tipo == "arquivados" else {**filtro_usuario(), "excluido": True}
+    total = colecao.count_documents(filtro)
+    paginas = max(1, (total + 24) // 25)
+    pagina = min(pagina, paginas)
+    itens = list(colecao.find(filtro).sort("arquivado_em" if tipo == "arquivados" else "excluido_em", -1).skip((pagina-1)*25).limit(25))
+    return render_template("registros_especiais.html", modulo="Clientes", tipo=tipo, itens=itens, total=total, pagina=pagina, total_paginas=paginas, voltar=url_for("clientes.listar_clientes"), restaurar_endpoint="clientes.restaurar_cliente", excluir_endpoint="clientes.excluir_permanentemente", campo_data="arquivado_em" if tipo == "arquivados" else "excluido_em", nome_campo="nome", detalhe_campo="telefone", rota_lista="clientes.listar_clientes")
+
+
 @clientes_bp.route("/clientes/novo", methods=["POST"])
 def cadastrar_cliente():
     nome = request.form.get("nome", "").strip()

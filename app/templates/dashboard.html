@@ -2,424 +2,222 @@
 
 {% block title %}Dashboard | TaskBerry{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
 {% block content %}
-
 <div class="dashboard-layout">
-
-    <!-- MENU LATERAL -->
     {% include 'components/sidebar.html' %}
 
-
-    <!-- CONTEÚDO PRINCIPAL -->
     <main class="dashboard-main">
-
         <header class="dashboard-header">
-
-            <button class="sidebar-toggle"
-                    id="sidebarToggle"
-                    type="button"
-                    aria-label="Abrir menu">
+            <button class="sidebar-toggle" id="sidebarToggle" type="button" aria-label="Abrir menu">
                 <i class="bi bi-list"></i>
             </button>
-
             <div class="dashboard-breadcrumb">
-                <span>Painel</span>
-                <i class="bi bi-chevron-right"></i>
-                <strong>Visão geral</strong>
+                <span>Painel</span><i class="bi bi-chevron-right"></i><strong>Visão geral</strong>
             </div>
-
             <div class="header-actions">
-
-                <button class="header-icon"
-                        type="button"
-                        aria-label="Notificações">
-                    <i class="bi bi-bell"></i>
-                    <span class="notification-dot"></span>
-                </button>
-
                 <div class="header-divider"></div>
-
-                <!-- INFORMAÇÕES DA CONTA -->
                 <div class="header-profile">
-
                     <div class="profile-avatar">
-                        <img
-                            src="{{ url_for('static', filename='img/logo.png') }}"
-                            alt="Logo TaskBerry"
-                            style="width: 30px; height: 30px; object-fit: contain;"
-                        >
+                        <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo TaskBerry"
+                             style="width:30px;height:30px;object-fit:contain;">
                     </div>
-
                     <div class="header-profile-info">
-                        <strong>
-                            <!-- {{ session.get("usuario_nome", "Administrador") }} -->
-                              Administrador
-                        </strong>
-
-                        <small title="{{ empresa_nome }}">
-                            {{ empresa_nome }}
-                        </small>
+                        <strong>{{ nome_usuario }}</strong>
+                        <small title="{{ empresa_nome }}">{{ empresa_nome }}</small>
                     </div>
-
-                    <i class="bi bi-chevron-down"></i>
-
                 </div>
-
             </div>
-
         </header>
 
-
-        <section class="dashboard-content">
-
-            <!-- APRESENTAÇÃO -->
-            <div class="dashboard-welcome">
-
-                <div>
-                    <span class="welcome-date">
-                        <i class="bi bi-calendar3"></i>
-                        PAINEL DE CONTROLE
-                    </span>
-
-                    <h1>Olá, seja bem-vindo! <span>✦</span></h1>
-
-                    <p>
-                        Acompanhe o que está acontecendo no seu negócio
-                        e mantenha tudo em ordem.
-                    </p>
+        <section class="dashboard-content taskberry-dashboard">
+            <div class="tb-dashboard-hero">
+                <div class="tb-hero-copy">
+                    <span class="tb-eyebrow"><i class="bi bi-stars"></i> CENTRAL DE INTELIGÊNCIA</span>
+                    <h1>Olá, {{ nome_usuario.split(' ')[0] }}! <span>✦</span></h1>
+                    <p>Uma visão clara da saúde do seu negócio, das operações ao financeiro.</p>
+                    <div class="tb-hero-meta">
+                        <span><i class="bi bi-building"></i> {{ empresa_nome }}</span>
+                        <span><i class="bi bi-calendar3"></i> {{ periodo_label|capitalize }}</span>
+                    </div>
                 </div>
-
-                <button class="dashboard-primary-button" type="button">
-                    <i class="bi bi-plus-lg"></i>
-                    Novo chamado
-                </button>
-
-            </div>
-
-
-            <!-- INDICADORES -->
-            <div class="dashboard-section-heading">
-                <div>
-                    <h2>Resumo do negócio</h2>
-                    <p>Uma visão rápida dos seus principais indicadores.</p>
-                </div>
-            </div>
-
-
-            <div class="dashboard-stats">
-
-                <article class="stat-card">
-
-                    <div class="stat-top">
-                        <span class="stat-icon purple">
-                            <i class="bi bi-people"></i>
-                        </span>
-
-                        <span class="stat-caption">CLIENTES</span>
-                    </div>
-
-                    <strong class="stat-number">
-                        {{ total_clientes }}
-                    </strong>
-
-                    <span class="stat-description">
-                        Clientes cadastrados
-                    </span>
-
-                </article>
-
-
-                <article class="stat-card">
-
-                    <div class="stat-top">
-                        <span class="stat-icon pink">
-                            <i class="bi bi-clipboard-check"></i>
-                        </span>
-
-                        <span class="stat-caption">CHAMADOS</span>
-                    </div>
-
-                    <strong class="stat-number">24</strong>
-
-                    <span class="stat-description">
-                        Chamados registrados
-                    </span>
-
-                </article>
-
-
-                <article class="stat-card">
-
-                    <div class="stat-top">
-                        <span class="stat-icon blue">
-                            <i class="bi bi-clock-history"></i>
-                        </span>
-
-                        <span class="stat-caption">EM ANDAMENTO</span>
-                    </div>
-
-                    <strong class="stat-number">08</strong>
-
-                    <span class="stat-description">
-                        Serviços em execução
-                    </span>
-
-                </article>
-
-
-                <article class="stat-card">
-
-                    <div class="stat-top">
-                        <span class="stat-icon green">
-                            <i class="bi bi-currency-dollar"></i>
-                        </span>
-
-                        <span class="stat-caption">FATURAMENTO</span>
-                    </div>
-
-                    <strong class="stat-number">R$ 8.450</strong>
-
-                    <span class="stat-description">
-                        Exemplo de valor mensal
-                    </span>
-
-                </article>
-
-            </div>
-
-
-            <!-- ÁREA DE GRÁFICO E CHAMADOS -->
-            <div class="dashboard-grid">
-
-                <section class="dashboard-panel financial-panel">
-
-                    <div class="panel-heading">
-
-                        <div>
-                            <h2>Movimentação financeira</h2>
-                            <p>
-                                Acompanhamento ilustrativo de entradas e saídas.
-                            </p>
-                        </div>
-
-                        <select class="dashboard-select"
-                                aria-label="Período financeiro">
-                            <option>Últimos 6 meses</option>
-                            <option>Este ano</option>
+                <div class="tb-hero-actions">
+                    <form method="GET" class="tb-period-filter">
+                        <label for="periodoDashboard">Período de análise</label>
+                        <select id="periodoDashboard" name="periodo" class="form-select" onchange="this.form.submit()">
+                            <option value="3" {% if periodo == "3" %}selected{% endif %}>Últimos 3 meses</option>
+                            <option value="6" {% if periodo == "6" %}selected{% endif %}>Últimos 6 meses</option>
+                            <option value="12" {% if periodo == "12" %}selected{% endif %}>Últimos 12 meses</option>
                         </select>
-
-                    </div>
-
-
-                    <div class="financial-summary">
-
-                        <div>
-                            <small>ENTRADAS</small>
-                            <strong>R$ 12.500,00</strong>
-                        </div>
-
-                        <div>
-                            <small>SAÍDAS</small>
-                            <strong>R$ 4.050,00</strong>
-                        </div>
-
-                    </div>
-
-
-                    <div class="chart-placeholder">
-
-                        <div class="chart-bars">
-
-                            <div class="chart-column">
-                                <span style="height: 42%"></span>
-                                <span style="height: 22%"></span>
-                                <small>JUN</small>
-                            </div>
-
-                            <div class="chart-column">
-                                <span style="height: 62%"></span>
-                                <span style="height: 32%"></span>
-                                <small>JUL</small>
-                            </div>
-
-                            <div class="chart-column">
-                                <span style="height: 50%"></span>
-                                <span style="height: 27%"></span>
-                                <small>AGO</small>
-                            </div>
-
-                            <div class="chart-column">
-                                <span style="height: 78%"></span>
-                                <span style="height: 39%"></span>
-                                <small>SET</small>
-                            </div>
-
-                            <div class="chart-column">
-                                <span style="height: 68%"></span>
-                                <span style="height: 31%"></span>
-                                <small>OUT</small>
-                            </div>
-
-                            <div class="chart-column">
-                                <span style="height: 92%"></span>
-                                <span style="height: 43%"></span>
-                                <small>NOV</small>
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="chart-legend">
-                        <span>
-                            <i class="legend-dot income"></i>
-                            Entradas
-                        </span>
-
-                        <span>
-                            <i class="legend-dot expenses"></i>
-                            Saídas
-                        </span>
-                    </div>
-
-                </section>
-
-
-                <section class="dashboard-panel calls-panel">
-
-                    <div class="panel-heading">
-
-                        <div>
-                            <h2>Chamados recentes</h2>
-                            <p>Acompanhe os últimos serviços.</p>
-                        </div>
-
-                        <a href="#" class="panel-link">Ver todos</a>
-
-                    </div>
-
-
-                    <div class="recent-call">
-
-                        <div class="call-icon">
-                            <i class="bi bi-house"></i>
-                        </div>
-
-                        <div class="call-info">
-                            <strong>Manutenção residencial</strong>
-                            <small>Cliente: Maria Oliveira</small>
-                        </div>
-
-                        <span class="status-badge status-progress">
-                            Em andamento
-                        </span>
-
-                    </div>
-
-
-                    <div class="recent-call">
-
-                        <div class="call-icon">
-                            <i class="bi bi-lightning"></i>
-                        </div>
-
-                        <div class="call-info">
-                            <strong>Instalação elétrica</strong>
-                            <small>Cliente: João Santos</small>
-                        </div>
-
-                        <span class="status-badge status-pending">
-                            Pendente
-                        </span>
-
-                    </div>
-
-
-                    <div class="recent-call">
-
-                        <div class="call-icon">
-                            <i class="bi bi-tools"></i>
-                        </div>
-
-                        <div class="call-info">
-                            <strong>Reparo de equipamentos</strong>
-                            <small>Cliente: Ana Costa</small>
-                        </div>
-
-                        <span class="status-badge status-finished">
-                            Concluído
-                        </span>
-
-                    </div>
-
-                </section>
-
+                    </form>
+                    <a href="{{ url_for('chamados.listar_chamados') }}" class="tb-dashboard-cta">
+                        <i class="bi bi-plus-lg"></i> Novo chamado
+                    </a>
+                </div>
+                <div class="tb-hero-orbit orbit-one"></div>
+                <div class="tb-hero-orbit orbit-two"></div>
             </div>
 
+            <div class="tb-section-heading">
+                <div><span class="tb-section-kicker">INDICADORES-CHAVE</span><h2>Resumo do empreendimento</h2>
+                    <p>Dados reais dos módulos conectados ao TaskBerry.</p></div>
+                <span class="tb-live-indicator"><i></i> Atualizado agora</span>
+            </div>
 
-            <!-- ATIVIDADES -->
-            <section class="dashboard-panel activity-panel">
+            <div class="tb-kpi-grid">
+                <a href="{{ url_for('clientes.listar_clientes') }}" class="tb-kpi-card kpi-violet">
+                    <div class="tb-kpi-top"><span class="tb-kpi-icon"><i class="bi bi-people"></i></span><span class="tb-kpi-label">CLIENTES</span></div>
+                    <strong>{{ total_clientes }}</strong><small>Cadastros ativos</small><span class="tb-kpi-link">Abrir clientes <i class="bi bi-arrow-up-right"></i></span>
+                </a>
+                <a href="{{ url_for('chamados.listar_chamados') }}" class="tb-kpi-card kpi-pink">
+                    <div class="tb-kpi-top"><span class="tb-kpi-icon"><i class="bi bi-clipboard2-check"></i></span><span class="tb-kpi-label">CHAMADOS</span></div>
+                    <strong>{{ total_chamados }}</strong><small>{{ chamados_abertos }} em aberto</small><span class="tb-kpi-link">Acompanhar serviços <i class="bi bi-arrow-up-right"></i></span>
+                </a>
+                <a href="{{ url_for('financeiro.index') }}" class="tb-kpi-card kpi-green">
+                    <div class="tb-kpi-top"><span class="tb-kpi-icon"><i class="bi bi-wallet2"></i></span><span class="tb-kpi-label">SALDO DO PERÍODO</span></div>
+                    <strong class="tb-kpi-money">{{ "R$ {:,.2f}".format(saldo_periodo).replace(",", "X").replace(".", ",").replace("X", ".") }}</strong>
+                    <small>Entradas realizadas menos saídas</small><span class="tb-kpi-link">Abrir financeiro <i class="bi bi-arrow-up-right"></i></span>
+                </a>
+                <a href="{{ url_for('funcionarios.listar_funcionarios') }}" class="tb-kpi-card kpi-blue">
+                    <div class="tb-kpi-top"><span class="tb-kpi-icon"><i class="bi bi-person-workspace"></i></span><span class="tb-kpi-label">EQUIPE ATIVA</span></div>
+                    <strong>{{ funcionarios_ativos }}</strong><small>Funcionários e proprietários ativos</small><span class="tb-kpi-link">Ver equipe <i class="bi bi-arrow-up-right"></i></span>
+                </a>
+            </div>
 
-                <div class="panel-heading">
-
-                    <div>
-                        <h2>Atividades recentes</h2>
-                        <p>Últimas movimentações do negócio.</p>
+            <div class="tb-dashboard-grid tb-main-charts">
+                <section class="tb-dashboard-card tb-finance-chart-card">
+                    <div class="tb-card-heading">
+                        <div><span class="tb-card-kicker">DESEMPENHO FINANCEIRO</span><h3>Entradas x saídas</h3>
+                            <p>Movimentações realizadas por mês, no período selecionado.</p></div>
+                        <a href="{{ url_for('financeiro.index') }}" class="tb-text-link">Detalhar <i class="bi bi-arrow-up-right"></i></a>
                     </div>
-
-                    <a href="#" class="panel-link">Ver histórico</a>
-
-                </div>
-
-
-                <div class="activity-item">
-
-                    <span class="activity-icon">
-                        <i class="bi bi-person-plus"></i>
-                    </span>
-
-                    <div>
-                        <strong>Novo cliente cadastrado</strong>
-                        <small>
-                            Maria Oliveira foi adicionada ao sistema.
-                        </small>
+                    <div class="tb-finance-totals">
+                        <div><span><i class="tb-dot dot-income"></i> Entradas</span><strong>{{ "R$ {:,.2f}".format(total_entradas).replace(",", "X").replace(".", ",").replace("X", ".") }}</strong></div>
+                        <div><span><i class="tb-dot dot-expense"></i> Saídas</span><strong>{{ "R$ {:,.2f}".format(total_saidas).replace(",", "X").replace(".", ",").replace("X", ".") }}</strong></div>
+                        <div><span><i class="tb-dot dot-pending"></i> A receber</span><strong>{{ "R$ {:,.2f}".format(entradas_pendentes).replace(",", "X").replace(".", ",").replace("X", ".") }}</strong></div>
                     </div>
+                    <div id="financeChart" class="tb-chart" role="img" aria-label="Gráfico de entradas e saídas por mês"></div>
+                </section>
 
-                    <time>Hoje</time>
-
-                </div>
-
-
-                <div class="activity-item">
-
-                    <span class="activity-icon">
-                        <i class="bi bi-clipboard-check"></i>
-                    </span>
-
-                    <div>
-                        <strong>Chamado atualizado</strong>
-                        <small>
-                            Instalação elétrica passou para em andamento.
-                        </small>
+                <section class="tb-dashboard-card tb-status-card">
+                    <div class="tb-card-heading"><div><span class="tb-card-kicker">OPERAÇÃO</span><h3>Situação dos chamados</h3>
+                        <p>Distribuição de todos os serviços ativos e históricos.</p></div></div>
+                    <div id="callsChart" class="tb-chart tb-donut-chart" role="img" aria-label="Gráfico de situação dos chamados"></div>
+                    <div class="tb-status-foot">
+                        <div><strong>{{ chamados_abertos }}</strong><span>Em aberto</span></div>
+                        <div><strong>{{ chamados_concluidos }}</strong><span>Concluídos</span></div>
+                        <div><strong>{{ chamados_atrasados }}</strong><span>Atrasados</span></div>
                     </div>
+                </section>
+            </div>
 
-                    <time>Ontem</time>
+            <div class="tb-dashboard-grid tb-secondary-grid">
+                <section class="tb-dashboard-card tb-recent-card">
+                    <div class="tb-card-heading"><div><span class="tb-card-kicker">ACOMPANHAMENTO</span><h3>Chamados recentes</h3>
+                        <p>Os últimos serviços movimentados.</p></div>
+                        <a href="{{ url_for('chamados.listar_chamados') }}" class="tb-text-link">Ver todos <i class="bi bi-arrow-up-right"></i></a></div>
+                    {% if chamados_recentes %}
+                    <div class="tb-recent-list">
+                        {% for chamado in chamados_recentes %}
+                        <a class="tb-recent-row" href="{{ url_for('chamados.visualizar_chamado', chamado_id=chamado._id) }}">
+                            <span class="tb-recent-symbol"><i class="bi bi-tools"></i></span>
+                            <span class="tb-recent-info"><strong>{{ chamado.titulo or "Serviço sem título" }}</strong>
+                                <small>{{ chamado.numero or "Chamado" }} · {{ chamado.cliente_nome or "Cliente não informado" }}</small></span>
+                            <span class="tb-status-pill status-{{ chamado.status }}">{{ chamado.status_label }}</span>
+                            <i class="bi bi-chevron-right tb-row-chevron"></i>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="tb-empty-state"><i class="bi bi-clipboard2"></i><strong>Nenhum chamado por aqui ainda</strong><span>Cadastre o primeiro serviço para acompanhar sua evolução.</span></div>
+                    {% endif %}
+                </section>
 
-                </div>
+                <section class="tb-dashboard-card tb-alert-card">
+                    <div class="tb-card-heading"><div><span class="tb-card-kicker">ATENÇÃO AO ESTOQUE</span><h3>Materiais no limite</h3>
+                        <p>Itens no nível mínimo ou abaixo dele.</p></div>
+                        <a href="{{ url_for('materiais.listar_materiais') }}" class="tb-text-link">Estoque <i class="bi bi-arrow-up-right"></i></a></div>
+                    {% if estoque_baixo %}
+                    <div class="tb-stock-list">
+                        {% for material in estoque_baixo %}
+                        <div class="tb-stock-row">
+                            <span class="tb-stock-icon"><i class="bi bi-box-seam"></i></span>
+                            <span class="tb-stock-info"><strong>{{ material.nome }}</strong><small>{{ material.unidade_medida or "Unidades" }}</small></span>
+                            <span class="tb-stock-quantity"><strong>{{ material.saldo_dashboard|round(2) }}</strong><small>mín. {{ material.minimo_dashboard|round(2) }}</small></span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="tb-empty-state tb-empty-success"><i class="bi bi-check2-circle"></i><strong>Estoque sob controle</strong><span>Nenhum material atingiu o nível mínimo.</span></div>
+                    {% endif %}
+                </section>
+            </div>
 
-            </section>
+            <div class="tb-dashboard-grid tb-bottom-grid">
+                <section class="tb-dashboard-card tb-operations-card">
+                    <div class="tb-card-heading"><div><span class="tb-card-kicker">RECURSOS</span><h3>Estrutura operacional</h3>
+                        <p>Visão rápida dos recursos cadastrados.</p></div></div>
+                    <div class="tb-resource-grid">
+                        <a href="{{ url_for('ferramentas.listar_ferramentas') }}"><span class="tb-resource-icon"><i class="bi bi-wrench-adjustable"></i></span><strong>{{ total_ferramentas }}</strong><small>Ferramentas cadastradas</small></a>
+                        <a href="{{ url_for('ferramentas.listar_ferramentas') }}"><span class="tb-resource-icon resource-warning"><i class="bi bi-tools"></i></span><strong>{{ ferramentas_manutencao }}</strong><small>Em manutenção</small></a>
+                        <a href="{{ url_for('ferramentas.listar_ferramentas') }}"><span class="tb-resource-icon resource-active"><i class="bi bi-cone-striped"></i></span><strong>{{ ferramentas_em_uso }}</strong><small>Em uso nas obras</small></a>
+                    </div>
+                </section>
 
+                <section class="tb-dashboard-card tb-activity-card">
+                    <div class="tb-card-heading"><div><span class="tb-card-kicker">LINHA DO TEMPO</span><h3>Atividade recente</h3>
+                        <p>Eventos registrados nos módulos do sistema.</p></div></div>
+                    {% if atividades %}
+                    <div class="tb-activity-list">
+                        {% for atividade in atividades %}
+                        <div class="tb-activity-row">
+                            <span class="tb-activity-icon activity-{{ atividade.tipo }}"><i class="bi {{ atividade.icone }}"></i></span>
+                            <div><strong>{{ atividade.titulo }}</strong><small>{{ atividade.detalhe }}</small></div>
+                            <time>{{ atividade.data.strftime("%d/%m · %H:%M") }}</time>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="tb-empty-state"><i class="bi bi-activity"></i><strong>Seu histórico começa aqui</strong><span>As movimentações aparecerão conforme você utilizar o sistema.</span></div>
+                    {% endif %}
+                </section>
+            </div>
 
-            <footer class="dashboard-footer">
-                <span>© 2026 TaskBerry. Gestão e otimização.</span>
-                <span>Organização que faz o negócio crescer.</span>
+            <footer class="dashboard-footer tb-dashboard-footer">
+                <span>© {{ now_year if now_year is defined else 2026 }} TaskBerry · Gestão inteligente para pequenos negócios</span>
+                <span>Dados privados do seu empreendimento</span>
             </footer>
-
         </section>
-
     </main>
-
 </div>
 
+<script src="https://cdn.plot.ly/plotly-3.0.1.min.js" charset="utf-8"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const charts = [
+        { id: "financeChart", data: {{ grafico_financeiro|safe }} },
+        { id: "callsChart", data: {{ grafico_chamados|safe }} }
+    ];
+    const dark = document.documentElement.getAttribute("data-theme") === "dark";
+    const textColor = dark ? "#C8BBD8" : "#82758F";
+    const gridColor = dark ? "rgba(210,190,230,.12)" : "rgba(150,130,170,.13)";
+    charts.forEach(function (chart) {
+        const element = document.getElementById(chart.id);
+        if (!element || !chart.data || !window.Plotly) return;
+        const layout = Object.assign({}, chart.data.layout || {}, {
+            font: Object.assign({}, (chart.data.layout || {}).font || {}, { color: textColor }),
+            paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)",
+            xaxis: Object.assign({}, (chart.data.layout || {}).xaxis || {}, { gridcolor: gridColor, tickfont: { color: textColor } }),
+            yaxis: Object.assign({}, (chart.data.layout || {}).yaxis || {}, { gridcolor: gridColor, tickfont: { color: textColor } })
+        });
+        Plotly.newPlot(element, chart.data.data || [], layout, {
+            responsive: true, displaylogo: false,
+            modeBarButtonsToRemove: ["lasso2d", "select2d", "autoScale2d"]
+        });
+    });
+});
+</script>
 {% endblock %}

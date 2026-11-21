@@ -1,0 +1,90 @@
+{% extends "index.html" %}
+{% block title %}{{ tipo|capitalize }} | {{ modulo }} | TaskBerry{% endblock %}
+{% block content %}
+<div class="dashboard-layout special-records-page">
+  {% include 'components/sidebar.html' %}
+  <main class="dashboard-main container-fluid py-4">
+    <section class="special-records-shell">
+      <header class="special-records-header">
+        <div class="special-records-heading">
+          <span class="special-records-eyebrow"><i class="bi bi-grid-1x2"></i> Gestão de registros</span>
+          <h1>{{ "Registros arquivados" if tipo == "arquivados" else "Lixeira" }} <span>{{ modulo }}</span></h1>
+          <p>{{ total }} registro(s) nesta área. Exibindo {{ itens|length }} nesta página, com limite de 25 por página.</p>
+        </div>
+        <a class="special-records-back" href="{{ voltar }}"><i class="bi bi-arrow-left"></i><span>Voltar</span></a>
+      </header>
+
+      {% if itens %}
+        <div class="special-records-grid">
+          {% for item in itens %}
+            <article class="special-record-card">
+              <div class="special-record-card-top">
+                <span class="special-record-icon"><i class="bi {{ 'bi-archive' if tipo == 'arquivados' else 'bi-trash3' }}"></i></span>
+                <span class="special-record-status">{{ "Arquivado" if tipo == "arquivados" else "Na lixeira" }}</span>
+              </div>
+              <h2>{{ item.get(nome_campo) or item.get("nome") or "Registro sem nome" }}</h2>
+              {% if detalhe_campo and item.get(detalhe_campo) %}
+                <p class="special-record-detail">{{ item.get(detalhe_campo) }}</p>
+              {% else %}
+                <p class="special-record-detail">Informações do cadastro preservadas.</p>
+              {% endif %}
+              <div class="special-record-date">
+                <i class="bi bi-calendar3"></i>
+                <span>{{ "Arquivado em" if tipo == "arquivados" else "Enviado à lixeira em" }}</span>
+                {% set data_item = item.get(campo_data) %}
+                <strong>{% if data_item %}{{ data_item.strftime("%d/%m/%Y às %H:%M") if data_item.strftime is defined else data_item }}{% else %}Data não registrada{% endif %}</strong>
+              </div>
+              <div class="special-record-actions">
+                {% if restaurar_endpoint %}
+                  {% if modulo == "Clientes" %}
+                    {% set restore_url = url_for(restaurar_endpoint, cliente_id=item._id) %}
+                  {% elif modulo == "Funcionários" %}
+                    {% set restore_url = url_for(restaurar_endpoint, funcionario_id=item._id) %}
+                  {% elif modulo == "Materiais" %}
+                    {% set restore_url = url_for(restaurar_endpoint, material_id=item._id) %}
+                  {% else %}
+                    {% set restore_url = url_for(restaurar_endpoint, ferramenta_id=item._id) %}
+                  {% endif %}
+                  <form method="POST" action="{{ restore_url }}">
+                    <button class="special-record-button primary" type="submit"><i class="bi bi-arrow-counterclockwise"></i> Restaurar</button>
+                  </form>
+                {% endif %}
+                {% if excluir_endpoint and tipo == "lixeira" %}
+                  {% if modulo == "Clientes" %}
+                    {% set delete_url = url_for(excluir_endpoint, cliente_id=item._id) %}
+                  {% else %}
+                    {% set delete_url = url_for(excluir_endpoint, material_id=item._id) %}
+                  {% endif %}
+                  <form method="POST" action="{{ delete_url }}" data-confirm="Esta ação é permanente. Deseja continuar?" data-confirm-title="Excluir definitivamente" data-confirm-button="Excluir" data-confirm-icon="bi-trash" data-confirm-variant="danger">
+                    <button class="special-record-button danger" type="submit"><i class="bi bi-trash"></i> Excluir</button>
+                  </form>
+                {% endif %}
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+
+        {% if total_paginas > 1 %}
+          <nav class="special-records-pagination" aria-label="Paginação dos registros">
+            <span class="special-records-page-summary">Página {{ pagina }} de {{ total_paginas }}</span>
+            <div class="special-records-page-controls">
+              <a class="special-page-link {% if pagina <= 1 %}disabled{% endif %}" href="{{ url_for(request.endpoint, tipo=tipo, pagina=pagina-1) if modulo in ['Clientes','Materiais'] else url_for(request.endpoint, pagina=pagina-1) }}"><i class="bi bi-chevron-left"></i> Anterior</a>
+              {% for numero in range(1, total_paginas + 1) %}
+                <a class="special-page-number {% if numero == pagina %}active{% endif %}" href="{{ url_for(request.endpoint, tipo=tipo, pagina=numero) if modulo in ['Clientes','Materiais'] else url_for(request.endpoint, pagina=numero) }}">{{ numero }}</a>
+              {% endfor %}
+              <a class="special-page-link {% if pagina >= total_paginas %}disabled{% endif %}" href="{{ url_for(request.endpoint, tipo=tipo, pagina=pagina+1) if modulo in ['Clientes','Materiais'] else url_for(request.endpoint, pagina=pagina+1) }}">Próxima <i class="bi bi-chevron-right"></i></a>
+            </div>
+          </nav>
+        {% endif %}
+      {% else %}
+        <div class="special-records-empty">
+          <span class="special-record-empty-icon"><i class="bi {{ 'bi-archive' if tipo == 'arquivados' else 'bi-trash3' }}"></i></span>
+          <h2>Nenhum registro encontrado</h2>
+          <p>Quando houver registros nesta área, eles aparecerão aqui.</p>
+          <a class="special-records-back" href="{{ voltar }}"><i class="bi bi-arrow-left"></i> Voltar ao módulo</a>
+        </div>
+      {% endif %}
+    </section>
+  </main>
+</div>
+{% endblock %}

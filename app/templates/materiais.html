@@ -41,13 +41,7 @@
                     </p>
                 </div>
             </div>
-
-            <div class="d-flex flex-wrap gap-2 mb-3">
-                <a href="#materiais-arquivados" class="materials-secondary-button text-decoration-none"><i class="bi bi-archive me-1"></i> Arquivados ({{ materiais_arquivados|length }})</a>
-                <a href="#lixeira-materiais" class="materials-secondary-button text-decoration-none"><i class="bi bi-trash me-1"></i> Lixeira ({{ materiais_lixeira|length }})</a>
-            </div>
-
-            <!-- MENSAGENS -->
+<!-- MENSAGENS -->
             {% with mensagens = get_flashed_messages(with_categories=true) %}
                 {% if mensagens %}
                     {% for categoria, mensagem in mensagens %}
@@ -96,12 +90,33 @@
                             <div class="materials-repurchase-identity">
                                 <i class="bi bi-box-seam"></i>
                                 <div class="flex-grow-1">
-                                    <small>Material selecionado</small>
-                                    <input type="text"
-                                           class="form-control"
-                                           value="{{ material_recompra.nome }}"
-                                           readonly
-                                           aria-label="Nome do material">
+                                    <small>Dados preenchidos automaticamente do material existente</small>
+                                    <div class="row g-3 mt-1">
+                                        <div class="col-md-4">
+                                            <label class="form-label">Nome do material</label>
+                                            <input type="text"
+                                                   class="form-control"
+                                                   value="{{ material_recompra.nome }}"
+                                                   readonly
+                                                   aria-label="Nome do material">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Categoria</label>
+                                            <input type="text"
+                                                   class="form-control"
+                                                   value="{{ material_recompra.categoria }}"
+                                                   readonly
+                                                   aria-label="Categoria do material">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Marca</label>
+                                            <input type="text"
+                                                   class="form-control"
+                                                   value="{{ material_recompra.marca or 'Não informada' }}"
+                                                   readonly
+                                                   aria-label="Marca do material">
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             <input type="hidden" name="capacidade_por_unidade" value="{{ material_recompra.capacidade_por_unidade }}">
@@ -251,7 +266,7 @@
                                 <input type="number"
                                        name="estoque_minimo"
                                        class="form-control"
-                                       min="0" step="0.01"
+                                       min="0" step="1"
                                        value="0">
                             </div>
                             {% endif %}
@@ -309,10 +324,10 @@
                                            id="materialCompraAntiga"
                                            name="compra_antiga"
                                            value="1">
-                                    <label class="form-check-label" for="materialCompraAntiga">
+                                    <label class="form-label" for="materialCompraAntiga">
                                         Este material já existia antes.
                                     </label>
-                                    <small class="d-block text-muted mt-1">
+                                    <small class="d-block text-muted mt-1 form-text">
                                         Marque para registrar o estoque inicial sem gerar uma despesa no Financeiro.
                                         Compras futuras deste material serão lançadas normalmente.
                                     </small>
@@ -633,7 +648,7 @@
                                                 </button>
 
                                                 {% if material.saldo_equivalente <= 0 %}
-                                                    <a href="{{ url_for('materiais.listar_materiais', recompra=material._id, _anchor='formulario-material') }}"
+                                                    <a href="{{ url_for('materiais.listar_materiais', recomprar=material._id, _anchor='formulario-material') }}"
                                                        class="materials-action-button materials-action-purchase"
                                                        title="Registrar nova compra"
                                                        aria-label="Registrar nova compra de {{ material.nome }}">
@@ -831,107 +846,10 @@
             </div>
 
 
-            <!-- MATERIAIS ARQUIVADOS -->
-            <section class="materials-history-panel mt-4" id="materiais-arquivados">
-                <div class="materials-panel-heading">
-                    <div>
-                        <h5><i class="bi bi-archive me-2"></i>Materiais arquivados</h5>
-                        <p>Materiais descontinuados temporariamente ou que você deseja manter fora do estoque ativo.</p>
-                    </div>
-                    <span class="materials-count">{{ materiais_arquivados|length }} itens</span>
-                </div>
-
-                {% if materiais_arquivados %}
-                    <div class="materials-compact-table-wrap">
-                        <table class="table materials-table materials-compact-table align-middle">
-                            <thead><tr><th>Material</th><th>Categoria</th><th>Estoque registrado</th><th class="text-end">Ações</th></tr></thead>
-                            <tbody>
-                                {% for material in materiais_arquivados %}
-                                    <tr data-expand-item="archived">
-                                        <td><strong>{{ material.nome }}</strong><small class="d-block">{{ material.marca or 'Marca não informada' }}</small></td>
-                                        <td>{{ material.categoria }}</td>
-                                        <td>{{ material.quantidade_unidades }} unidade(s)</td>
-                                        <td class="text-end">
-                                            <div class="d-inline-flex gap-2">
-                                                <form method="POST" action="{{ url_for('materiais.restaurar_material', material_id=material._id) }}">
-                                                    <button class="materials-action-button" title="Restaurar para o estoque" type="submit"><i class="bi bi-arrow-counterclockwise"></i></button>
-                                                </form>
-                                                <form method="POST" action="{{ url_for('materiais.enviar_material_lixeira', material_id=material._id) }}" data-confirm="Enviar este material arquivado para a lixeira? Ele poderá ser restaurado depois."
-                                                    data-confirm-title="Enviar material para a lixeira"
-                                                    data-confirm-button="Enviar para a lixeira"
-                                                    data-confirm-icon="bi-trash"
-                                                    data-confirm-variant="danger">
-                                                    <button class="materials-action-button danger" title="Enviar para a lixeira" type="submit"><i class="bi bi-trash"></i></button>
-                                                </form>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    {% if materiais_arquivados|length > 5 %}
-                        <div class="materials-expand-wrap">
-                            <button type="button" class="materials-expand-button" data-expand-list="archived">
-                                Mostrar mais 10 materiais arquivados <i class="bi bi-chevron-down"></i>
-                            </button>
-                        </div>
-                    {% endif %}
-                {% else %}
-                    <div class="materials-history-empty">Nenhum material arquivado.</div>
-                {% endif %}
-            </section>
-
-            <!-- LIXEIRA DE MATERIAIS -->
-            <section class="materials-history-panel mt-4" id="lixeira-materiais">
-                <div class="materials-panel-heading">
-                    <div>
-                        <h5><i class="bi bi-trash me-2"></i>Lixeira de materiais</h5>
-                        <p>Restaure materiais enviados para a lixeira ou exclua definitivamente seus cadastros.</p>
-                    </div>
-                    <span class="materials-count">{{ materiais_lixeira|length }} itens</span>
-                </div>
-
-                {% if materiais_lixeira %}
-                    <div class="materials-compact-table-wrap">
-                        <table class="table materials-table materials-compact-table align-middle">
-                            <thead><tr><th>Material</th><th>Categoria</th><th>Enviado para lixeira</th><th class="text-end">Ações</th></tr></thead>
-                            <tbody>
-                                {% for material in materiais_lixeira %}
-                                    <tr data-expand-item="trash">
-                                        <td><strong>{{ material.nome }}</strong><small class="d-block">{{ material.marca or 'Marca não informada' }}</small></td>
-                                        <td>{{ material.categoria }}</td>
-                                        <td>{% if material.excluido_em %}{{ material.excluido_em.strftime('%d/%m/%Y %H:%M') }}{% else %}Data não registrada{% endif %}</td>
-                                        <td class="text-end">
-                                            <div class="d-inline-flex gap-2">
-                                                <form method="POST" action="{{ url_for('materiais.restaurar_material', material_id=material._id) }}">
-                                                    <button class="materials-action-button" title="Restaurar material" type="submit"><i class="bi bi-arrow-counterclockwise"></i></button>
-                                                </form>
-                                                <form method="POST" action="{{ url_for('materiais.excluir_material_permanentemente', material_id=material._id) }}" data-confirm="Esta ação é definitiva. O cadastro será removido permanentemente, mas o histórico de movimentações será preservado."
-                                                    data-confirm-title="Excluir material permanentemente"
-                                                    data-confirm-button="Excluir definitivamente"
-                                                    data-confirm-icon="bi-trash3"
-                                                    data-confirm-variant="danger">
-                                                    <button class="materials-action-button danger" title="Excluir permanentemente" type="submit"><i class="bi bi-trash3"></i></button>
-                                                </form>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    {% if materiais_lixeira|length > 5 %}
-                        <div class="materials-expand-wrap">
-                            <button type="button" class="materials-expand-button" data-expand-list="trash">
-                                Mostrar mais 10 materiais na lixeira <i class="bi bi-chevron-down"></i>
-                            </button>
-                        </div>
-                    {% endif %}
-                {% else %}
-                    <div class="materials-history-empty">A lixeira está vazia.</div>
-                {% endif %}
-            </section>
+            <div class="d-flex flex-wrap justify-content-end gap-2 my-4">
+                <a class="materials-secondary-button text-decoration-none" href="{{ url_for('materiais.registros_especiais_materiais', tipo='arquivados') }}"><i class="bi bi-archive me-1"></i> Arquivados</a>
+                <a class="materials-secondary-button text-decoration-none" href="{{ url_for('materiais.registros_especiais_materiais', tipo='lixeira') }}"><i class="bi bi-trash me-1"></i> Lixeira</a>
+            </div>
 
             <footer class="dashboard-footer mt-4">
                 <span>TaskBerry · Gestão inteligente para pequenos negócios</span>
@@ -1223,7 +1141,7 @@
                                    name="estoque_minimo"
                                    class="form-control"
                                    min="0"
-                                   step="0.01"
+                                   step="1"
                                    value="{{ material.estoque_minimo }}">
                         </div>
 
