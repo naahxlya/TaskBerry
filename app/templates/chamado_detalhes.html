@@ -14,7 +14,7 @@
         <div><a class="calls-back-link" href="{{ url_for('chamados.listar_chamados') }}"><i class="bi bi-arrow-left"></i> Voltar para chamados</a><div class="calls-eyebrow mt-3">{{ chamado.numero }}</div><h1>{{ chamado.titulo }}</h1><p class="text-muted mb-0">{{ chamado.cliente_nome }} · {{ chamado.status_label }}</p></div>
         <div class="d-flex gap-2 flex-wrap">
           {% if chamado.status != 'concluido' and chamado.status != 'cancelado' %}
-          <form method="POST" action="{{ url_for('chamados.concluir_chamado', chamado_id=chamado._id) }}" data-confirm="Deseja marcar este chamado como concluído?" data-confirm-title="Concluir chamado" data-confirm-button="Concluir" data-confirm-icon="bi-check-circle" data-confirm-variant="primary"><button class="btn btn-success" type="submit"><i class="bi bi-check2-circle"></i> Concluído</button></form>
+          <button class="btn btn-success" type="button" data-bs-toggle="modal" data-bs-target="#modalConcluirChamado"><i class="bi bi-check2-circle"></i> Concluído</button>
           <button class="btn btn-outline-danger" type="button" data-bs-toggle="modal" data-bs-target="#modalCancelarChamado"><i class="bi bi-x-circle"></i> Cancelar</button>
           {% endif %}
           <a class="btn btn-outline-primary" href="{{ url_for('chamados.editar_chamado', chamado_id=chamado._id) }}"><i class="bi bi-pencil"></i> Editar</a>
@@ -26,6 +26,29 @@
           <form method="POST" action="{{ url_for('chamados.enviar_para_lixeira', chamado_id=chamado._id) }}" data-confirm="O chamado será enviado à lixeira por 10 dias. As movimentações financeiras serão preservadas. Deseja continuar?" data-confirm-title="Enviar chamado à lixeira" data-confirm-button="Enviar à lixeira" data-confirm-icon="bi-trash" data-confirm-variant="danger"><button class="btn btn-outline-danger" type="submit"><i class="bi bi-trash"></i> Excluir</button></form>
           </div>
       </div>
+      <div class="modal fade" id="modalConcluirChamado" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+        <form method="POST" action="{{ url_for('chamados.concluir_chamado', chamado_id=chamado._id) }}" id="formConcluirChamado">
+          <div class="modal-header"><h5 class="modal-title">Concluir chamado</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+          <div class="modal-body">
+            <p>O serviço será marcado como concluído. Deseja registrar agora algum valor recebido por esta obra no Financeiro?</p>
+            {% if (chamado.saldo_pendente if chamado.saldo_pendente is defined else (chamado.valor_final or 0) - (chamado.valor_recebido or 0)) > 0 %}
+            <div class="form-check mb-2"><input class="form-check-input" type="radio" name="registrar_recebimento" id="recebimentoSim" value="sim" required><label class="form-check-label" for="recebimentoSim">Sim, registrar recebimento</label></div>
+            <div class="form-check mb-3"><input class="form-check-input" type="radio" name="registrar_recebimento" id="recebimentoNao" value="nao" required><label class="form-check-label" for="recebimentoNao">Não, registrar depois manualmente</label></div>
+            {% else %}
+            <input type="hidden" name="registrar_recebimento" value="nao">
+            <div class="alert alert-success">Esta obra não possui saldo pendente. Você pode concluir o chamado sem registrar outro recebimento.</div>
+            {% endif %}
+            <div id="camposRecebimento" class="border rounded-3 p-3" hidden>
+              <label class="form-label" for="valor_recebido_agora">Valor recebido agora (R$)</label>
+              <input class="form-control mb-3" type="text" inputmode="decimal" name="valor_recebido_agora" id="valor_recebido_agora" placeholder="0,00">
+              <label class="form-label" for="forma_pagamento_conclusao">Forma de pagamento</label>
+              <select class="form-select" name="forma_pagamento" id="forma_pagamento_conclusao"><option value="pix">PIX</option><option value="dinheiro">Dinheiro</option><option value="transferencia">Transferência</option><option value="credito">Cartão de crédito</option><option value="debito">Cartão de débito</option><option value="boleto">Boleto</option><option value="nao_informado">Não informado</option></select>
+              <small class="text-muted d-block mt-2">Saldo ainda devido: R$ {{ '%.2f'|format(chamado.saldo_pendente or 0)|replace('.', ',') }}. Você pode registrar um pagamento parcial.</small>
+            </div>
+            <div id="avisoRecebimentoManual" class="alert alert-warning mt-3 mb-0" hidden><strong>Atenção:</strong> se você já recebeu o valor da obra e não registrar agora, esse dinheiro não entrará no ERP. Será necessário lançá-lo manualmente depois no módulo Financeiro.</div>
+          </div>
+          <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Voltar</button><button type="submit" class="btn btn-success">Concluir chamado</button></div>
+        </form></div></div></div>
       <div class="modal fade" id="modalCancelarChamado" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
         <form method="POST" action="{{ url_for('chamados.cancelar_chamado', chamado_id=chamado._id) }}">
           <div class="modal-header"><h5 class="modal-title">Cancelar chamado</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
@@ -53,4 +76,24 @@
     </section>
   </main>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const yes = document.getElementById("recebimentoSim");
+  const no = document.getElementById("recebimentoNao");
+  const fields = document.getElementById("camposRecebimento");
+  const warning = document.getElementById("avisoRecebimentoManual");
+  const amount = document.getElementById("valor_recebido_agora");
+  function updateChoice() {
+    const register = yes && yes.checked;
+    fields.hidden = !register;
+    warning.hidden = !(no && no.checked);
+    if (amount) amount.required = !!register;
+  }
+  yes?.addEventListener("change", updateChoice);
+  no?.addEventListener("change", updateChoice);
+});
+</script>
 {% endblock %}

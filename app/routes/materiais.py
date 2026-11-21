@@ -161,6 +161,12 @@ def converter_data(valor):
     return datetime.strptime(valor, "%Y-%m-%d")
 
 
+def validar_data_historica(data):
+    if data and data.date() < (datetime.now(timezone.utc).date() - timedelta(days=365)):
+        raise ValueError("Para manter o histórico gerencial consistente, a data da compra deve estar dentro dos últimos 12 meses.")
+    return data
+
+
 def buscar_material(material_id, incluir_arquivados=False):
     if not ObjectId.is_valid(material_id):
         return None
@@ -646,6 +652,7 @@ def cadastrar_material():
                     "valor_unitario": valor_unitario,
                     "valor_total": round(saldo * valor_unitario, 2),
                     "fornecedor": fornecedor,
+                    "data_compra": data_compra,
                     "compra_antiga": compra_antiga
                 }
             )
@@ -692,7 +699,7 @@ def registrar_compra_material(material_id):
         valor_unitario = converter_numero(
             request.form.get("valor_unitario", ""), permitir_zero=False
         )
-        data_compra = converter_data(request.form.get("data_compra", ""))
+        data_compra = validar_data_historica(converter_data(request.form.get("data_compra", "")))
     except (InvalidOperation, ValueError, TypeError):
         flash("Informe uma quantidade, um valor unitário válido e confira a data da compra.", "danger")
         return redirect(url_for("materiais.listar_materiais", recompra=material_id))

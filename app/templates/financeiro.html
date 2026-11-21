@@ -66,7 +66,63 @@
                     <small><i class="bi bi-hourglass-split"></i> Valores pendentes</small>
                     <strong>R$ {{ "%.2f"|format(totais.entradas_pendentes + totais.saidas_pendentes)|replace(".", ",") }}</strong>
                     <div class="finance-kpi-foot">A receber: R$ {{ "%.2f"|format(totais.entradas_pendentes)|replace(".", ",") }} · A pagar: R$ {{ "%.2f"|format(totais.saidas_pendentes)|replace(".", ",") }}</div>
+                    <button type="button" class="finance-detail-button" data-bs-toggle="modal" data-bs-target="#modalPendentes">Ver itens pendentes <i class="bi bi-arrow-right"></i></button>
                 </article>
+                <article class="finance-kpi receivable">
+                    <small><i class="bi bi-cash-coin"></i> Valores a receber</small>
+                    <strong>R$ {{ "%.2f"|format(totais.a_receber)|replace(".", ",") }}</strong>
+                    <div class="finance-kpi-foot">Saldo ainda não recebido de todas as obras ativas</div>
+                    <button type="button" class="finance-detail-button" data-bs-toggle="modal" data-bs-target="#modalReceber">Ver obras e valores <i class="bi bi-arrow-right"></i></button>
+                </article>
+            </div>
+
+            <div class="d-flex justify-content-end mb-3">
+                <a href="#novo-lancamento" class="materials-primary-button finance-action-button"><i class="bi bi-plus-lg"></i> Registrar movimentação</a>
+            </div>
+
+            <div class="modal fade" id="modalPendentes" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content finance-detail-modal">
+                    <div class="modal-header"><div><h5 class="modal-title">Itens com valores pendentes</h5><p class="mb-0 small text-muted">Compromissos e previsões ainda não realizados nesta competência.</p></div><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                    <div class="modal-body">
+                        {% if pendentes_itens %}
+                        <div class="finance-detail-list">
+                            {% for item in pendentes_itens %}
+                            <div class="finance-detail-row">
+                                <div><strong>{{ item.descricao }}</strong><small>{{ item.data_movimento.strftime('%d/%m/%Y') if item.data_movimento else 'Data não informada' }}{% if item.fornecedor %} · {{ item.fornecedor }}{% endif %}</small>
+                                {% if item.origem == 'manutencao_ferramenta' %}<small>Manutenção de ferramenta{% if item.ferramenta_codigo %} · {{ item.ferramenta_codigo }}{% endif %}</small>{% elif item.funcionario_nome %}<small>Funcionário: {{ item.funcionario_nome }}</small>{% elif item.chamado_numero %}<small>{{ item.chamado_numero }} · {{ item.chamado_titulo }}</small>{% endif %}</div>
+                                <strong class="finance-value {{ 'income' if item.tipo == 'entrada' else 'expense' }}">R$ {{ '%.2f'|format(item.valor)|replace('.', ',') }}</strong>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}<div class="finance-empty"><strong>Nenhum valor pendente nesta competência.</strong></div>{% endif %}
+                    </div>
+                    {% if pendentes_total_paginas > 1 %}<div class="modal-footer finance-modal-pagination">
+                        <span>{{ pendentes_total }} registro(s)</span>
+                        <div>{% if pendentes_pagina > 1 %}<a href="{{ url_for('financeiro.index', competencia=competencia, pendentes_pagina=pendentes_pagina-1, receber_pagina=receber_pagina) }}#modalPendentes">Anterior</a>{% endif %}<span>{{ pendentes_pagina }} / {{ pendentes_total_paginas }}</span>{% if pendentes_pagina < pendentes_total_paginas %}<a href="{{ url_for('financeiro.index', competencia=competencia, pendentes_pagina=pendentes_pagina+1, receber_pagina=receber_pagina) }}#modalPendentes">Próxima</a>{% endif %}</div>
+                    </div>{% endif %}
+                </div></div>
+            </div>
+
+            <div class="modal fade" id="modalReceber" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content finance-detail-modal">
+                    <div class="modal-header"><div><h5 class="modal-title">Valores a receber por obra</h5><p class="mb-0 small text-muted">Chamados ativos com saldo ainda devido, considerando os pagamentos parciais.</p></div><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                    <div class="modal-body">
+                        {% if receber_itens %}
+                        <div class="finance-detail-list">
+                            {% for item in receber_itens %}
+                            <div class="finance-detail-row">
+                                <div><strong>{{ item.numero }} · {{ item.titulo }}</strong><small>{{ item.cliente_nome or 'Cliente não informado' }} · Recebido: R$ {{ '%.2f'|format(item.valor_recebido or 0)|replace('.', ',') }}</small></div>
+                                <strong class="finance-value expense">Falta R$ {{ '%.2f'|format(item.saldo_modal)|replace('.', ',') }}</strong>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}<div class="finance-empty"><strong>Nenhuma obra com saldo a receber.</strong></div>{% endif %}
+                    </div>
+                    {% if receber_total_paginas > 1 %}<div class="modal-footer finance-modal-pagination">
+                        <span>{{ receber_total }} obra(s)</span>
+                        <div>{% if receber_pagina > 1 %}<a href="{{ url_for('financeiro.index', competencia=competencia, pendentes_pagina=pendentes_pagina, receber_pagina=receber_pagina-1) }}#modalReceber">Anterior</a>{% endif %}<span>{{ receber_pagina }} / {{ receber_total_paginas }}</span>{% if receber_pagina < receber_total_paginas %}<a href="{{ url_for('financeiro.index', competencia=competencia, pendentes_pagina=pendentes_pagina, receber_pagina=receber_pagina+1) }}#modalReceber">Próxima</a>{% endif %}</div>
+                    </div>{% endif %}
+                </div></div>
             </div>
 
 
@@ -333,7 +389,7 @@
                 {% endif %}
 
                 {% if total_paginas > 1 %}
-                <nav class="finance-pagination" aria-label="Paginação financeira">
+                <nav class="finance-pagination tb-pagination" aria-label="Paginação financeira">
                     {% if pagina > 1 %}<a href="{{ url_for('financeiro.index', competencia=competencia, tipo=tipo_filtro, status=status_filtro, busca=busca, pagina=pagina-1) }}">&lt;</a>{% endif %}
                     {% for n in range(1,total_paginas+1) %}
                     <a href="{{ url_for('financeiro.index', competencia=competencia, tipo=tipo_filtro, status=status_filtro, busca=busca, pagina=n) }}" class="{{ 'current' if n == pagina else '' }}">{{ n }}</a>
@@ -387,9 +443,13 @@ document.addEventListener("DOMContentLoaded", function () {
         });
         Plotly.newPlot(element, chart.data.data || [], layout, {
             responsive: true, displaylogo: false,
-            modeBarButtonsToRemove: ["lasso2d", "select2d", "autoScale2d"]
+            modeBarButtonsToRemove: ["lasso2d", "select2d", "autoScale2d", {% if not permitir_baixar_graficos %}"toImage"{% endif %}]
         });
     });
+    if (location.hash === "#modalPendentes" || location.hash === "#modalReceber") {
+        const modalElement = document.querySelector(location.hash);
+        if (modalElement && window.bootstrap) bootstrap.Modal.getOrCreateInstance(modalElement).show();
+    }
 });
 </script>
 <script>

@@ -979,9 +979,9 @@
 
 
 {% if total_paginas|default(1) > 1 %}
-<nav class="d-flex justify-content-center gap-2 my-3" aria-label="Paginação de funcionários">
+<nav class="tb-pagination" aria-label="Paginação de funcionários">
 {% for n in range(1, total_paginas + 1) %}
-<a class="btn btn-sm {{ 'btn-primary' if n == pagina else 'btn-outline-secondary' }}" href="{{ url_for('funcionarios.listar_funcionarios', pagina=n, busca=busca, situacao=filtro_situacao) }}">{{ n }}</a>
+<a class="page-link {{ 'active' if n == pagina else '' }}" href="{{ url_for('funcionarios.listar_funcionarios', pagina=n, busca=busca, situacao=filtro_situacao) }}">{{ n }}</a>
 {% endfor %}
 </nav>
 {% endif %}

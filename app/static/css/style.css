@@ -21910,3 +21910,66 @@ html[data-theme="dark"] .employee-expenses-welcome .materials-secondary-button{b
     .special-record-card { min-height: 0; }
     .special-records-pagination { align-items: flex-start; flex-direction: column; }
 }
+
+/* TASKBERRY | Paginação padronizada entre os módulos */
+.tb-pagination,
+.clients-pagination,
+.finance-pagination,
+.special-records-pagination,
+.employee-expenses-pagination {
+    display:flex; align-items:center; justify-content:center; flex-wrap:wrap;
+    gap:7px; margin-top:20px; padding-top:14px;
+}
+.tb-pagination .page-link,
+.clients-pagination .page-link,
+.finance-pagination a,
+.special-records-pagination .special-page-link,
+.employee-expenses-pagination a {
+    display:inline-flex; align-items:center; justify-content:center;
+    min-width:36px; min-height:36px; padding:7px 11px;
+    border:1px solid var(--tb-border); border-radius:10px !important;
+    background:var(--tb-surface); color:var(--tb-text);
+    font-size:.78rem; font-weight:800; text-decoration:none;
+    box-shadow:none; transition:background .18s ease,border-color .18s ease,color .18s ease;
+}
+.tb-pagination .page-link:hover,
+.clients-pagination .page-link:hover,
+.finance-pagination a:hover,
+.special-records-pagination .special-page-link:hover,
+.employee-expenses-pagination a:hover {
+    border-color:var(--tb-purple); color:var(--tb-purple);
+}
+.tb-pagination .page-item.active .page-link,
+.clients-pagination .page-item.active .page-link,
+.finance-pagination .current,
+.special-records-pagination .special-page-link.active,
+.employee-expenses-pagination a.active {
+    border-color:var(--tb-purple); background:var(--tb-purple); color:#fff;
+}
+.tb-pagination .page-item.disabled .page-link,
+.clients-pagination .page-item.disabled .page-link,
+.special-records-pagination .special-page-link.disabled {
+    opacity:.45; pointer-events:none;
+}
+html[data-theme="dark"] .tb-pagination .page-link,
+html[data-theme="dark"] .clients-pagination .page-link,
+html[data-theme="dark"] .finance-pagination a,
+html[data-theme="dark"] .special-records-pagination .special-page-link,
+html[data-theme="dark"] .employee-expenses-pagination a {
+    background:var(--tb-surface-raised); color:var(--tb-text); border-color:var(--tb-border);
+}
+html[data-theme="dark"] .tb-pagination .page-item.active .page-link,
+html[data-theme="dark"] .clients-pagination .page-item.active .page-link,
+html[data-theme="dark"] .finance-pagination .current,
+html[data-theme="dark"] .special-records-pagination .special-page-link.active,
+html[data-theme="dark"] .employee-expenses-pagination a.active {
+    background:var(--tb-purple); border-color:var(--tb-purple); color:#fff;
+}
+
+.tb-pagination > .page-link.active { border-color:var(--tb-purple); background:var(--tb-purple); color:#fff; }
+
+.calls-conclude-modal { border:1px solid var(--tb-border); border-radius:16px; background:var(--tb-surface); color:var(--tb-text); }
+.calls-conclude-modal .modal-header,.calls-conclude-modal .modal-footer { border-color:var(--tb-border); }
+.calls-conclude-modal .modal-title { color:var(--tb-text); font-weight:800; }
+html[data-theme="dark"] .calls-conclude-modal .form-control,
+html[data-theme="dark"] .calls-conclude-modal .form-select { background:var(--tb-input-bg); border-color:var(--tb-border); color:var(--tb-text); }

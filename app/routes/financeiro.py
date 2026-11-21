@@ -62,7 +62,7 @@ ITENS_POR_PAGINA = 20
 
 
 def montar_analise_graficos(db, usuario, competencia):
-    """Monta indicadores de resultado com base no caixa realizado por competência."""
+    """Monta indicadores de resultado agrupados pelo mês real da movimentação."""
     try:
         ano_ref, mes_ref = map(int, competencia.split("-"))
     except (TypeError, ValueError):
@@ -81,14 +81,25 @@ def montar_analise_graficos(db, usuario, competencia):
 
     totais = {item: {"entrada": 0.0, "saida": 0.0} for item in meses}
     despesas_categoria = {}
+    primeiro = meses[0]
+    inicio_analise = datetime(int(primeiro[:4]), int(primeiro[5:7]), 1, tzinfo=timezone.utc)
+    proximo_ano, proximo_mes = ano_ref, mes_ref + 1
+    if proximo_mes > 12:
+        proximo_mes = 1
+        proximo_ano += 1
+    fim_analise = datetime(proximo_ano, proximo_mes, 1, tzinfo=timezone.utc)
+
     cursor = db["movimentacoes_financeiras"].find({
         "usuario_id": usuario,
-        "competencia": {"$in": meses},
+        "data_movimento": {"$gte": inicio_analise, "$lt": fim_analise},
         "status": "realizado",
         "cancelada": {"$ne": True}
-    }, {"competencia": 1, "tipo": 1, "valor": 1, "categoria": 1})
+    }, {"data_movimento": 1, "tipo": 1, "valor": 1, "categoria": 1})
     for movimento in cursor:
-        comp = movimento.get("competencia")
+        data_mov = movimento.get("data_movimento")
+        if not isinstance(data_mov, datetime):
+            continue
+        comp = f"{data_mov.year:04d}-{data_mov.month:02d}"
         if comp not in totais:
             continue
         try:
@@ -285,7 +296,8 @@ def somar_movimentos(db, filtro):
     resultado = list(db["movimentacoes_financeiras"].aggregate(pipeline))
     totais = {
         "entradas": 0.0, "saidas": 0.0,
-        "entradas_pendentes": 0.0, "saidas_pendentes": 0.0
+        "entradas_pendentes": 0.0, "saidas_pendentes": 0.0,
+        "a_receber": 0.0
     }
     for item in resultado:
         tipo_mov = item["_id"].get("tipo")
@@ -298,6 +310,17 @@ def somar_movimentos(db, filtro):
         totais[chave] += float(item.get("total", 0) or 0)
     totais["saldo"] = round(totais["entradas"] - totais["saidas"], 2)
     return {k: round(v, 2) for k, v in totais.items()}
+
+
+def paginar_registros(colecao, filtro, pagina, por_pagina=10, ordenacao=None):
+    total = colecao.count_documents(filtro)
+    paginas = max(1, (total + por_pagina - 1) // por_pagina)
+    pagina = min(max(1, pagina), paginas)
+    cursor = colecao.find(filtro)
+    if ordenacao:
+        cursor = cursor.sort(ordenacao)
+    itens = list(cursor.skip((pagina - 1) * por_pagina).limit(por_pagina))
+    return itens, pagina, paginas, total
 
 
 @financeiro_bp.route("/financeiro")
@@ -360,8 +383,52 @@ def index():
     filtro_competencia = {"usuario_id": usuario, "competencia": competencia, "cancelada": {"$ne": True}}
     totais_competencia = somar_movimentos(db, filtro_competencia)
 
+    # Pendências detalhadas para conferência rápida (10 por página).
+    try:
+        pendentes_pagina = max(1, int(request.args.get("pendentes_pagina", 1)))
+        receber_pagina = max(1, int(request.args.get("receber_pagina", 1)))
+    except (TypeError, ValueError):
+        pendentes_pagina = receber_pagina = 1
+
+    filtro_pendentes = {
+        "usuario_id": usuario, "competencia": competencia,
+        "status": "pendente", "cancelada": {"$ne": True}
+    }
+    pendentes_itens, pendentes_pagina, pendentes_total_paginas, pendentes_total = paginar_registros(
+        db["movimentacoes_financeiras"], filtro_pendentes, pendentes_pagina,
+        10, [("data_movimento", -1), ("criado_em", -1)]
+    )
+
+    todos_chamados_receber = list(db["chamados"].find({
+        "usuario_id": usuario, "arquivado": {"$ne": True},
+        "excluido": {"$ne": True}, "status": {"$ne": "cancelado"}
+    }, {"numero": 1, "titulo": 1, "cliente_nome": 1, "valor_final": 1, "valor_recebido": 1, "saldo_pendente": 1, "status": 1, "previsao_termino": 1, "criado_em": 1}))
+    obras_a_receber = []
+    for item in todos_chamados_receber:
+        saldo = max(float(item.get(
+            "saldo_pendente",
+            float(item.get("valor_final", 0) or 0) - float(item.get("valor_recebido", 0) or 0)
+        ) or 0), 0)
+        if saldo > 0:
+            item["saldo_modal"] = round(saldo, 2)
+            obras_a_receber.append(item)
+    obras_a_receber.sort(key=lambda item: (
+        str(item.get("previsao_termino") or ""),
+        str(item.get("criado_em") or "")
+    ))
+    receber_total = len(obras_a_receber)
+    receber_total_paginas = max(1, (receber_total + 9) // 10)
+    receber_pagina = min(max(1, receber_pagina), receber_total_paginas)
+    receber_itens = obras_a_receber[(receber_pagina - 1) * 10:receber_pagina * 10]
+    totais_competencia["a_receber"] = round(sum(item["saldo_modal"] for item in obras_a_receber), 2)
+
+
     chamados, clientes, funcionarios = carregar_opcoes(db, usuario)
     analise_graficos = montar_analise_graficos(db, usuario, competencia)
+    config_usuario = db["configuracoes"].find_one(
+        {"usuario_id": usuario}, {"preferencias.permitir_baixar_graficos": 1}
+    ) or {}
+    permitir_baixar_graficos = config_usuario.get("preferencias", {}).get("permitir_baixar_graficos", True)
 
     # Painel de contas a receber: saldo pendente das obras, sem tratar
     # o valor contratado como receita recebida.
@@ -390,6 +457,15 @@ def index():
         total_paginas=total_paginas,
         total_registros=total_registros,
         totais=totais_competencia,
+        pendentes_itens=pendentes_itens,
+        pendentes_pagina=pendentes_pagina,
+        pendentes_total_paginas=pendentes_total_paginas,
+        pendentes_total=pendentes_total,
+        receber_itens=receber_itens,
+        receber_pagina=receber_pagina,
+        receber_total_paginas=receber_total_paginas,
+        receber_total=receber_total,
+        permitir_baixar_graficos=permitir_baixar_graficos,
         chamados=chamados,
         obras_com_saldo=obras_com_saldo,
         clientes=clientes,

@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from decimal import Decimal, InvalidOperation
 from uuid import uuid4
 import re
@@ -46,6 +46,12 @@ def converter_data(valor, obrigatoria=False):
         )
     except ValueError:
         raise ValueError("Data inválida.")
+
+
+def validar_data_historica(data, descricao="registro"):
+    if data and data.date() < (agora().date() - timedelta(days=365)):
+        raise ValueError(f"A data de {descricao} deve estar dentro dos últimos 12 meses.")
+    return data
 
 
 def converter_valor(valor):
@@ -258,8 +264,9 @@ def cadastrar_ferramenta():
         return voltar()
 
     try:
-        data_aquisicao = converter_data(
-            request.form.get("data_aquisicao")
+        data_aquisicao = validar_data_historica(
+            converter_data(request.form.get("data_aquisicao")),
+            "aquisição"
         )
         valor_aquisicao = converter_valor(
             request.form.get("valor_aquisicao")
@@ -446,9 +453,9 @@ def enviar_para_manutencao(ferramenta_id):
         return voltar()
 
     try:
-        data_envio = converter_data(
-            request.form.get("data_envio"),
-            obrigatoria=True
+        data_envio = validar_data_historica(
+            converter_data(request.form.get("data_envio"), obrigatoria=True),
+            "envio para manutenção"
         )
         valor_estimado = converter_valor(
             request.form.get("valor_estimado")

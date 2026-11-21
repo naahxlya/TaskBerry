@@ -206,3 +206,12 @@ html[data-theme="dark"] .tb-chart-note { color: var(--tb-muted, #b9adc8); }
     .tb-materials-chart-card .tb-card-heading { flex-wrap: wrap; }
     .tb-materials-chart-total { align-items: flex-start; }
 }
+
+/* Linha do tempo independente da altura dos recursos */
+.tb-stacked-bottom-grid { grid-template-columns: minmax(0,1fr); }
+.tb-stacked-bottom-grid .tb-operations-card { min-height: 0; }
+.tb-stacked-bottom-grid .tb-activity-card { min-height: 0; }
+.tb-activity-more { display:flex; justify-content:center; padding-top:14px; }
+@media (min-width: 1101px) {
+  .tb-stacked-bottom-grid { grid-template-columns: minmax(0,1fr); }
+}

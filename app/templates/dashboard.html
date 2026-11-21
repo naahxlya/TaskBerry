@@ -97,7 +97,7 @@
                     <div class="tb-finance-totals">
                         <div><span><i class="tb-dot dot-income"></i> Entradas</span><strong>{{ "R$ {:,.2f}".format(total_entradas).replace(",", "X").replace(".", ",").replace("X", ".") }}</strong></div>
                         <div><span><i class="tb-dot dot-expense"></i> Saídas</span><strong>{{ "R$ {:,.2f}".format(total_saidas).replace(",", "X").replace(".", ",").replace("X", ".") }}</strong></div>
-                        <div><span><i class="tb-dot dot-pending"></i> A receber</span><strong>{{ "R$ {:,.2f}".format(entradas_pendentes).replace(",", "X").replace(".", ",").replace("X", ".") }}</strong></div>
+                        <div><span><i class="tb-dot dot-pending"></i> A receber</span><strong>{{ "R$ {:,.2f}".format(valores_a_receber).replace(",", "X").replace(".", ",").replace("X", ".") }}</strong></div>
                     </div>
                     <div id="financeChart" class="tb-chart" role="img" aria-label="Gráfico de entradas e saídas por mês"></div>
                 </section>
@@ -120,8 +120,8 @@
                     <div class="tb-card-heading">
                         <div>
                             <span class="tb-card-kicker">CUSTO OPERACIONAL</span>
-                            <h3>Investimento em materiais</h3>
-                            <p>Despesas efetivamente registradas no Financeiro, agrupadas por mês.</p>
+                            <h3>Investimento em materiais e manutenção</h3>
+                            <p>Compras de estoque pagas e custos de manutenção registrados, agrupados por mês.</p>
                         </div>
                         <div class="tb-materials-chart-total">
                             <small>Total no período</small>
@@ -129,7 +129,7 @@
                         </div>
                     </div>
                     <div id="materialsExpenseChart" class="tb-chart" role="img" aria-label="Gráfico mensal de despesas com materiais"></div>
-                    <p class="tb-chart-note"><i class="bi bi-info-circle"></i> Considera compras de materiais com situação realizada. Lançamentos pendentes não entram no total pago.</p>
+                    <p class="tb-chart-note"><i class="bi bi-info-circle"></i> Inclui compras pagas e manutenções registradas, inclusive previsões que ainda aguardam pagamento.</p>
                 </section>
             </div>
 
@@ -175,7 +175,7 @@
                 </section>
             </div>
 
-            <div class="tb-dashboard-grid tb-bottom-grid">
+            <div class="tb-dashboard-grid tb-bottom-grid tb-stacked-bottom-grid">
                 <section class="tb-dashboard-card tb-operations-card">
                     <div class="tb-card-heading"><div><span class="tb-card-kicker">RECURSOS</span><h3>Estrutura operacional</h3>
                         <p>Visão rápida dos recursos cadastrados.</p></div></div>
@@ -199,8 +199,15 @@
                         </div>
                         {% endfor %}
                     </div>
+                    {% if tem_mais_atividades %}
+                    <div class="tb-activity-more">
+                        <a href="{{ url_for('dashboard.dashboard', periodo=periodo, atividades_pagina=atividades_pagina+1) }}" class="materials-secondary-button">
+                            <i class="bi bi-chevron-down"></i> Mostrar mais 10 registros
+                        </a>
+                    </div>
+                    {% endif %}
                     {% else %}
-                    <div class="tb-empty-state"><i class="bi bi-activity"></i><strong>Seu histórico começa aqui</strong><span>As movimentações aparecerão conforme você utilizar o sistema.</span></div>
+                    <div class="tb-empty-state"><i class="bi bi-activity"></i><strong>Nenhuma atividade neste mês</strong><span>Os registros deste mês aparecerão aqui conforme você utilizar o sistema.</span></div>
                     {% endif %}
                 </section>
             </div>
@@ -235,7 +242,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
         Plotly.newPlot(element, chart.data.data || [], layout, {
             responsive: true, displaylogo: false,
-            modeBarButtonsToRemove: ["lasso2d", "select2d", "autoScale2d"]
+            modeBarButtonsToRemove: ["lasso2d", "select2d", "autoScale2d", {% if not permitir_baixar_graficos %}"toImage"{% endif %}]
         });
     });
 });

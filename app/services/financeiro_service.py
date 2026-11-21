@@ -1,4 +1,8 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+
+
+def _data_dentro_ultimos_12_meses(data):
+    return not isinstance(data, datetime) or data.date() >= (datetime.now(timezone.utc).date() - timedelta(days=365))
 
 
 def obter_competencia(data_movimento, dia_fechamento=30):
@@ -66,9 +70,6 @@ def registrar_despesa_compra_material(db, usuario_id, movimentacao_estoque):
     Espelha compras do estoque no financeiro. A origem é identificada pelo
     ObjectId da movimentação de estoque para impedir duplicidade.
     """
-    if movimentacao_estoque.get("compra_antiga") is True:
-        return None
-
     valor_total = movimentacao_estoque.get("valor_total")
     if not valor_total or float(valor_total) <= 0:
         return None
@@ -80,11 +81,17 @@ def registrar_despesa_compra_material(db, usuario_id, movimentacao_estoque):
     }):
         return None
 
-    data_movimento = (
-        movimentacao_estoque.get("data_compra")
-        or movimentacao_estoque.get("data")
-        or datetime.now(timezone.utc)
-    )
+    data_movimento = movimentacao_estoque.get("data_compra")
+    if not data_movimento and movimentacao_estoque.get("material_id"):
+        material = db["materiais"].find_one({
+            "_id": movimentacao_estoque.get("material_id"),
+            "usuario_id": usuario_id
+        }, {"data_compra": 1})
+        if material:
+            data_movimento = material.get("data_compra")
+    data_movimento = data_movimento or movimentacao_estoque.get("data") or datetime.now(timezone.utc)
+    if not _data_dentro_ultimos_12_meses(data_movimento):
+        return None
     nome = movimentacao_estoque.get("material_nome", "Material")
     fornecedor = movimentacao_estoque.get("fornecedor", "")
 
@@ -119,7 +126,6 @@ def sincronizar_compras_estoque(db, usuario_id):
     cursor = db["movimentacoes_estoque"].find({
         "usuario_id": usuario_id,
         "tipo": {"$in": ["compra", "compra_reabastecimento"]},
-        "compra_antiga": {"$ne": True},
         "valor_total": {"$gt": 0}
     }).sort("data", 1)
 
@@ -195,9 +201,6 @@ def atualizar_totais_chamado(db, usuario_id, chamado_id):
 
 def registrar_despesa_aquisicao_ferramenta(db, usuario_id, ferramenta):
     aquisicao = ferramenta.get("aquisicao") or {}
-    if ferramenta.get("compra_antiga") is True or aquisicao.get("compra_antiga") is True:
-        return None
-
     valor = (ferramenta.get("aquisicao") or {}).get(
         "valor", ferramenta.get("valor_aquisicao", 0)
     )
@@ -211,6 +214,8 @@ def registrar_despesa_aquisicao_ferramenta(db, usuario_id, ferramenta):
         return None
 
     data = aquisicao.get("data") or ferramenta.get("data_aquisicao") or datetime.now(timezone.utc)
+    if not _data_dentro_ultimos_12_meses(data):
+        return None
     fornecedor = aquisicao.get("fornecedor") or ferramenta.get("fornecedor", "")
     nome = ferramenta.get("nome", "Ferramenta")
     codigo = ferramenta.get("codigo", "")
@@ -239,8 +244,6 @@ def registrar_despesa_aquisicao_ferramenta(db, usuario_id, ferramenta):
 def sincronizar_aquisicoes_ferramentas(db, usuario_id):
     cursor = db["ferramentas"].find({
         "usuario_id": usuario_id,
-        "compra_antiga": {"$ne": True},
-        "aquisicao.compra_antiga": {"$ne": True},
         "valor_aquisicao": {"$gt": 0}
     })
     importadas = 0

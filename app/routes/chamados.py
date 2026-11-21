@@ -15,6 +15,7 @@ from flask import (
 )
 
 from app.database.connection import get_database
+from app.services.financeiro_service import preparar_movimentacao, atualizar_totais_chamado
 
 
 chamados_bp = Blueprint("chamados", __name__)
@@ -861,6 +862,10 @@ def atualizar_situacao(chamado_id):
         flash("Situação inválida.", "danger")
         return voltar_para_lista()
 
+    if novo_status == "concluido":
+        flash("Para concluir o chamado e decidir sobre o recebimento, abra os detalhes do serviço.", "info")
+        return redirect(url_for("chamados.visualizar_chamado", chamado_id=chamado_id))
+
     data_atual = agora()
 
     atualizacoes = {
@@ -1303,18 +1308,78 @@ def concluir_chamado(chamado_id):
     if not chamado:
         flash("Chamado não encontrado.", "danger")
         return voltar_para_lista()
-    data = agora()
-    get_database()["chamados"].update_one(
-        {"_id": chamado["_id"], "usuario_id": obter_usuario_id()},
-        {"$set": {"status": "concluido", "concluido_em": data, "atualizado_em": data},
-         "$push": {"historico": {"acao": "conclusao", "descricao": "Chamado marcado como concluído.", "data": data, "usuario_nome": session.get("usuario_nome", "Usuário")}}}
-    )
+    if chamado.get("status") in ("concluido", "cancelado"):
+        flash("Este chamado já foi encerrado.", "warning")
+        return redirect(url_for("chamados.visualizar_chamado", chamado_id=chamado_id))
+
     db = get_database()
+    usuario = obter_usuario_id()
+    registrar_recebimento = request.form.get("registrar_recebimento") == "sim"
+    valor_recebido_agora = 0.0
+    if registrar_recebimento:
+        try:
+            valor_recebido_agora = converter_valor(request.form.get("valor_recebido_agora", ""))
+        except ValueError as erro:
+            flash(str(erro), "danger")
+            return redirect(url_for("chamados.visualizar_chamado", chamado_id=chamado_id))
+
+        saldo_atual = max(
+            round(float(chamado.get("valor_final", 0) or 0) - float(chamado.get("valor_recebido", 0) or 0), 2),
+            0
+        )
+        if valor_recebido_agora <= 0 or valor_recebido_agora > saldo_atual + 0.001:
+            flash(f"Informe um recebimento maior que zero e até o saldo pendente de R$ {saldo_atual:.2f}.", "warning")
+            return redirect(url_for("chamados.visualizar_chamado", chamado_id=chamado_id))
+
+        recebimento_existente = db["movimentacoes_financeiras"].find_one({
+            "usuario_id": usuario,
+            "chamado_id": chamado["_id"],
+            "origem": "conclusao_chamado",
+            "cancelada": {"$ne": True}
+        })
+        if not recebimento_existente:
+            movimento = preparar_movimentacao(
+                db, usuario, "entrada", "pagamento_obra",
+                f"Recebimento ao concluir a obra {chamado.get('numero', '')}",
+                valor_recebido_agora, agora(),
+                status="realizado", forma_pagamento=request.form.get("forma_pagamento", "nao_informado"),
+                chamado_id=chamado["_id"], chamado_numero=chamado.get("numero", ""),
+                chamado_titulo=chamado.get("titulo", ""),
+                cliente_id=chamado.get("cliente_id"),
+                cliente_nome=chamado.get("cliente_nome", ""),
+                origem="conclusao_chamado",
+                observacoes="Recebimento registrado no momento da conclusão do chamado."
+            )
+            db["movimentacoes_financeiras"].insert_one(movimento)
+
+    data = agora()
+    descricao_historico = "Chamado marcado como concluído."
+    if registrar_recebimento:
+        descricao_historico += f" Recebimento registrado no Financeiro: R$ {valor_recebido_agora:.2f}."
+    db["chamados"].update_one(
+        {"_id": chamado["_id"], "usuario_id": usuario},
+        {"$set": {"status": "concluido", "concluido_em": data, "atualizado_em": data},
+         "$push": {"historico": {"acao": "conclusao", "descricao": descricao_historico, "data": data, "usuario_nome": session.get("usuario_nome", "Usuário")}}}
+    )
+    if registrar_recebimento:
+        atualizar_totais_chamado(db, usuario, chamado["_id"])
+
     for item in chamado.get("ferramentas_previstas", []):
         ferramenta_id = item.get("ferramenta_id")
         if ferramenta_id and ObjectId.is_valid(str(ferramenta_id)):
-            db["ferramentas"].update_one({"_id": ObjectId(str(ferramenta_id)), "usuario_id": obter_usuario_id(), "chamado_atual_id": chamado["_id"]}, {"$set": {"chamado_atual_id": None, "situacao": "disponivel", "atualizado_em": data}})
-    flash("Chamado concluído. As ferramentas vinculadas foram liberadas.", "success")
+            db["ferramentas"].update_one({"_id": ObjectId(str(ferramenta_id)), "usuario_id": usuario, "chamado_atual_id": chamado["_id"]}, {"$set": {"chamado_atual_id": None, "situacao": "disponivel", "atualizado_em": data}})
+
+    if registrar_recebimento:
+        flash("Chamado concluído e recebimento registrado no Financeiro.", "success")
+    else:
+        saldo_restante = max(
+            round(float(chamado.get("valor_final", 0) or 0) - float(chamado.get("valor_recebido", 0) or 0), 2),
+            0
+        )
+        if saldo_restante > 0:
+            flash("Chamado concluído. Atenção: como você optou por não registrar o recebimento, qualquer valor recebido nesta obra não entrará no ERP até que seja lançado manualmente no Financeiro.", "warning")
+        else:
+            flash("Chamado concluído. Não havia saldo pendente para registrar.", "success")
     return redirect(url_for("chamados.visualizar_chamado", chamado_id=chamado_id))
 
 

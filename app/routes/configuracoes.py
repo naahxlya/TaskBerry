@@ -25,6 +25,7 @@ PREFERENCIAS_PADRAO = {
     "incluir_clientes_arquivados_excluidos": False,
     "prioridade_chamados_primeiro": "urgente",
     "mostrar_botao_topo": True,
+    "permitir_baixar_graficos": True,
     "exigir_senha_exclusao": False,
     "ordem_clientes": "nome_asc",
     "ordem_funcionarios": "nome_asc",
@@ -148,6 +149,7 @@ def minhas_configuracoes():
             chaves_booleanas = {
                 "incluir_clientes_arquivados_excluidos",
                 "mostrar_botao_topo",
+                "permitir_baixar_graficos",
                 "exigir_senha_exclusao"
             }
             if chave not in chaves_booleanas:

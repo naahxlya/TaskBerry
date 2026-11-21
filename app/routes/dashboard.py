@@ -1,4 +1,5 @@
 from datetime import datetime, timezone, timedelta
+from zoneinfo import ZoneInfo
 import json
 
 from bson import ObjectId
@@ -7,7 +8,10 @@ import plotly.graph_objects as go
 from plotly.utils import PlotlyJSONEncoder
 
 from app.database.connection import get_database
-from app.services.financeiro_service import sincronizar_compras_estoque
+from app.services.financeiro_service import (
+    sincronizar_compras_estoque,
+    sincronizar_aquisicoes_ferramentas
+)
 
 
 dashboard_bp = Blueprint("dashboard", __name__)
@@ -131,6 +135,7 @@ def dashboard():
     # Garante que compras registradas no estoque também estejam refletidas no razão financeiro.
     try:
         sincronizar_compras_estoque(db, usuario_id)
+        sincronizar_aquisicoes_ferramentas(db, usuario_id)
     except Exception:
         pass
     usuario = None
@@ -208,7 +213,34 @@ def dashboard():
     total_gastos_materiais = 0.0
     for movimento in movimentos_periodo:
         data_mov = _data_segura(movimento.get("data_movimento"))
-        if not data_mov or movimento.get("tipo") != "saida" or movimento.get("categoria") != "materiais":
+        eh_compra_material = (
+            movimento.get("tipo") == "saida"
+            and movimento.get("categoria") == "materiais"
+        )
+        eh_manutencao = (
+            movimento.get("tipo") == "saida"
+            and movimento.get("origem") == "manutencao_ferramenta"
+        )
+        if not data_mov or not (eh_compra_material or eh_manutencao):
+            continue
+        chave = (data_mov.year, data_mov.month)
+        if chave in gastos_materiais_mensais:
+            valor = _dinheiro(movimento.get("valor"))
+            gastos_materiais_mensais[chave] += valor
+            total_gastos_materiais += valor
+
+    # Custos de manutenção confirmados podem continuar pendentes de pagamento.
+    # Eles aparecem neste painel como compromisso operacional, sem inflar o caixa pago.
+    for movimento in movimentos.find({
+        **filtro_usuario,
+        "tipo": "saida",
+        "origem": "manutencao_ferramenta",
+        "status": "pendente",
+        "cancelada": {"$ne": True},
+        "data_movimento": {"$gte": primeiro_mes, "$lt": fim_periodo}
+    }, {"data_movimento": 1, "valor": 1}):
+        data_mov = _data_segura(movimento.get("data_movimento"))
+        if not data_mov:
             continue
         chave = (data_mov.year, data_mov.month)
         if chave in gastos_materiais_mensais:
@@ -233,6 +265,16 @@ def dashboard():
             "cancelada": {"$ne": True}, "data_movimento": {"$gte": primeiro_mes, "$lt": fim_periodo}
         }, {"valor": 1})
     )
+    valores_a_receber = 0.0
+    for obra in chamados.find({
+        **filtro_ativo,
+        "status": {"$nin": ["cancelado"]},
+    }, {"valor_final": 1, "valor_recebido": 1, "saldo_pendente": 1}):
+        saldo_obra = _dinheiro(obra.get(
+            "saldo_pendente",
+            max(_dinheiro(obra.get("valor_final")) - _dinheiro(obra.get("valor_recebido")), 0)
+        ))
+        valores_a_receber += max(saldo_obra, 0)
 
     rotulos_status = {
         "a_iniciar": "A iniciar", "em_andamento": "Em andamento",
@@ -284,19 +326,27 @@ def dashboard():
         **filtro_usuario, "excluido": {"$ne": True}, "situacao": {"$ne": "desligado"}
     })
 
+    agora_local = agora.astimezone(ZoneInfo("America/Sao_Paulo"))
+    inicio_local = agora_local.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    proximo_local = (inicio_local + timedelta(days=32)).replace(day=1)
+    mes_atual_inicio = inicio_local.astimezone(timezone.utc)
+    proximo_mes_inicio = proximo_local.astimezone(timezone.utc)
     atividades = []
-    for item in chamados.find(filtro_ativo, {"titulo": 1, "numero": 1, "historico": 1, "cliente_nome": 1}).sort("atualizado_em", -1).limit(12):
+    for item in chamados.find(filtro_ativo, {"titulo": 1, "numero": 1, "historico": 1, "cliente_nome": 1}).sort("atualizado_em", -1).limit(100):
         for evento in item.get("historico", [])[-4:]:
             data_evento = _data_segura(evento.get("data"))
-            if data_evento:
+            if data_evento and mes_atual_inicio <= data_evento < proximo_mes_inicio:
                 atividades.append({
                     "data": data_evento, "titulo": evento.get("descricao") or "Chamado atualizado",
                     "detalhe": f'Chamado {item.get("numero", "")} · {item.get("titulo", "")}',
                     "icone": "bi-clipboard-check", "tipo": "chamado"
                 })
-    for item in movimentos.find(filtro_usuario, {
+    for item in movimentos.find({
+        **filtro_usuario,
+        "data_movimento": {"$gte": mes_atual_inicio, "$lt": proximo_mes_inicio}
+    }, {
         "descricao": 1, "tipo": 1, "valor": 1, "data_movimento": 1, "cancelada": 1
-    }).sort("data_movimento", -1).limit(8):
+    }).sort("data_movimento", -1).limit(100):
         data_evento = _data_segura(item.get("data_movimento"))
         if data_evento and not item.get("cancelada"):
             atividades.append({
@@ -304,9 +354,12 @@ def dashboard():
                 "detalhe": f'{ "Entrada" if item.get("tipo") == "entrada" else "Saída" } · {_formatar_moeda(_dinheiro(item.get("valor")))}',
                 "icone": "bi-cash-coin", "tipo": "financeiro"
             })
-    for item in db["movimentacoes_estoque"].find(filtro_usuario, {
+    for item in db["movimentacoes_estoque"].find({
+        **filtro_usuario,
+        "data": {"$gte": mes_atual_inicio, "$lt": proximo_mes_inicio}
+    }, {
         "material_nome": 1, "descricao": 1, "data": 1, "tipo": 1
-    }).sort("data", -1).limit(6):
+    }).sort("data", -1).limit(100):
         data_evento = _data_segura(item.get("data"))
         if data_evento:
             atividades.append({
@@ -314,7 +367,20 @@ def dashboard():
                 "detalhe": item.get("material_nome", "Material"), "icone": "bi-box-seam", "tipo": "estoque"
             })
     atividades.sort(key=lambda x: x["data"], reverse=True)
-    atividades = atividades[:7]
+    try:
+        atividades_pagina = max(1, int(request.args.get("atividades_pagina", 1)))
+    except (TypeError, ValueError):
+        atividades_pagina = 1
+    total_atividades = len(atividades)
+    limite_atividades = atividades_pagina * 10
+    atividades = atividades[:limite_atividades]
+    tem_mais_atividades = total_atividades > limite_atividades
+
+    configuracao_usuario = db["configuracoes"].find_one(
+        {"usuario_id": usuario_id}, {"preferencias.permitir_baixar_graficos": 1}
+    ) or {}
+    preferencias_usuario = configuracao_usuario.get("preferencias", {})
+    permitir_baixar_graficos = preferencias_usuario.get("permitir_baixar_graficos", True)
 
     return render_template(
         "dashboard.html",
@@ -324,6 +390,8 @@ def dashboard():
         chamados_atrasados=chamados_atrasados, total_entradas=total_entradas,
         total_saidas=total_saidas, saldo_periodo=saldo_periodo,
         entradas_pendentes=entradas_pendentes, saidas_pendentes=saidas_pendentes,
+        valores_a_receber=round(valores_a_receber, 2),
+        atividades_pagina=atividades_pagina, tem_mais_atividades=tem_mais_atividades,
         total_ferramentas=total_ferramentas, ferramentas_manutencao=ferramentas_manutencao,
         ferramentas_em_uso=ferramentas_em_uso, funcionarios_ativos=funcionarios_ativos,
         estoque_baixo=estoque_baixo, chamados_recentes=chamados_recentes,
@@ -331,5 +399,6 @@ def dashboard():
         grafico_chamados=_grafico_json(grafico_chamados),
         grafico_materiais=_grafico_json(grafico_materiais),
         total_gastos_materiais=round(total_gastos_materiais, 2),
+        permitir_baixar_graficos=permitir_baixar_graficos,
         periodo_label=f"últimos {quantidade_meses} meses", now_year=agora.year
     )

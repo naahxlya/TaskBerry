@@ -381,6 +381,21 @@
 
                         <div class="settings-preference-row">
                             <div>
+                                <strong>Permitir baixar gráficos como imagem</strong>
+                                <p class="text-muted small mb-0">Exibe ou oculta a opção de exportar os gráficos do Dashboard e Financeiro como imagem.</p>
+                            </div>
+                            <form method="POST" action="{{ url_for('configuracoes.minhas_configuracoes') }}" data-setting-switch>
+                                <input type="hidden" name="acao" value="preferencia_switch">
+                                <input type="hidden" name="chave" value="permitir_baixar_graficos">
+                                <input type="hidden" name="valor" value="{{ 'false' if preferencias.permitir_baixar_graficos else 'true' }}" data-switch-value>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="permitirBaixarGraficos" {% if preferencias.permitir_baixar_graficos %}checked{% endif %} data-setting-switch-input>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div class="settings-preference-row">
+                            <div>
                                 <strong>Botão voltar ao topo</strong>
                                 <p class="text-muted small mb-0">Exibe ou oculta o botão flutuante de rolagem para o início da página.</p>
                             </div>

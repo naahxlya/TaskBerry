@@ -1017,6 +1017,7 @@
                                                 chamado_id=chamado._id
                                             ) }}"
                                             class="calls-status-form"
+                                            data-conclude-url="{{ url_for('chamados.concluir_chamado', chamado_id=chamado._id) }}"
                                         >
 
                                             <label for="status-{{ chamado._id }}">
@@ -1049,7 +1050,7 @@
                         </div>
 
                         {% if total_paginas > 1 %}
-                            <nav class="mt-4" aria-label="Paginação dos chamados">
+                            <nav class="mt-4 tb-pagination" aria-label="Paginação dos chamados">
                                 <ul class="pagination justify-content-center flex-wrap">
 
                                     <li class="page-item {% if pagina <= 1 %}disabled{% endif %}">
@@ -1642,6 +1643,25 @@
 
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.19/locales-all.global.min.js"></script>
 
+<div class="modal fade" id="modalConcluirChamadoLista" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content calls-conclude-modal">
+    <div class="modal-header"><h5 class="modal-title">Concluir chamado</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+      <p>Deseja registrar agora no Financeiro o valor recebido por esta obra?</p>
+      <div class="form-check mb-2"><input class="form-check-input" type="radio" name="lista_registrar_recebimento" id="listaRecebimentoSim" value="sim"><label class="form-check-label" for="listaRecebimentoSim">Sim, registrar recebimento</label></div>
+      <div class="form-check mb-3"><input class="form-check-input" type="radio" name="lista_registrar_recebimento" id="listaRecebimentoNao" value="nao"><label class="form-check-label" for="listaRecebimentoNao">Não, registrar depois manualmente</label></div>
+      <div id="listaCamposRecebimento" class="border rounded-3 p-3" hidden>
+        <label class="form-label" for="listaValorRecebido">Valor recebido agora (R$)</label>
+        <input class="form-control mb-3" id="listaValorRecebido" type="text" inputmode="decimal" placeholder="0,00">
+        <label class="form-label" for="listaFormaPagamento">Forma de pagamento</label>
+        <select class="form-select" id="listaFormaPagamento"><option value="pix">PIX</option><option value="dinheiro">Dinheiro</option><option value="transferencia">Transferência</option><option value="credito">Cartão de crédito</option><option value="debito">Cartão de débito</option><option value="boleto">Boleto</option><option value="nao_informado">Não informado</option></select>
+      </div>
+      <div id="listaAvisoManual" class="alert alert-warning mt-3 mb-0" hidden><strong>Atenção:</strong> se já recebeu o valor e não registrar agora, ele não entrará no ERP até que seja lançado manualmente no Financeiro.</div>
+    </div>
+    <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" id="listaCancelarConclusao">Voltar</button><button type="button" class="btn btn-success" id="listaConfirmarConclusao">Concluir chamado</button></div>
+  </div></div>
+</div>
+
 <script>
 document.addEventListener("DOMContentLoaded", function () {
 
@@ -1720,23 +1740,93 @@ document.addEventListener("DOMContentLoaded", function () {
     // CONFIRMAÇÃO DE MUDANÇA DE SITUAÇÃO
     // =========================================
 
-    document.querySelectorAll(".calls-status-form").forEach(function (form) {
+    let formularioConclusaoAtivo = null;
+    const modalConclusaoListaEl = document.getElementById("modalConcluirChamadoLista");
+    const modalConclusaoLista = modalConclusaoListaEl && window.bootstrap
+        ? bootstrap.Modal.getOrCreateInstance(modalConclusaoListaEl)
+        : null;
+    const simLista = document.getElementById("listaRecebimentoSim");
+    const naoLista = document.getElementById("listaRecebimentoNao");
+    const camposLista = document.getElementById("listaCamposRecebimento");
+    const avisoLista = document.getElementById("listaAvisoManual");
+    const valorLista = document.getElementById("listaValorRecebido");
 
+    function atualizarOpcaoConclusaoLista() {
+        const registrar = simLista && simLista.checked;
+        if (camposLista) camposLista.hidden = !registrar;
+        if (avisoLista) avisoLista.hidden = !(naoLista && naoLista.checked);
+    }
+    simLista?.addEventListener("change", atualizarOpcaoConclusaoLista);
+    naoLista?.addEventListener("change", atualizarOpcaoConclusaoLista);
+
+    document.getElementById("listaConfirmarConclusao")?.addEventListener("click", function () {
+        if (!formularioConclusaoAtivo) return;
+        const escolha = document.querySelector('input[name="lista_registrar_recebimento"]:checked');
+        if (!escolha) {
+            window.TaskBerryConfirm?.ask({
+                kicker: "CONCLUSÃO DO CHAMADO", title: "Escolha uma opção",
+                message: "Informe se deseja registrar o recebimento agora ou depois.",
+                confirmText: "Entendi", icon: "bi-info-circle", variant: "primary"
+            });
+            return;
+        }
+        if (escolha.value === "sim" && !valorLista.value.trim()) {
+            valorLista.focus();
+            valorLista.reportValidity();
+            return;
+        }
+        const form = formularioConclusaoAtivo;
+        form.action = form.dataset.concludeUrl;
+        const hidden = function (name, value) {
+            let input = form.querySelector('input[name="' + name + '"]');
+            if (!input) {
+                input = document.createElement("input");
+                input.type = "hidden";
+                input.name = name;
+                form.appendChild(input);
+            }
+            input.value = value;
+        };
+        hidden("registrar_recebimento", escolha.value);
+        hidden("valor_recebido_agora", escolha.value === "sim" ? valorLista.value : "");
+        hidden("forma_pagamento", document.getElementById("listaFormaPagamento")?.value || "nao_informado");
+        modalConclusaoLista?.hide();
+        form.submit();
+    });
+
+    document.querySelectorAll(".calls-status-form").forEach(function (form) {
         const select = form.querySelector("select");
         if (!select) return;
-
-        let valorInicial = select.value;
+        const valorInicial = select.value;
+        select.dataset.valorInicial = valorInicial;
         let confirmacaoEmAndamento = false;
 
         select.addEventListener("change", async function () {
-
             if (confirmacaoEmAndamento) return;
-
             const novoValor = select.value;
             if (novoValor === valorInicial) return;
 
-            confirmacaoEmAndamento = true;
+            if (novoValor === "concluido") {
+                formularioConclusaoAtivo = form;
+                if (simLista) simLista.checked = false;
+                if (naoLista) naoLista.checked = false;
+                if (valorLista) valorLista.value = "";
+                atualizarOpcaoConclusaoLista();
+                if (modalConclusaoLista) {
+                    modalConclusaoLista.show();
+                } else {
+                    form.action = form.dataset.concludeUrl;
+                    const hidden = document.createElement("input");
+                    hidden.type = "hidden";
+                    hidden.name = "registrar_recebimento";
+                    hidden.value = "nao";
+                    form.appendChild(hidden);
+                    form.submit();
+                }
+                return;
+            }
 
+            confirmacaoEmAndamento = true;
             const confirmado = await window.TaskBerryConfirm.ask({
                 kicker: "ATUALIZAÇÃO DO CHAMADO",
                 title: "Alterar situação",
@@ -1745,22 +1835,24 @@ document.addEventListener("DOMContentLoaded", function () {
                 icon: "bi-arrow-repeat",
                 variant: "primary"
             });
-
             if (confirmado) {
-                if (typeof form.requestSubmit === "function") {
-                    form.requestSubmit();
-                } else {
-                    form.submit();
-                }
+                if (typeof form.requestSubmit === "function") form.requestSubmit();
+                else form.submit();
             } else {
                 select.value = valorInicial;
             }
-
             confirmacaoEmAndamento = false;
-
         });
-
     });
+
+    modalConclusaoListaEl?.addEventListener("hidden.bs.modal", function () {
+        if (formularioConclusaoAtivo) {
+            const select = formularioConclusaoAtivo.querySelector("select");
+            if (select) select.value = select.dataset.valorInicial || select.value;
+        }
+        formularioConclusaoAtivo = null;
+    });
+
 
 
     // =========================================

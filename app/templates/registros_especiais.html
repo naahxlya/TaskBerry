@@ -65,7 +65,7 @@
         </div>
 
         {% if total_paginas > 1 %}
-          <nav class="special-records-pagination" aria-label="Paginação dos registros">
+          <nav class="special-records-pagination tb-pagination" aria-label="Paginação dos registros">
             <span class="special-records-page-summary">Página {{ pagina }} de {{ total_paginas }}</span>
             <div class="special-records-page-controls">
               <a class="special-page-link {% if pagina <= 1 %}disabled{% endif %}" href="{{ url_for(request.endpoint, tipo=tipo, pagina=pagina-1) if modulo in ['Clientes','Materiais'] else url_for(request.endpoint, pagina=pagina-1) }}"><i class="bi bi-chevron-left"></i> Anterior</a>
