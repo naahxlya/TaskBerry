@@ -21973,3 +21973,11 @@ html[data-theme="dark"] .employee-expenses-pagination a.active {
 .calls-conclude-modal .modal-title { color:var(--tb-text); font-weight:800; }
 html[data-theme="dark"] .calls-conclude-modal .form-control,
 html[data-theme="dark"] .calls-conclude-modal .form-select { background:var(--tb-input-bg); border-color:var(--tb-border); color:var(--tb-text); }
+
+
+/* TaskBerry: padronização dos controles funcionais */
+.dashboard-content .btn:not(.btn-lg), .dashboard-content button.btn:not(.btn-lg) { min-height: 34px; padding: .38rem .72rem; font-size: .875rem; }
+.dashboard-content .btn-primary { background-color: #673ab7; border-color: #673ab7; }
+.dashboard-content .btn-primary:hover { background-color: #542da0; border-color: #542da0; }
+.dashboard-content .btn-danger, .dashboard-content .btn-outline-danger { --bs-btn-color: #b42332; --bs-btn-border-color: #d65b68; --bs-btn-hover-bg: #b42332; --bs-btn-hover-border-color: #b42332; }
+.dashboard-content .tb-special-link, .dashboard-content a[href*="arquivadas"], .dashboard-content a[href*="/lixeira"] { color: #667085; }

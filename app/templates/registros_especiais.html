@@ -14,6 +14,10 @@
         <a class="special-records-back" href="{{ voltar }}"><i class="bi bi-arrow-left"></i><span>Voltar</span></a>
       </header>
 
+      <form method="GET" class="d-flex gap-2 mb-3" role="search">
+        <input class="form-control" type="search" name="busca" value="{{ busca|default('') }}" placeholder="Pesquisar registros..." aria-label="Pesquisar registros">
+        <button class="btn btn-secondary btn-sm" type="submit">Pesquisar</button>
+      </form>
       {% if itens %}
         <div class="special-records-grid">
           {% for item in itens %}
@@ -42,6 +46,8 @@
                     {% set restore_url = url_for(restaurar_endpoint, funcionario_id=item._id) %}
                   {% elif modulo == "Materiais" %}
                     {% set restore_url = url_for(restaurar_endpoint, material_id=item._id) %}
+                  {% elif modulo == "Ferramentas" and tipo == "lixeira" %}
+                    {% set restore_url = url_for("ferramentas.restaurar_ferramenta_lixeira", ferramenta_id=item._id) %}
                   {% else %}
                     {% set restore_url = url_for(restaurar_endpoint, ferramenta_id=item._id) %}
                   {% endif %}
@@ -52,6 +58,8 @@
                 {% if excluir_endpoint and tipo == "lixeira" %}
                   {% if modulo == "Clientes" %}
                     {% set delete_url = url_for(excluir_endpoint, cliente_id=item._id) %}
+                  {% elif modulo == "Ferramentas" %}
+                    {% set delete_url = url_for(excluir_endpoint, ferramenta_id=item._id) %}
                   {% else %}
                     {% set delete_url = url_for(excluir_endpoint, material_id=item._id) %}
                   {% endif %}
@@ -68,11 +76,11 @@
           <nav class="special-records-pagination tb-pagination" aria-label="Paginação dos registros">
             <span class="special-records-page-summary">Página {{ pagina }} de {{ total_paginas }}</span>
             <div class="special-records-page-controls">
-              <a class="special-page-link {% if pagina <= 1 %}disabled{% endif %}" href="{{ url_for(request.endpoint, tipo=tipo, pagina=pagina-1) if modulo in ['Clientes','Materiais'] else url_for(request.endpoint, pagina=pagina-1) }}"><i class="bi bi-chevron-left"></i> Anterior</a>
+              <a class="special-page-link {% if pagina <= 1 %}disabled{% endif %}" href="{{ url_for(request.endpoint, tipo=tipo, pagina=pagina-1, busca=busca|default('')) if modulo in ['Clientes','Materiais'] else url_for(request.endpoint, pagina=pagina-1, busca=busca|default('')) }}"><i class="bi bi-chevron-left"></i> Anterior</a>
               {% for numero in range(1, total_paginas + 1) %}
-                <a class="special-page-number {% if numero == pagina %}active{% endif %}" href="{{ url_for(request.endpoint, tipo=tipo, pagina=numero) if modulo in ['Clientes','Materiais'] else url_for(request.endpoint, pagina=numero) }}">{{ numero }}</a>
+                <a class="special-page-number {% if numero == pagina %}active{% endif %}" href="{{ url_for(request.endpoint, tipo=tipo, pagina=numero, busca=busca|default('')) if modulo in ['Clientes','Materiais'] else url_for(request.endpoint, pagina=numero, busca=busca|default('')) }}">{{ numero }}</a>
               {% endfor %}
-              <a class="special-page-link {% if pagina >= total_paginas %}disabled{% endif %}" href="{{ url_for(request.endpoint, tipo=tipo, pagina=pagina+1) if modulo in ['Clientes','Materiais'] else url_for(request.endpoint, pagina=pagina+1) }}">Próxima <i class="bi bi-chevron-right"></i></a>
+              <a class="special-page-link {% if pagina >= total_paginas %}disabled{% endif %}" href="{{ url_for(request.endpoint, tipo=tipo, pagina=pagina+1, busca=busca|default('')) if modulo in ['Clientes','Materiais'] else url_for(request.endpoint, pagina=pagina+1, busca=busca|default('')) }}">Próxima <i class="bi bi-chevron-right"></i></a>
             </div>
           </nav>
         {% endif %}

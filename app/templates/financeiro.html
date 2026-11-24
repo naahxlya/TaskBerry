@@ -289,7 +289,7 @@
                             <select class="form-select" name="chamado_id" id="chamado_id">
                                 <option value="">Nenhum</option>
                                 {% for chamado in chamados %}
-                                <option value="{{ chamado._id }}">{{ chamado.numero }} · {{ chamado.titulo }} · {{ chamado.cliente_nome }}</option>
+                                <option value="{{ chamado._id }}" {% if chamado_preselecionado == chamado._id|string %}selected{% endif %}>{{ chamado.numero }} · {{ chamado.titulo }} · {{ chamado.cliente_nome }}</option>
                                 {% endfor %}
                             </select>
                         </div>

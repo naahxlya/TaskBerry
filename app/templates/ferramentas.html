@@ -530,6 +530,9 @@
                                                     title="Arquivar">
                                                 <i class="bi bi-archive"></i>
                                             </button>
+                                            <form method="POST" action="{{ url_for('ferramentas.enviar_ferramenta_lixeira', ferramenta_id=ferramenta._id) }}" data-confirm="Enviar esta ferramenta à lixeira? O histórico será preservado." data-confirm-title="Excluir ferramenta" data-confirm-button="Enviar à lixeira" data-confirm-icon="bi-trash" data-confirm-variant="danger" class="d-inline">
+                                                <button type="submit" class="tools-more-button text-danger" title="Excluir"><i class="bi bi-trash"></i></button>
+                                            </form>
 
                                         {% elif ferramenta.situacao == "manutencao" %}
 
@@ -1068,6 +1071,14 @@
 
 
             <!-- 04. CADASTRO DE EQUIPAMENTO -->
+            {% if total_paginas > 1 %}
+            <nav class="d-flex justify-content-center align-items-center gap-2 my-3" aria-label="Paginação de ferramentas">
+                <a class="btn btn-sm btn-secondary {% if pagina <= 1 %}disabled{% endif %}" href="{{ url_for('ferramentas.listar_ferramentas', pagina=pagina-1, busca=busca, categoria=categoria_selecionada, situacao=situacao_selecionada) }}">Anterior</a>
+                <span class="small text-muted">Página {{ pagina }} de {{ total_paginas }} · {{ total_registros }} registros</span>
+                <a class="btn btn-sm btn-secondary {% if pagina >= total_paginas %}disabled{% endif %}" href="{{ url_for('ferramentas.listar_ferramentas', pagina=pagina+1, busca=busca, categoria=categoria_selecionada, situacao=situacao_selecionada) }}">Próxima</a>
+            </nav>
+            {% endif %}
+
             <section class="tools-register-section">
 
                 <div class="tools-section-heading">
@@ -1287,7 +1298,10 @@
 
 
             <div class="d-flex justify-content-end my-4">
-                <a class="btn btn-outline-secondary" href="{{ url_for('ferramentas.ferramentas_arquivadas') }}"><i class="bi bi-archive me-1"></i> Arquivados</a>
+                <div class="d-flex justify-content-end gap-2 flex-wrap">
+                    <a class="btn btn-outline-secondary" href="{{ url_for('ferramentas.ferramentas_arquivadas') }}"><i class="bi bi-archive me-1"></i> Arquivados</a>
+                    <a class="btn btn-outline-secondary" href="{{ url_for('ferramentas.ferramentas_lixeira') }}"><i class="bi bi-trash me-1"></i> Lixeira</a>
+                </div>
             </div>
 
             <footer class="dashboard-footer">

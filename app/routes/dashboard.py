@@ -86,9 +86,9 @@ def _criar_grafico_despesas_materiais(meses, valores):
     labels = [f"{meses_pt[mes - 1]}/{str(ano)[-2:]}" for ano, mes in meses]
     fig = go.Figure()
     fig.add_trace(go.Bar(
-        name="Materiais", x=labels, y=valores,
+        name="Materiais e ferramentas", x=labels, y=valores,
         marker_color="#B99AE8", marker_line_width=0,
-        hovertemplate="Gasto com materiais: R$ %{y:,.2f}<extra></extra>"
+        hovertemplate="Gasto com materiais e ferramentas: R$ %{y:,.2f}<extra></extra>"
     ))
     fig.update_layout(
         height=290, margin=dict(l=12, r=12, t=12, b=12),
@@ -188,7 +188,8 @@ def dashboard():
         "status": "realizado"
     }
     movimentos_periodo = list(movimentos.find(filtro_movimento_periodo, {
-        "tipo": 1, "valor": 1, "data_movimento": 1, "descricao": 1, "categoria": 1
+        "tipo": 1, "valor": 1, "data_movimento": 1, "descricao": 1,
+        "categoria": 1, "origem": 1
     }))
 
     totais_mensais = {(ano, mes): {"entrada": 0.0, "saida": 0.0} for ano, mes in meses}
@@ -217,11 +218,16 @@ def dashboard():
             movimento.get("tipo") == "saida"
             and movimento.get("categoria") == "materiais"
         )
+        eh_compra_ferramenta = (
+            movimento.get("tipo") == "saida"
+            and (movimento.get("categoria") == "ferramentas"
+                 or movimento.get("origem") == "aquisicao_ferramenta")
+        )
         eh_manutencao = (
             movimento.get("tipo") == "saida"
             and movimento.get("origem") == "manutencao_ferramenta"
         )
-        if not data_mov or not (eh_compra_material or eh_manutencao):
+        if not data_mov or not (eh_compra_material or eh_compra_ferramenta or eh_manutencao):
             continue
         chave = (data_mov.year, data_mov.month)
         if chave in gastos_materiais_mensais:
@@ -318,7 +324,7 @@ def dashboard():
     estoque_baixo.sort(key=lambda x: (x["saldo_dashboard"] - x["minimo_dashboard"], x.get("nome", "").lower()))
     estoque_baixo = estoque_baixo[:5]
 
-    filtro_ferramentas = {"usuario_id": usuario_id, "arquivada": {"$ne": True}}
+    filtro_ferramentas = {"usuario_id": usuario_id, "arquivada": {"$ne": True}, "excluida": {"$ne": True}}
     total_ferramentas = ferramentas.count_documents(filtro_ferramentas)
     ferramentas_manutencao = ferramentas.count_documents({**filtro_ferramentas, "situacao": "manutencao"})
     ferramentas_em_uso = ferramentas.count_documents({**filtro_ferramentas, "situacao": "em_uso"})

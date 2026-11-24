@@ -408,6 +408,15 @@ def listar_materiais():
     elif filtro_estoque == "zerado":
         materiais = [item for item in materiais if item["saldo_equivalente"] <= 0]
 
+    try:
+        pagina = max(1, int(request.args.get("pagina", 1)))
+    except (TypeError, ValueError):
+        pagina = 1
+    total_filtrado = len(materiais)
+    total_paginas = max(1, (total_filtrado + 9) // 10)
+    pagina = min(pagina, total_paginas)
+    materiais = materiais[(pagina - 1) * 10:pagina * 10]
+
     materiais_arquivados = [
         formatar_material(item)
         for item in colecao.find({
@@ -453,6 +462,9 @@ def listar_materiais():
     return render_template(
         "materiais.html",
         materiais=materiais,
+        pagina=pagina,
+        total_paginas=total_paginas,
+        total_filtrado=total_filtrado,
         material_recompra=material_recompra,
         materiais_arquivados=materiais_arquivados,
         materiais_lixeira=materiais_lixeira,
@@ -480,7 +492,11 @@ def registros_especiais_materiais(tipo):
     if tipo not in ("arquivados", "lixeira"):
         return voltar_para_lista()
     db = get_database()
+    busca = request.args.get("busca", "").strip()
     filtro = {"usuario_id": obter_usuario_id(), "arquivado": True, "excluido": {"$ne": True}} if tipo == "arquivados" else {"usuario_id": obter_usuario_id(), "excluido": True}
+    if busca:
+        termo = re.escape(busca)
+        filtro["$or"] = [{"nome": {"$regex": termo, "$options": "i"}}, {"categoria": {"$regex": termo, "$options": "i"}}, {"marca": {"$regex": termo, "$options": "i"}}]
     try:
         pagina = max(1, int(request.args.get("pagina", 1)))
     except (TypeError, ValueError):
@@ -489,7 +505,7 @@ def registros_especiais_materiais(tipo):
     paginas = max(1, (total + 24) // 25)
     pagina = min(pagina, paginas)
     itens = [formatar_material(x) for x in db["materiais"].find(filtro).sort("arquivado_em" if tipo == "arquivados" else "excluido_em", -1).skip((pagina-1)*25).limit(25)]
-    return render_template("registros_especiais.html", modulo="Materiais", tipo=tipo, itens=itens, total=total, pagina=pagina, total_paginas=paginas, voltar=url_for("materiais.listar_materiais"), restaurar_endpoint="materiais.restaurar_material", excluir_endpoint="materiais.excluir_material_permanentemente" if tipo == "lixeira" else None, campo_data="arquivado_em" if tipo == "arquivados" else "excluido_em", nome_campo="nome", detalhe_campo="categoria", rota_lista="materiais.listar_materiais")
+    return render_template("registros_especiais.html", modulo="Materiais", tipo=tipo, itens=itens, total=total, pagina=pagina, total_paginas=paginas, busca=busca, voltar=url_for("materiais.listar_materiais"), restaurar_endpoint="materiais.restaurar_material", excluir_endpoint="materiais.excluir_material_permanentemente" if tipo == "lixeira" else None, campo_data="arquivado_em" if tipo == "arquivados" else "excluido_em", nome_campo="nome", detalhe_campo="categoria", rota_lista="materiais.listar_materiais")
 
 
 @materiais_bp.route("/materiais/movimentacoes/mais")

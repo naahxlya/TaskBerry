@@ -467,6 +467,7 @@ def index():
         receber_total=receber_total,
         permitir_baixar_graficos=permitir_baixar_graficos,
         chamados=chamados,
+        chamado_preselecionado=request.args.get("chamado_id", ""),
         obras_com_saldo=obras_com_saldo,
         clientes=clientes,
         funcionarios=funcionarios,

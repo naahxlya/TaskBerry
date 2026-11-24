@@ -9,7 +9,10 @@ from app.database.connection import get_database
 
 
 def create_app():
-    load_dotenv()
+    load_dotenv(override=True)
+
+    print("MONGO_URI carregada:", bool(os.getenv("MONGO_URI")))
+    print("MONGO_DB carregado:", os.getenv("MONGO_DB"))
 
     app = Flask(__name__)
 

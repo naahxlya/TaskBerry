@@ -120,16 +120,16 @@
                     <div class="tb-card-heading">
                         <div>
                             <span class="tb-card-kicker">CUSTO OPERACIONAL</span>
-                            <h3>Investimento em materiais e manutenção</h3>
-                            <p>Compras de estoque pagas e custos de manutenção registrados, agrupados por mês.</p>
+                            <h3>Custos com materiais e ferramentas</h3>
+                            <p>Compras de materiais, aquisição de ferramentas e custos de manutenção registrados por mês.</p>
                         </div>
                         <div class="tb-materials-chart-total">
                             <small>Total no período</small>
                             <strong>R$ {{ "{:,.2f}".format(total_gastos_materiais).replace(",", "X").replace(".", ",").replace("X", ".") }}</strong>
                         </div>
                     </div>
-                    <div id="materialsExpenseChart" class="tb-chart" role="img" aria-label="Gráfico mensal de despesas com materiais"></div>
-                    <p class="tb-chart-note"><i class="bi bi-info-circle"></i> Inclui compras pagas e manutenções registradas, inclusive previsões que ainda aguardam pagamento.</p>
+                    <div id="materialsExpenseChart" class="tb-chart" role="img" aria-label="Gráfico mensal de despesas com materiais e ferramentas"></div>
+                    <p class="tb-chart-note"><i class="bi bi-info-circle"></i> Inclui compras de materiais, aquisição de ferramentas e manutenções registradas, inclusive previsões que ainda aguardam pagamento.</p>
                 </section>
             </div>
 
@@ -202,7 +202,7 @@
                     {% if tem_mais_atividades %}
                     <div class="tb-activity-more">
                         <a href="{{ url_for('dashboard.dashboard', periodo=periodo, atividades_pagina=atividades_pagina+1) }}" class="materials-secondary-button">
-                            <i class="bi bi-chevron-down"></i> Mostrar mais 10 registros
+                            <i class="bi bi-chevron-down mx-2"></i> Mostrar mais 10 registros
                         </a>
                     </div>
                     {% endif %}

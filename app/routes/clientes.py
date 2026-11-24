@@ -7,7 +7,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from app.database.connection import get_database
 
 clientes_bp = Blueprint("clientes", __name__)
-ITENS_POR_PAGINA = 25
+ITENS_POR_PAGINA = 10
 PRAZO_DIAS = 10
 
 
@@ -87,8 +87,8 @@ def listar_clientes():
     }.get(ordem_clientes, [("nome", 1), ("_id", 1)])
     clientes = list(colecao.find(filtro).sort(ordenacao).skip(deslocamento).limit(ITENS_POR_PAGINA))
     total_clientes = colecao.count_documents({**filtro_usuario(), "arquivado": {"$ne": True}, "excluido": {"$ne": True}})
-    arquivados = list(colecao.find({**filtro_usuario(), "arquivado": True, "excluido": {"$ne": True}}).sort("arquivado_em", -1).limit(100))
-    lixeira = list(colecao.find({**filtro_usuario(), "excluido": True}).sort("excluido_em", -1).limit(100))
+    arquivados = []
+    lixeira = []
 
     return render_template(
         "clientes.html", clientes=clientes, busca=busca, total_clientes=total_clientes,
@@ -110,12 +110,16 @@ def registros_especiais_clientes(tipo):
         pagina = max(1, int(request.args.get("pagina", 1)))
     except (TypeError, ValueError):
         pagina = 1
+    busca = request.args.get("busca", "").strip()
     filtro = {**filtro_usuario(), "arquivado": True, "excluido": {"$ne": True}} if tipo == "arquivados" else {**filtro_usuario(), "excluido": True}
+    if busca:
+        termo = re.escape(busca)
+        filtro["$or"] = [{"nome": {"$regex": termo, "$options": "i"}}, {"telefone": {"$regex": termo, "$options": "i"}}, {"email": {"$regex": termo, "$options": "i"}}]
     total = colecao.count_documents(filtro)
     paginas = max(1, (total + 24) // 25)
     pagina = min(pagina, paginas)
     itens = list(colecao.find(filtro).sort("arquivado_em" if tipo == "arquivados" else "excluido_em", -1).skip((pagina-1)*25).limit(25))
-    return render_template("registros_especiais.html", modulo="Clientes", tipo=tipo, itens=itens, total=total, pagina=pagina, total_paginas=paginas, voltar=url_for("clientes.listar_clientes"), restaurar_endpoint="clientes.restaurar_cliente", excluir_endpoint="clientes.excluir_permanentemente", campo_data="arquivado_em" if tipo == "arquivados" else "excluido_em", nome_campo="nome", detalhe_campo="telefone", rota_lista="clientes.listar_clientes")
+    return render_template("registros_especiais.html", modulo="Clientes", tipo=tipo, itens=itens, total=total, pagina=pagina, total_paginas=paginas, busca=busca, voltar=url_for("clientes.listar_clientes"), restaurar_endpoint="clientes.restaurar_cliente", excluir_endpoint="clientes.excluir_permanentemente", campo_data="arquivado_em" if tipo == "arquivados" else "excluido_em", nome_campo="nome", detalhe_campo="telefone", rota_lista="clientes.listar_clientes")
 
 
 @clientes_bp.route("/clientes/novo", methods=["POST"])

@@ -131,7 +131,7 @@ def sincronizar_compras_estoque(db, usuario_id):
 
     importadas = 0
     for item in cursor:
-        if db["movimentacoes_financeiras"].find_one({
+        if db["movimentacoes_financeiras "].find_one({
             "usuario_id": usuario_id,
             "origem_movimentacao_estoque_id": item["_id"]
         }, {"_id": 1}):

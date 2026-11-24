@@ -706,6 +706,13 @@
                         </table>
 
                     </div>
+                    {% if total_paginas > 1 %}
+                    <nav class="d-flex justify-content-center align-items-center gap-2 my-3" aria-label="Paginação de materiais">
+                        <a class="btn btn-sm btn-secondary {% if pagina <= 1 %}disabled{% endif %}" href="{{ url_for('materiais.listar_materiais', pagina=pagina-1, busca=busca, categoria=categoria_selecionada, estoque=filtro_estoque) }}">Anterior</a>
+                        <span class="small text-muted">Página {{ pagina }} de {{ total_paginas }} · {{ total_filtrado }} registros</span>
+                        <a class="btn btn-sm btn-secondary {% if pagina >= total_paginas %}disabled{% endif %}" href="{{ url_for('materiais.listar_materiais', pagina=pagina+1, busca=busca, categoria=categoria_selecionada, estoque=filtro_estoque) }}">Próxima</a>
+                    </nav>
+                    {% endif %}
 
                 {% else %}
 

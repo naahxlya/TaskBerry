@@ -244,7 +244,7 @@ def obter_funcionarios_validos(ids):
 
 def carregar_materiais_disponiveis():
     return list(get_database()["materiais"].find({
-        "usuario_id": obter_usuario_id(), "arquivado": {"$ne": True}
+        "usuario_id": obter_usuario_id(), "arquivado": {"$ne": True}, "excluido": {"$ne": True}
     }).sort("nome", 1))
 
 
@@ -267,7 +267,7 @@ def carregar_ferramentas_disponiveis(chamado=None):
     return ferramentas
 
 
-def obter_associacoes_previstas():
+def obter_associacoes_previstas(chamado_atual_id=None):
     db = get_database()
     materiais_ids = request.form.getlist("materiais_ids")
     ferramentas_ids = request.form.getlist("ferramentas_ids")
@@ -288,6 +288,9 @@ def obter_associacoes_previstas():
             raise ValueError("Informe uma quantidade válida para cada material.")
         if quantidade <= 0:
             raise ValueError("A quantidade prevista deve ser maior que zero.")
+        disponivel = saldo_material_disponivel(material["_id"], chamado_atual_id)
+        if quantidade > disponivel + 0.0001:
+            raise ValueError(f"Estoque insuficiente para {material.get('nome', 'material')}. Disponível para este chamado: {disponivel:g} {material.get('unidade_medida', '')}.")
         previstos_m.append({"material_id": str(material["_id"]), "nome": material.get("nome", "Material"),
             "unidade_medida": material.get("unidade_medida", "unidade"), "quantidade_prevista": quantidade,
             "consumo_registrado": False})
@@ -303,7 +306,7 @@ def obter_associacoes_previstas():
     return previstos_m, previstos_f
 
 
-def preparar_dados_formulario():
+def preparar_dados_formulario(chamado_atual_id=None):
     titulo = request.form.get("titulo", "").strip()
     descricao = request.form.get("descricao", "").strip()
     cliente_id = request.form.get("cliente_id", "").strip()
@@ -389,7 +392,7 @@ def preparar_dados_formulario():
         or cliente.get("nome", "")
     )
 
-    materiais_previstos, ferramentas_previstas = obter_associacoes_previstas()
+    materiais_previstos, ferramentas_previstas = obter_associacoes_previstas(chamado_atual_id)
 
     return {
         "materiais_previstos": materiais_previstos,
@@ -785,7 +788,7 @@ def atualizar_chamado(chamado_id):
         return voltar_para_lista()
 
     try:
-        dados = preparar_dados_formulario()
+        dados = preparar_dados_formulario(chamado["_id"])
 
     except ValueError as erro:
         flash(str(erro), "danger")
@@ -1044,6 +1047,52 @@ def eventos_calendario_json(eventos):
 # VISUALIZAÇÃO, ARQUIVO, LIXEIRA E RESTAURAÇÃO
 # =========================================================
 
+def saldo_material_disponivel(material_id, chamado_atual_id=None):
+    db = get_database()
+    material = db["materiais"].find_one({"_id": material_id, "usuario_id": obter_usuario_id(), "arquivado": {"$ne": True}, "excluido": {"$ne": True}})
+    if not material:
+        return 0.0
+    saldo = float(material.get("quantidade_fechada", 0) or 0) + float(material.get("percentual_aberto", 0) or 0) / 100
+    filtro = {"usuario_id": obter_usuario_id(), "arquivado": {"$ne": True}, "excluido": {"$ne": True}, "status": {"$nin": ["concluido", "cancelado"]}}
+    if chamado_atual_id:
+        filtro["_id"] = {"$ne": chamado_atual_id}
+    reservado = 0.0
+    for chamado in db["chamados"].find(filtro, {"materiais_previstos": 1}):
+        for item in chamado.get("materiais_previstos", []):
+            if str(item.get("material_id")) == str(material_id):
+                reservado += float(item.get("quantidade_prevista", 0) or 0)
+    return max(round(saldo - reservado, 3), 0.0)
+
+
+@chamados_bp.route("/chamados/<chamado_id>/materiais/adicionar", methods=["POST"])
+def adicionar_material_chamado(chamado_id):
+    chamado = buscar_chamado(chamado_id)
+    if not chamado or chamado.get("status") in ("concluido", "cancelado"):
+        flash("Chamado indisponível para alteração de materiais.", "warning")
+        return redirect(url_for("chamados.visualizar_chamado", chamado_id=chamado_id))
+    material_id = request.form.get("material_id", "")
+    if not ObjectId.is_valid(material_id):
+        flash("Selecione um material válido.", "danger")
+        return redirect(url_for("chamados.visualizar_chamado", chamado_id=chamado_id))
+    material = get_database()["materiais"].find_one({"_id": ObjectId(material_id), "usuario_id": obter_usuario_id(), "arquivado": {"$ne": True}, "excluido": {"$ne": True}})
+    try:
+        quantidade = float(request.form.get("quantidade", "0").replace(",", "."))
+    except (ValueError, AttributeError):
+        quantidade = 0
+    if not material or quantidade <= 0:
+        flash("Informe um material e uma quantidade válida.", "danger")
+        return redirect(url_for("chamados.visualizar_chamado", chamado_id=chamado_id))
+    saldo = saldo_material_disponivel(material["_id"], chamado["_id"])
+    ja_vinculado = sum(float(x.get("quantidade_prevista", 0) or 0) for x in chamado.get("materiais_previstos", []) if str(x.get("material_id")) == material_id)
+    if quantidade + ja_vinculado > saldo + 0.0001:
+        flash(f"Estoque insuficiente. Disponível para este chamado: {max(saldo-ja_vinculado, 0):g} {material.get('unidade_medida', '')}.", "warning")
+        return redirect(url_for("chamados.visualizar_chamado", chamado_id=chamado_id))
+    item = {"material_id": material_id, "nome": material.get("nome", "Material"), "unidade_medida": material.get("unidade_medida", "unidade"), "quantidade_prevista": quantidade, "consumo_registrado": False}
+    get_database()["chamados"].update_one({"_id": chamado["_id"], "usuario_id": obter_usuario_id()}, {"$push": {"materiais_previstos": item}, "$set": {"atualizado_em": agora()}})
+    flash("Material incluído no chamado. O saldo disponível foi atualizado.", "success")
+    return redirect(url_for("chamados.visualizar_chamado", chamado_id=chamado_id))
+
+
 @chamados_bp.route("/chamados/<chamado_id>")
 def visualizar_chamado(chamado_id):
     chamado = buscar_chamado(chamado_id)
@@ -1052,6 +1101,10 @@ def visualizar_chamado(chamado_id):
         return voltar_para_lista()
     chamado = preparar_chamado_para_template(chamado)
     db = get_database()
+    materiais = carregar_materiais_disponiveis()
+    for material in materiais:
+        reservado_no_atual = sum(float(item.get("quantidade_prevista", 0) or 0) for item in chamado.get("materiais_previstos", []) if str(item.get("material_id")) == str(material["_id"]))
+        material["saldo_para_chamado"] = max(saldo_material_disponivel(material["_id"], chamado["_id"]) - reservado_no_atual, 0)
     ferramentas = list(db["ferramentas"].find({
         "usuario_id": obter_usuario_id(), "arquivada": {"$ne": True},
         "situacao": {"$ne": "baixada"}
@@ -1061,7 +1114,7 @@ def visualizar_chamado(chamado_id):
         "excluido": {"$ne": True}, "arquivado": {"$ne": True},
         "status": {"$nin": ["concluido", "cancelado"]}
     }, {"numero": 1, "titulo": 1}).sort("criado_em", -1).limit(300))
-    return render_template("chamado_detalhes.html", chamado=chamado, status_opcoes=STATUS_CHAMADO, prioridades=PRIORIDADES, ferramentas_disponiveis=ferramentas, outros_chamados=outros_chamados)
+    return render_template("chamado_detalhes.html", chamado=chamado, status_opcoes=STATUS_CHAMADO, prioridades=PRIORIDADES, ferramentas_disponiveis=ferramentas, materiais_disponiveis=materiais, outros_chamados=outros_chamados)
 
 
 def registrar_acao_chamado(chamado_id, campo, valor, acao, descricao):
@@ -1314,73 +1367,21 @@ def concluir_chamado(chamado_id):
 
     db = get_database()
     usuario = obter_usuario_id()
-    registrar_recebimento = request.form.get("registrar_recebimento") == "sim"
-    valor_recebido_agora = 0.0
-    if registrar_recebimento:
-        try:
-            valor_recebido_agora = converter_valor(request.form.get("valor_recebido_agora", ""))
-        except ValueError as erro:
-            flash(str(erro), "danger")
-            return redirect(url_for("chamados.visualizar_chamado", chamado_id=chamado_id))
-
-        saldo_atual = max(
-            round(float(chamado.get("valor_final", 0) or 0) - float(chamado.get("valor_recebido", 0) or 0), 2),
-            0
-        )
-        if valor_recebido_agora <= 0 or valor_recebido_agora > saldo_atual + 0.001:
-            flash(f"Informe um recebimento maior que zero e até o saldo pendente de R$ {saldo_atual:.2f}.", "warning")
-            return redirect(url_for("chamados.visualizar_chamado", chamado_id=chamado_id))
-
-        recebimento_existente = db["movimentacoes_financeiras"].find_one({
-            "usuario_id": usuario,
-            "chamado_id": chamado["_id"],
-            "origem": "conclusao_chamado",
-            "cancelada": {"$ne": True}
-        })
-        if not recebimento_existente:
-            movimento = preparar_movimentacao(
-                db, usuario, "entrada", "pagamento_obra",
-                f"Recebimento ao concluir a obra {chamado.get('numero', '')}",
-                valor_recebido_agora, agora(),
-                status="realizado", forma_pagamento=request.form.get("forma_pagamento", "nao_informado"),
-                chamado_id=chamado["_id"], chamado_numero=chamado.get("numero", ""),
-                chamado_titulo=chamado.get("titulo", ""),
-                cliente_id=chamado.get("cliente_id"),
-                cliente_nome=chamado.get("cliente_nome", ""),
-                origem="conclusao_chamado",
-                observacoes="Recebimento registrado no momento da conclusão do chamado."
-            )
-            db["movimentacoes_financeiras"].insert_one(movimento)
-
     data = agora()
-    descricao_historico = "Chamado marcado como concluído."
-    if registrar_recebimento:
-        descricao_historico += f" Recebimento registrado no Financeiro: R$ {valor_recebido_agora:.2f}."
     db["chamados"].update_one(
         {"_id": chamado["_id"], "usuario_id": usuario},
         {"$set": {"status": "concluido", "concluido_em": data, "atualizado_em": data},
-         "$push": {"historico": {"acao": "conclusao", "descricao": descricao_historico, "data": data, "usuario_nome": session.get("usuario_nome", "Usuário")}}}
+         "$push": {"historico": {"acao": "conclusao", "descricao": "Chamado marcado como concluído. O recebimento poderá ser lançado no Financeiro.", "data": data, "usuario_nome": session.get("usuario_nome", "Usuário")}}}
     )
-    if registrar_recebimento:
-        atualizar_totais_chamado(db, usuario, chamado["_id"])
-
     for item in chamado.get("ferramentas_previstas", []):
         ferramenta_id = item.get("ferramenta_id")
         if ferramenta_id and ObjectId.is_valid(str(ferramenta_id)):
-            db["ferramentas"].update_one({"_id": ObjectId(str(ferramenta_id)), "usuario_id": usuario, "chamado_atual_id": chamado["_id"]}, {"$set": {"chamado_atual_id": None, "situacao": "disponivel", "atualizado_em": data}})
-
-    if registrar_recebimento:
-        flash("Chamado concluído e recebimento registrado no Financeiro.", "success")
-    else:
-        saldo_restante = max(
-            round(float(chamado.get("valor_final", 0) or 0) - float(chamado.get("valor_recebido", 0) or 0), 2),
-            0
-        )
-        if saldo_restante > 0:
-            flash("Chamado concluído. Atenção: como você optou por não registrar o recebimento, qualquer valor recebido nesta obra não entrará no ERP até que seja lançado manualmente no Financeiro.", "warning")
-        else:
-            flash("Chamado concluído. Não havia saldo pendente para registrar.", "success")
-    return redirect(url_for("chamados.visualizar_chamado", chamado_id=chamado_id))
+            db["ferramentas"].update_one(
+                {"_id": ObjectId(str(ferramenta_id)), "usuario_id": usuario, "chamado_atual_id": chamado["_id"]},
+                {"$set": {"chamado_atual_id": None, "situacao": "disponivel", "atualizado_em": data}}
+            )
+    flash("Chamado concluído. Confira os recebimentos e registre os valores no Financeiro.", "success")
+    return redirect(url_for("financeiro.index", chamado_id=str(chamado["_id"]), abrir_lancamento=1) + "#novo-lancamento")
 
 
 @chamados_bp.route("/chamados/<chamado_id>/cancelar", methods=["POST"])

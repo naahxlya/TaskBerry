@@ -122,7 +122,7 @@ def listar_funcionarios():
         pagina = max(1, int(request.args.get("pagina", 1)))
     except (TypeError, ValueError):
         pagina = 1
-    por_pagina = 25
+    por_pagina = 10
     total_registros = colecao.count_documents(filtro)
     total_paginas = max(1, (total_registros + por_pagina - 1) // por_pagina)
     pagina = min(pagina, total_paginas)
@@ -219,12 +219,16 @@ def lixeira_funcionarios():
         pagina = max(1, int(request.args.get("pagina", 1)))
     except (TypeError, ValueError):
         pagina = 1
+    busca = request.args.get("busca", "").strip()
     filtro = {"usuario_id": usuario, "excluido": True}
+    if busca:
+        termo = re.escape(busca)
+        filtro["$or"] = [{"nome": {"$regex": termo, "$options": "i"}}, {"cargo": {"$regex": termo, "$options": "i"}}]
     total = colecao.count_documents(filtro)
     paginas = max(1, (total + 24) // 25)
     pagina = min(pagina, paginas)
     itens = list(colecao.find(filtro).sort("nome", 1).skip((pagina-1)*25).limit(25))
-    return render_template("registros_especiais.html", modulo="Funcionários", tipo="lixeira", itens=itens, total=total, pagina=pagina, total_paginas=paginas, voltar=url_for("funcionarios.listar_funcionarios"), restaurar_endpoint="funcionarios.restaurar_funcionario", excluir_endpoint=None, campo_data="excluido_em", nome_campo="nome", detalhe_campo="cargo", rota_lista="funcionarios.listar_funcionarios")
+    return render_template("registros_especiais.html", modulo="Funcionários", tipo="lixeira", itens=itens, total=total, pagina=pagina, total_paginas=paginas, busca=busca, voltar=url_for("funcionarios.listar_funcionarios"), restaurar_endpoint="funcionarios.restaurar_funcionario", excluir_endpoint=None, campo_data="excluido_em", nome_campo="nome", detalhe_campo="cargo", rota_lista="funcionarios.listar_funcionarios")
 
 
 @funcionarios_bp.route("/funcionarios/novo", methods=["POST"])

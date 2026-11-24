@@ -3,14 +3,23 @@ from flask import current_app
 
 
 def get_database():
-    mongo_uri = current_app.config["MONGO_URI"]
     database_name = current_app.config["MONGO_DB"]
 
-    client = MongoClient(
-        mongo_uri,
-        serverSelectionTimeoutMS=5000
-    )
+    client = current_app.extensions.get("mongo_client")
 
-    client.admin.command("ping")
+    if client is None:
+        mongo_uri = current_app.config["MONGO_URI"]
+
+        client = MongoClient(
+            mongo_uri,
+            authMechanism="SCRAM-SHA-1",
+            authSource="admin",
+            serverSelectionTimeoutMS=5000,
+            connectTimeoutMS=10000
+        )
+
+        client.admin.command("ping")
+
+        current_app.extensions["mongo_client"] = client
 
     return client[database_name]

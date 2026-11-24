@@ -79,7 +79,8 @@ def converter_valor(valor):
 def filtro_usuario():
     return {
         "usuario_id": usuario_id(),
-        "arquivada": {"$ne": True}
+        "arquivada": {"$ne": True},
+        "excluida": {"$ne": True}
     }
 
 
@@ -158,12 +159,19 @@ def listar_ferramentas():
     if situacao:
         filtro["situacao"] = situacao
 
+    try:
+        pagina = max(1, int(request.args.get("pagina", 1)))
+    except (TypeError, ValueError):
+        pagina = 1
+    total_registros = colecao.count_documents(filtro)
+    total_paginas = max(1, (total_registros + 9) // 10)
+    pagina = min(pagina, total_paginas)
     ferramentas = [
         preparar_ferramenta(item)
-        for item in colecao.find(filtro).sort("criado_em", -1)
+        for item in colecao.find(filtro).sort("criado_em", -1).skip((pagina - 1) * 10).limit(10)
     ]
 
-    todas = list(colecao.find({**filtro_usuario(), "arquivada": {"$ne": True}}))
+    todas = list(colecao.find({**filtro_usuario(), "arquivada": {"$ne": True}, "excluida": {"$ne": True}}))
 
     total_ferramentas = len(todas)
 
@@ -230,6 +238,9 @@ def listar_ferramentas():
     return render_template(
         "ferramentas.html",
         ferramentas=ferramentas,
+        pagina=pagina,
+        total_paginas=total_paginas,
+        total_registros=total_registros,
         busca=busca,
         categoria_selecionada=categoria,
         situacao_selecionada=situacao,
@@ -638,7 +649,11 @@ def confirmar_reparo(ferramenta_id):
 @ferramentas_bp.route("/ferramentas/arquivadas")
 def ferramentas_arquivadas():
     db = get_database()
-    filtro = {**filtro_usuario(), "arquivada": True}
+    busca = request.args.get("busca", "").strip()
+    filtro = {**filtro_usuario(), "arquivada": True, "excluida": {"$ne": True}}
+    if busca:
+        termo = re.escape(busca)
+        filtro["$or"] = [{"nome": {"$regex": termo, "$options": "i"}}, {"codigo": {"$regex": termo, "$options": "i"}}]
     try:
         pagina = max(1, int(request.args.get("pagina", 1)))
     except (TypeError, ValueError):
@@ -647,7 +662,7 @@ def ferramentas_arquivadas():
     paginas = max(1, (total + 24) // 25)
     pagina = min(pagina, paginas)
     itens = [preparar_ferramenta(x) for x in db["ferramentas"].find(filtro).sort("arquivada_em", -1).skip((pagina-1)*25).limit(25)]
-    return render_template("registros_especiais.html", modulo="Ferramentas", tipo="arquivados", itens=itens, total=total, pagina=pagina, total_paginas=paginas, voltar=url_for("ferramentas.listar_ferramentas"), restaurar_endpoint="ferramentas.restaurar_ferramenta", excluir_endpoint=None, campo_data="arquivada_em", nome_campo="nome", detalhe_campo="codigo", rota_lista="ferramentas.listar_ferramentas")
+    return render_template("registros_especiais.html", modulo="Ferramentas", tipo="arquivados", itens=itens, total=total, pagina=pagina, total_paginas=paginas, busca=busca, voltar=url_for("ferramentas.listar_ferramentas"), restaurar_endpoint="ferramentas.restaurar_ferramenta", excluir_endpoint=None, campo_data="arquivada_em", nome_campo="nome", detalhe_campo="codigo", rota_lista="ferramentas.listar_ferramentas")
 
 
 @ferramentas_bp.route("/ferramentas/<ferramenta_id>/restaurar", methods=["POST"])
@@ -661,6 +676,66 @@ def restaurar_ferramenta(ferramenta_id):
     )
     flash("Equipamento restaurado para a lista de ferramentas." if resultado.modified_count else "Não foi possível restaurar o equipamento.", "success" if resultado.modified_count else "warning")
     return redirect(url_for("ferramentas.ferramentas_arquivadas"))
+
+
+@ferramentas_bp.route("/ferramentas/<ferramenta_id>/excluir", methods=["POST"])
+def enviar_ferramenta_lixeira(ferramenta_id):
+    ferramenta = buscar_ferramenta(ferramenta_id)
+    if not ferramenta:
+        flash("Ferramenta não encontrada.", "danger")
+        return voltar()
+    if ferramenta.get("situacao") in ("em_uso", "manutencao"):
+        flash("Não é possível excluir uma ferramenta em uso ou em manutenção.", "warning")
+        return voltar()
+    momento = agora()
+    get_database()["ferramentas"].update_one(
+        {"_id": ferramenta["_id"], **filtro_usuario()},
+        {"$set": {"excluida": True, "excluida_em": momento, "atualizado_em": momento}}
+    )
+    flash("Ferramenta enviada à lixeira. O histórico foi preservado.", "success")
+    return voltar()
+
+
+@ferramentas_bp.route("/ferramentas/lixeira")
+def ferramentas_lixeira():
+    db = get_database()
+    colecao = db["ferramentas"]
+    busca = request.args.get("busca", "").strip()
+    filtro = {"usuario_id": usuario_id(), "excluida": True}
+    if busca:
+        termo = re.escape(busca)
+        filtro["$or"] = [{"nome": {"$regex": termo, "$options": "i"}}, {"codigo": {"$regex": termo, "$options": "i"}}]
+    try:
+        pagina = max(1, int(request.args.get("pagina", 1)))
+    except (TypeError, ValueError):
+        pagina = 1
+    total = colecao.count_documents(filtro)
+    paginas = max(1, (total + 24) // 25)
+    pagina = min(pagina, paginas)
+    itens = [preparar_ferramenta(x) for x in colecao.find(filtro).sort("excluida_em", -1).skip((pagina-1)*25).limit(25)]
+    return render_template("registros_especiais.html", modulo="Ferramentas", tipo="lixeira", itens=itens, total=total, pagina=pagina, total_paginas=paginas, busca=busca, voltar=url_for("ferramentas.listar_ferramentas"), restaurar_endpoint="ferramentas.restaurar_ferramenta", excluir_endpoint="ferramentas.excluir_ferramenta_permanentemente", campo_data="excluida_em", nome_campo="nome", detalhe_campo="codigo", rota_lista="ferramentas.listar_ferramentas")
+
+
+@ferramentas_bp.route("/ferramentas/<ferramenta_id>/restaurar-lixeira", methods=["POST"])
+def restaurar_ferramenta_lixeira(ferramenta_id):
+    if not ObjectId.is_valid(ferramenta_id):
+        flash("Ferramenta não encontrada.", "danger")
+        return redirect(url_for("ferramentas.ferramentas_lixeira"))
+    resultado = get_database()["ferramentas"].update_one(
+        {"_id": ObjectId(ferramenta_id), "usuario_id": usuario_id(), "excluida": True},
+        {"$set": {"excluida": False, "atualizado_em": agora()}, "$unset": {"excluida_em": ""}}
+    )
+    flash("Ferramenta restaurada." if resultado.modified_count else "Não foi possível restaurar a ferramenta.", "success" if resultado.modified_count else "warning")
+    return redirect(url_for("ferramentas.ferramentas_lixeira"))
+
+
+@ferramentas_bp.route("/ferramentas/<ferramenta_id>/excluir-permanentemente", methods=["POST"])
+def excluir_ferramenta_permanentemente(ferramenta_id):
+    if not ObjectId.is_valid(ferramenta_id):
+        return redirect(url_for("ferramentas.ferramentas_lixeira"))
+    resultado = get_database()["ferramentas"].delete_one({"_id": ObjectId(ferramenta_id), "usuario_id": usuario_id(), "excluida": True})
+    flash("Ferramenta excluída permanentemente." if resultado.deleted_count else "Não foi possível excluir a ferramenta.", "success" if resultado.deleted_count else "warning")
+    return redirect(url_for("ferramentas.ferramentas_lixeira"))
 
 
 # =====================================================

@@ -27,27 +27,10 @@
           </div>
       </div>
       <div class="modal fade" id="modalConcluirChamado" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
-        <form method="POST" action="{{ url_for('chamados.concluir_chamado', chamado_id=chamado._id) }}" id="formConcluirChamado">
+        <form method="POST" action="{{ url_for('chamados.concluir_chamado', chamado_id=chamado._id) }}">
           <div class="modal-header"><h5 class="modal-title">Concluir chamado</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-          <div class="modal-body">
-            <p>O serviço será marcado como concluído. Deseja registrar agora algum valor recebido por esta obra no Financeiro?</p>
-            {% if (chamado.saldo_pendente if chamado.saldo_pendente is defined else (chamado.valor_final or 0) - (chamado.valor_recebido or 0)) > 0 %}
-            <div class="form-check mb-2"><input class="form-check-input" type="radio" name="registrar_recebimento" id="recebimentoSim" value="sim" required><label class="form-check-label" for="recebimentoSim">Sim, registrar recebimento</label></div>
-            <div class="form-check mb-3"><input class="form-check-input" type="radio" name="registrar_recebimento" id="recebimentoNao" value="nao" required><label class="form-check-label" for="recebimentoNao">Não, registrar depois manualmente</label></div>
-            {% else %}
-            <input type="hidden" name="registrar_recebimento" value="nao">
-            <div class="alert alert-success">Esta obra não possui saldo pendente. Você pode concluir o chamado sem registrar outro recebimento.</div>
-            {% endif %}
-            <div id="camposRecebimento" class="border rounded-3 p-3" hidden>
-              <label class="form-label" for="valor_recebido_agora">Valor recebido agora (R$)</label>
-              <input class="form-control mb-3" type="text" inputmode="decimal" name="valor_recebido_agora" id="valor_recebido_agora" placeholder="0,00">
-              <label class="form-label" for="forma_pagamento_conclusao">Forma de pagamento</label>
-              <select class="form-select" name="forma_pagamento" id="forma_pagamento_conclusao"><option value="pix">PIX</option><option value="dinheiro">Dinheiro</option><option value="transferencia">Transferência</option><option value="credito">Cartão de crédito</option><option value="debito">Cartão de débito</option><option value="boleto">Boleto</option><option value="nao_informado">Não informado</option></select>
-              <small class="text-muted d-block mt-2">Saldo ainda devido: R$ {{ '%.2f'|format(chamado.saldo_pendente or 0)|replace('.', ',') }}. Você pode registrar um pagamento parcial.</small>
-            </div>
-            <div id="avisoRecebimentoManual" class="alert alert-warning mt-3 mb-0" hidden><strong>Atenção:</strong> se você já recebeu o valor da obra e não registrar agora, esse dinheiro não entrará no ERP. Será necessário lançá-lo manualmente depois no módulo Financeiro.</div>
-          </div>
-          <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Voltar</button><button type="submit" class="btn btn-success">Concluir chamado</button></div>
+          <div class="modal-body"><p class="mb-0">O chamado será marcado como concluído e você será direcionado ao Financeiro para registrar os recebimentos, se necessário.</p></div>
+          <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Voltar</button><button type="submit" class="btn btn-primary">Concluir chamado</button></div>
         </form></div></div></div>
       <div class="modal fade" id="modalCancelarChamado" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
         <form method="POST" action="{{ url_for('chamados.cancelar_chamado', chamado_id=chamado._id) }}">
@@ -58,7 +41,16 @@
       <div class="row g-3">
         <div class="col-lg-8">
           <section class="calls-form-panel mb-3"><h2>Descrição do serviço</h2><p style="white-space:pre-wrap">{{ chamado.descricao or 'Nenhuma descrição informada.' }}</p><hr><h2>Observações internas</h2><p style="white-space:pre-wrap">{{ chamado.observacoes or 'Nenhuma observação registrada.' }}</p></section>
-          <section class="calls-form-panel mb-3"><h2>Materiais previstos</h2>{% if chamado.materiais_previstos %}<ul>{% for item in chamado.materiais_previstos %}<li>{{ item.nome }} · {{ item.quantidade_prevista }} {{ item.unidade_medida or '' }} <small class="text-muted">(consumo não registrado por este vínculo)</small></li>{% endfor %}</ul>{% else %}<p class="text-muted">Nenhum material vinculado.</p>{% endif %}<hr><h2>Ferramentas vinculadas à obra</h2>{% if chamado.ferramentas_previstas %}<ul class="list-unstyled">{% for item in chamado.ferramentas_previstas %}<li class="d-flex justify-content-between align-items-center gap-2 py-2 border-bottom"><span>{{ item.nome }} {% if item.codigo %}· {{ item.codigo }}{% endif %}</span>{% if item.ferramenta_id %}<form method="POST" action="{{ url_for('chamados.desvincular_ferramenta_chamado', chamado_id=chamado._id, ferramenta_id=item.ferramenta_id) }}" data-confirm="Desvincular esta ferramenta e marcá-la como disponível?" data-confirm-title="Desvincular ferramenta" data-confirm-button="Desvincular" data-confirm-icon="bi-link-45deg" data-confirm-variant="primary"><button class="btn btn-sm btn-outline-secondary" type="submit">Desvincular</button></form>{% endif %}
+          <section class="calls-form-panel mb-3"><h2>Materiais previstos</h2>{% if chamado.materiais_previstos %}<ul>{% for item in chamado.materiais_previstos %}<li>{{ item.nome }} · {{ item.quantidade_prevista }} {{ item.unidade_medida or '' }} <small class="text-muted">(consumo não registrado por este vínculo)</small></li>{% endfor %}</ul>{% else %}<p class="text-muted">Nenhum material vinculado.</p>{% endif %}
+            {% if chamado.status not in ['concluido', 'cancelado'] %}
+            <form method="POST" action="{{ url_for('chamados.adicionar_material_chamado', chamado_id=chamado._id) }}" class="row g-2 align-items-end mt-2">
+              <div class="col-md-6"><label class="form-label" for="material_id_chamado">Adicionar material</label><select class="form-select" name="material_id" id="material_id_chamado" required><option value="">Selecione um material</option>{% for material in materiais_disponiveis if material.saldo_para_chamado > 0 %}<option value="{{ material._id }}">{{ material.nome }} · disponível: {{ material.saldo_para_chamado|round(2) }} {{ material.unidade_medida }}</option>{% endfor %}</select></div>
+              <div class="col-md-3"><label class="form-label" for="quantidade_material_chamado">Quantidade</label><input class="form-control" type="number" min="0.001" step="0.001" name="quantidade" id="quantidade_material_chamado" required></div>
+              <div class="col-md-3"><button class="btn btn-sm btn-primary w-100" type="submit"><i class="bi bi-plus-lg"></i> Incluir</button></div>
+            </form>
+            <small class="text-muted d-block mt-2">O sistema desconta as quantidades já reservadas em outros chamados ativos antes de permitir uma nova inclusão.</small>
+            {% endif %}
+            <hr><h2>Ferramentas vinculadas à obra</h2>{% if chamado.ferramentas_previstas %}<ul class="list-unstyled">{% for item in chamado.ferramentas_previstas %}<li class="d-flex justify-content-between align-items-center gap-2 py-2 border-bottom"><span>{{ item.nome }} {% if item.codigo %}· {{ item.codigo }}{% endif %}</span>{% if item.ferramenta_id %}<form method="POST" action="{{ url_for('chamados.desvincular_ferramenta_chamado', chamado_id=chamado._id, ferramenta_id=item.ferramenta_id) }}" data-confirm="Desvincular esta ferramenta e marcá-la como disponível?" data-confirm-title="Desvincular ferramenta" data-confirm-button="Desvincular" data-confirm-icon="bi-link-45deg" data-confirm-variant="primary"><button class="btn btn-sm btn-outline-secondary" type="submit">Desvincular</button></form>{% endif %}
               {% if item.ferramenta_id and outros_chamados %}
               <form method="POST" action="{{ url_for('chamados.transferir_ferramenta_chamado', chamado_id=chamado._id, ferramenta_id=item.ferramenta_id) }}" class="d-flex gap-1 mt-2">
                 <select class="form-select form-select-sm" name="destino_chamado_id" required><option value="">Transferir para outro chamado...</option>{% for outro in outros_chamados %}<option value="{{ outro._id }}">{{ outro.numero }} · {{ outro.titulo }}</option>{% endfor %}</select>
@@ -78,22 +70,4 @@
 </div>
 {% endblock %}
 
-{% block extra_js %}
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-  const yes = document.getElementById("recebimentoSim");
-  const no = document.getElementById("recebimentoNao");
-  const fields = document.getElementById("camposRecebimento");
-  const warning = document.getElementById("avisoRecebimentoManual");
-  const amount = document.getElementById("valor_recebido_agora");
-  function updateChoice() {
-    const register = yes && yes.checked;
-    fields.hidden = !register;
-    warning.hidden = !(no && no.checked);
-    if (amount) amount.required = !!register;
-  }
-  yes?.addEventListener("change", updateChoice);
-  no?.addEventListener("change", updateChoice);
-});
-</script>
-{% endblock %}
+{% block extra_js %}{% endblock %}

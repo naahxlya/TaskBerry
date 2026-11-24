@@ -264,15 +264,19 @@ document.addEventListener("DOMContentLoaded", function () {
             document.body.dataset.requireDeletePassword === "true" &&
             isPermanentDelete;
 
+        const acaoDestrutiva = isPermanentDelete || /arquiv|exclu|lixeira|delete|trash/i.test(
+            `${form.dataset.confirmTitle || ""} ${form.dataset.confirm || ""} ${form.dataset.confirmButton || ""}`
+        );
+
         openConfirmation({
-            kicker: form.dataset.confirmKicker || (isPermanentDelete ? "EXCLUSÃO DEFINITIVA" : undefined),
+            kicker: form.dataset.confirmKicker || (acaoDestrutiva ? "AÇÃO DE ARQUIVAMENTO OU EXCLUSÃO" : undefined),
             title: form.dataset.confirmTitle || (isPermanentDelete ? "Excluir permanentemente" : undefined),
             message: form.dataset.confirm || (isPermanentDelete
                 ? "Esta ação não poderá ser desfeita. Deseja realmente excluir este registro?"
                 : "Deseja realmente continuar?"),
             confirmText: form.dataset.confirmButton || (isPermanentDelete ? "Excluir definitivamente" : "Confirmar"),
             icon: form.dataset.confirmIcon || (isPermanentDelete ? "bi-trash3" : "bi-exclamation-circle"),
-            variant: form.dataset.confirmVariant || "danger",
+            variant: acaoDestrutiva ? "danger" : (form.dataset.confirmVariant || "primary"),
             requirePassword: requirePassword
         });
     }, true);
