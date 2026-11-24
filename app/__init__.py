@@ -18,6 +18,7 @@ def create_app():
 
     # Configurações gerais
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
+    app.config["MAX_CONTENT_LENGTH"] = 12 * 1024 * 1024  # até 12 MB por envio
 
     app.config["MONGO_URI"] = os.getenv(
         "MONGO_URI",

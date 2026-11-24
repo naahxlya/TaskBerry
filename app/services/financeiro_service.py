@@ -62,6 +62,14 @@ def preparar_movimentacao(
         "cancelada": False,
     }
     registro.update(extras)
+    # Estrutura BSON padronizada para lançamentos manuais e automáticos.
+    registro.setdefault("detalhes", {
+        "documento_referencia": "",
+        "centro_custo": "",
+        "observacao_interna": "",
+        "origem_registro": registro.get("origem", "integracao_automatica")
+    })
+    registro.setdefault("anexos", [])
     return registro
 
 

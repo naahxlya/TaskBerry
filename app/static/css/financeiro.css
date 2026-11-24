@@ -378,3 +378,22 @@ html[data-theme="dark"] .finance-pill.cancelled { border-color: #754354; backgro
   .finance-detail-row { align-items:flex-start; flex-direction:column; gap:6px; }
   .finance-modal-pagination { align-items:flex-start; flex-direction:column; }
 }
+
+
+/* Campos BSON estruturados do lançamento financeiro */
+.finance-advanced-fields {
+    padding: 16px;
+    border: 1px solid var(--tb-border);
+    border-radius: 12px;
+    background: var(--tb-surface-raised);
+}
+.finance-advanced-heading {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-bottom: 14px;
+}
+.finance-advanced-heading strong { color: var(--tb-text); font-size: .9rem; }
+.finance-advanced-heading strong i { color: var(--tb-purple); margin-right: 5px; }
+.finance-advanced-heading span, .finance-help-text { color: var(--tb-muted); font-size: .78rem; line-height: 1.5; }
+.finance-help-text { display: block; margin-top: 7px; }

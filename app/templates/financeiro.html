@@ -3,7 +3,7 @@
 {% block title %}Financeiro | TaskBerry{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/financeiro.css', v='20261118-3') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/financeiro.css', v='20261124-1') }}">
 {% endblock %}
 
 {% block content %}
@@ -230,7 +230,7 @@
                     </div>
                 </div>
 
-                <form method="POST" action="{{ url_for('financeiro.criar_movimentacao') }}" class="finance-form">
+                <form method="POST" enctype="multipart/form-data" action="{{ url_for('financeiro.criar_movimentacao') }}" class="finance-form">
                     <div class="finance-type-choice">
                         <label><input type="radio" name="tipo" value="entrada" checked> <i class="bi bi-arrow-down-left-circle text-success"></i> Entrada</label>
                         <label><input type="radio" name="tipo" value="saida"> <i class="bi bi-arrow-up-right-circle text-danger"></i> Saída</label>
@@ -319,6 +319,31 @@
                             <label for="observacoes">Observações</label>
                             <textarea class="form-control" name="observacoes" id="observacoes" rows="2" maxlength="1000" placeholder="Informações adicionais sobre o lançamento"></textarea>
                         </div>
+                        <div class="finance-field-full finance-advanced-fields">
+                            <div class="finance-advanced-heading">
+                                <strong><i class="bi bi-braces"></i> Controle Fiscal</strong>
+                                <span>Registro adicional para comprovantes de pagamentos</span>
+                            </div>
+                            <div class="finance-form-grid">
+                                <div>
+                                    <label for="documento_referencia">Documento de referência</label>
+                                    <input class="form-control" type="text" name="documento_referencia" id="documento_referencia" maxlength="100" placeholder="Ex.: NF-2026-015">
+                                </div>
+                                <div>
+                                    <label for="centro_custo">Centro de custo</label>
+                                    <input class="form-control" type="text" name="centro_custo" id="centro_custo" maxlength="100" placeholder="Ex.: Obra residencial">
+                                </div>
+                                <div>
+                                    <label for="observacao_interna">Observação interna</label>
+                                    <input class="form-control" type="text" name="observacao_interna" id="observacao_interna" maxlength="250" placeholder="Detalhe para controle interno">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="finance-field-full">
+                            <label for="anexos">Comprovantes e anexos</label>
+                            <input class="form-control" type="file" name="anexos" id="anexos" multiple accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx,.xls,.xlsx">
+                            <small class="finance-help-text">Você pode selecionar vários arquivos. Formatos aceitos: PDF, imagens, Word e Excel. Os arquivos serão vinculados a esta movimentação.</small>
+                        </div>
                     </div>
                     <div class="finance-note"><i class="bi bi-info-circle"></i> Pagamentos vinculados a obras atualizam automaticamente os campos de total recebido e saldo pendente do chamado. Compras registradas em Materiais e Ferramentas também são lançadas como despesas.</div>
                     <div class="finance-form-actions">
@@ -357,7 +382,23 @@
                                 <td>{{ item.data_movimento.strftime("%d/%m/%Y") if item.data_movimento else "—" }}
                                     {% if item.data_vencimento %}<span class="finance-secondary">Vence: {{ item.data_vencimento.strftime("%d/%m/%Y") }}</span>{% endif %}
                                 </td>
-                                <td><span class="finance-description">{{ item.descricao }}</span><span class="finance-secondary">{{ formas_pagamento.get(item.forma_pagamento, item.forma_pagamento) }}</span></td>
+                                <td>
+                                    <span class="finance-description">{{ item.descricao }}</span>
+                                    <span class="finance-secondary">{{ formas_pagamento.get(item.forma_pagamento, item.forma_pagamento) }}</span>
+                                    {% if item.detalhes and (item.detalhes.documento_referencia or item.detalhes.centro_custo) %}
+                                    <span class="finance-secondary">
+                                        {% if item.detalhes.documento_referencia %}Doc.: {{ item.detalhes.documento_referencia }}{% endif %}
+                                        {% if item.detalhes.centro_custo %} · {{ item.detalhes.centro_custo }}{% endif %}
+                                    </span>
+                                    {% endif %}
+                                    {% if item.anexos %}
+                                    <span class="finance-secondary"><i class="bi bi-paperclip"></i> {{ item.anexos|length }} anexo(s):
+                                        {% for anexo in item.anexos %}
+                                        <a href="{{ url_for('static', filename=anexo.caminho) }}" target="_blank" rel="noopener">{{ anexo.nome }}</a>{% if not loop.last %}, {% endif %}
+                                        {% endfor %}
+                                    </span>
+                                    {% endif %}
+                                </td>
                                 <td>{{ (categorias_entrada if item.tipo == 'entrada' else categorias_saida).get(item.categoria, item.categoria) }}
                                     {% if item.chamado_numero %}<span class="finance-secondary">{{ item.chamado_numero }} · {{ item.chamado_titulo }}</span>{% endif %}
                                     {% if item.funcionario_nome %}<span class="finance-secondary">{{ item.funcionario_nome }}</span>{% endif %}

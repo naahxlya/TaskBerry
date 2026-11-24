@@ -5,6 +5,8 @@ from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from io import StringIO
 import csv
 import re
+import os
+import uuid
 
 from bson import ObjectId
 from flask import (
@@ -556,6 +558,9 @@ def criar_movimentacao():
     funcionario_id = request.form.get("funcionario_id", "").strip()
     fornecedor = request.form.get("fornecedor", "").strip()
     observacoes = request.form.get("observacoes", "").strip()
+    documento_referencia = request.form.get("documento_referencia", "").strip()
+    centro_custo = request.form.get("centro_custo", "").strip()
+    observacao_interna = request.form.get("observacao_interna", "").strip()
 
     categorias_validas = CATEGORIAS_ENTRADA if tipo == "entrada" else CATEGORIAS_SAIDA
     if tipo not in ("entrada", "saida") or categoria not in categorias_validas:
@@ -618,6 +623,40 @@ def criar_movimentacao():
             flash(f"O valor excede o saldo pendente da obra (R$ {max(saldo_disponivel, 0):.2f}).", "warning")
             return redirect(url_for("financeiro.index"))
 
+    # Object BSON: dados complementares agrupados em um único campo.
+    detalhes = {
+        "documento_referencia": documento_referencia,
+        "centro_custo": centro_custo,
+        "observacao_interna": observacao_interna,
+        "origem_registro": "formulario_financeiro"
+    }
+
+    # Array BSON: cada comprovante é um objeto dentro da lista de anexos.
+    anexos = []
+    arquivos = request.files.getlist("anexos")
+    extensoes_permitidas = {"pdf", "png", "jpg", "jpeg", "webp", "doc", "docx", "xls", "xlsx"}
+    pasta_upload = os.path.join(current_app.root_path, "static", "uploads", "financeiro")
+    os.makedirs(pasta_upload, exist_ok=True)
+    for arquivo in arquivos:
+        if not arquivo or not arquivo.filename:
+            continue
+        nome_original = arquivo.filename.strip()
+        extensao = nome_original.rsplit(".", 1)[-1].lower() if "." in nome_original else ""
+        if extensao not in extensoes_permitidas:
+            flash(f"O arquivo '{nome_original}' possui formato não permitido.", "warning")
+            continue
+        nome_salvo = f"{uuid.uuid4().hex}.{extensao}"
+        caminho_absoluto = os.path.join(pasta_upload, nome_salvo)
+        arquivo.save(caminho_absoluto)
+        anexos.append({
+            "nome": nome_original[:180],
+            "arquivo": nome_salvo,
+            "caminho": f"uploads/financeiro/{nome_salvo}",
+            "extensao": extensao,
+            "tamanho_bytes": os.path.getsize(caminho_absoluto),
+            "enviado_em": agora()
+        })
+
     registro = preparar_movimentacao(
         db, usuario, tipo, categoria, descricao, valor, data_movimento,
         status=status,
@@ -632,7 +671,9 @@ def criar_movimentacao():
         fornecedor=fornecedor,
         observacoes=observacoes,
         data_vencimento=data_vencimento,
-        origem="manual"
+        origem="manual",
+        detalhes=detalhes,
+        anexos=anexos
     )
 
     try:
